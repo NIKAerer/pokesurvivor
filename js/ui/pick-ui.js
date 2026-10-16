@@ -21,6 +21,8 @@ G.PickUI = (() => {
     const s = G.DB.save;
     if (!box().includes(s.partner)) { s.partner = box()[0]; s.partnerShiny = false; }
     if (!G.DB.ownsShiny(s.partner)) s.partnerShiny = false;
+    // Un seul type de ticket : les anciens tickets ×10 valent 10 tickets.
+    if (s.tickets && s.tickets.t10 > 0) { s.tickets.t1 += s.tickets.t10 * 10; s.tickets.t10 = 0; G.DB.commit(); }
     for (const d of box()) if (!G.DB.owns(d)) G.DB.grant(d, 'starter');   // le Pokédex les compte
     G.Sprites.preload(box());          // charger les sprites avant de jouer
     render();
@@ -31,7 +33,7 @@ G.PickUI = (() => {
     const mon = G.DEX_BY[s.partner], mv = G.Moves.BY_ID[G.startMoveOf(mon.dex)];
     const t = s.tickets || { t1: 0, t10: 0 };
     $('pick-wallet').innerHTML = `<span class="coin"></span> <b>${s.coins.toLocaleString('fr')}</b>
-      &nbsp; ${G.Icons.html('ticket', 16)} <b>${t.t1}</b> &nbsp; ${G.Icons.html('ticket10', 16)} <b>${t.t10}</b>`;
+      &nbsp; ${G.Icons.html('ticket', 16)} <b>${t.t1}</b>`;
 
     // Le Pokémon choisi.
     const hero = $('pick-hero');
@@ -76,6 +78,8 @@ G.PickUI = (() => {
     $('pick-upg').onclick = () => G.MenuUI.openUpgrades();
     $('pick-gacha').onclick = () => G.GachaUI.open();
     $('pick-dex').onclick = () => G.MenuUI.openDex();
+    $('pick-set').innerHTML = G.Icons.html('gear', 18);
+    $('pick-set').onclick = () => G.SettingsUI.open('sound');
     // « Retour » des écrans Améliorations et Gacha : revient ici.
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
   }
