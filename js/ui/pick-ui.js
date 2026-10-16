@@ -20,6 +20,7 @@ G.PickUI = (() => {
     G.UI.show('scr-pick');
     const s = G.DB.save;
     if (!box().includes(s.partner)) { s.partner = box()[0]; s.partnerShiny = false; }
+    G.Sprites.preload(box());          // charger les sprites avant de jouer
     render();
   }
 
