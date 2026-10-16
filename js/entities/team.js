@@ -125,6 +125,39 @@ G.Team = (() => {
     return a;
   }
 
+  /**
+   * Les 4 attaques qu'un Pokémon peut apprendre (version de Nika) : son attaque de
+   * départ + 3 autres, toujours les mêmes pour sa famille (elles restent après
+   * l'évolution). On prend surtout les types de la famille, au plus 1 bonus (buff).
+   */
+  const sets = {};
+  function learnset(dex) {
+    const root = family(dex);
+    if (sets[root]) return sets[root];
+    const start = G.startMoveOf(dex);
+    const types = new Set();
+    for (const p of G.DEX) if (family(p.dex) === root) p.types.forEach(t => types.add(t));
+    let seed = root * 9301 + 49297;
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    const mix = a => a.map(x => [rnd(), x]).sort((p, q) => p[0] - q[0]).map(x => x[1]);
+    const pool = G.Moves.poolFor({ types: [...types] }).filter(id => id !== start);
+    const typed = mix(pool.filter(id => G.Moves.BY_ID[id].type !== 'normal'));
+    const normal = mix(pool.filter(id => G.Moves.BY_ID[id].type === 'normal'));
+    const out = [start];
+    let buffs = G.Moves.BY_ID[start].kind === 'buff' ? 1 : 0;
+    for (const id of [...typed, ...normal]) {
+      if (out.length >= 4) break;
+      const m = G.Moves.BY_ID[id];
+      if (m.kind === 'buff' && buffs >= 1) continue;
+      // varier : pas deux attaques de la même famille tant qu'il y a le choix
+      if (out.some(o => G.Moves.BY_ID[o].kind === m.kind) && typed.length + normal.length > 6 && out.length < 3) continue;
+      if (m.kind === 'buff') buffs++;
+      out.push(id);
+    }
+    for (const id of [...typed, ...normal]) { if (out.length >= 4) break; if (!out.includes(id)) out.push(id); }
+    return (sets[root] = out);
+  }
+
   /** XP partagée : les alliés reçoivent la même XP (le chef la reçoit dans game.js). */
   function shareXp(amount) {
     for (const a of allies) a.gainXp(amount);
@@ -181,6 +214,6 @@ G.Team = (() => {
   function update(dt) { for (const a of allies) a.update(dt); }
   function tick(dt, now) { if (!leader || leader.dead) return; for (const a of allies) G.Combat.tick(dt, a, now); }
 
-  return { MAX, reset, members, full, recruit, shareXp, evoLevel, evolve, recruitOffers, update, tick, family,
+  return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, update, tick, family,
            get allies() { return allies; }, get leader() { return leader; } };
 })();
