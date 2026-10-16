@@ -89,7 +89,7 @@ G.Game = (() => {
     holdBy = []; awayBy = null;
     const save = G.DB.save;
     const mon = G.DEX_BY[save.partner];
-    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));
+    const perks = G.Upgrades.perks({});      // version de Nika : pas de boutique
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -893,11 +893,13 @@ G.Flow = {
     document.getElementById('user-pill').onclick = () => G.GoalsUI.open('profile');
     G.Audio.music('village');     // suena tras el primer clic (lo exige el navegador)
     G.Game.init();
+    G.PickUI.init();
     // La base de datos (nube o local) recupera la sesión anterior.
     G.DB.ready().then(restored => {
       document.getElementById('boot').classList.add('hidden');
       // En otra tarea: crear el sonido para comprobarlo cuesta ~60 ms y no debe bloquear la carga.
-      setTimeout(() => this.tapToStart(() => { if (restored) this.afterLogin(); else this.toLogin(); }), 0);
+      // Version de Nika : pas de menu, on va droit au choix du Pokémon.
+      setTimeout(() => this.tapToStart(() => G.PickUI.open()), 0);
     });
   },
   /**
@@ -929,12 +931,13 @@ G.Flow = {
   },
   goMenu() {
     if (G.Game.state !== 'ui') G.Game.toUI();
-    G.Audio.music('village');
-    G.MenuUI.open();
-    G.LoginUI.offerRecovery();
+    G.PickUI.open();
   },
   /** Al cerrar el resumen: a la sala si sigues en una, si no al menú. */
   afterRun() {
+    if (G.Game.state !== 'ui') G.Game.toUI();
+    G.PickUI.open();
+    return;
     if (G.Social.room) {
       if (G.Game.state !== 'ui') G.Game.toUI();
       G.Audio.music('village');

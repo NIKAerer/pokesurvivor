@@ -210,6 +210,7 @@ G.Progress = (() => {
   // ---------------- avisos ----------------
 
   function notify(title, sub, ach) {
+    return;                         // version de Nika : pas de succès/missions, que la partie
     toastQ.push({ title, sub, ach });
     if (toastQ.length === 1) showNext();
   }
