@@ -74,6 +74,7 @@ G.Gacha = (() => {
    *   { dex, rarity, shiny, isNew, refund }
    */
   function pull(save, n, gen = 1, use = 't1') {
+    save.box = save.box || [1, 4, 7];
     const cost = costOf(save, n, use);
     if (!cost) return null;
     save.tickets.t1 -= cost.t1;
@@ -108,9 +109,13 @@ G.Gacha = (() => {
         if (isNew) save.shiny[mon.dex] = { at: Date.now(), from: 'gacha' };
         else refund = REFUND[rarity] * 3;
         if (!save.owned[mon.dex]) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
+        if (!save.box.includes(mon.dex)) save.box.push(mon.dex);
       } else {
-        isNew = !save.owned[mon.dex];
-        if (isNew) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
+        // Version de Nika : « nouveau » = pas encore jouable (un Pokémon déjà
+        // recruté en partie mais pas tiré au gacha devient jouable).
+        isNew = !save.box.includes(mon.dex);
+        if (!save.owned[mon.dex]) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
+        if (isNew) save.box.push(mon.dex);
         else refund = REFUND[rarity];
       }
       save.coins += refund;

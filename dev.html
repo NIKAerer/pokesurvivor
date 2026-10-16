@@ -453,7 +453,7 @@
     <div class="upg-head">
       <canvas id="upg-stage" class="stage" width="120" height="96"></canvas>
       <div class="grow">
-        <p class="sub" style="margin:0">Les améliorations comptent pour toute ton équipe, quel que soit le Pokémon. Le choix ci-dessous sert seulement au Veto et aux raccourcis.</p>
+        <p class="sub" style="margin:0">Les améliorations comptent pour toute ton équipe, quel que soit le Pokémon.</p>
         <div class="row" style="margin-top:8px">
           <label for="upg-mon" style="margin:0">Pokémon</label>
           <select id="upg-mon" class="field" style="width:auto;min-width:220px"></select>
@@ -528,11 +528,20 @@
 
 <!-- ====== Choix rapide du Pokémon (version de Nika, js/ui/pick-ui.js) ====== -->
 <section id="scr-pick" class="scr dim hidden">
-  <div class="box center pick-box">
-    <h1 class="pick-title">PokéSurvivor</h1>
-    <p class="sub">Choisis ton Pokémon</p>
-    <div class="pick-cards" id="pick-cards"></div>
-    <button id="pick-again" class="btn small ghost">Autres Pokémon</button>
+  <div class="box pick-box">
+    <div class="row between"><h1 class="pick-title">PokéSurvivor</h1><span class="pick-wallet" id="pick-wallet"></span></div>
+    <div class="pick-main">
+      <div class="pick-hero" id="pick-hero"></div>
+      <div class="pick-side">
+        <p class="sub" id="pick-count" style="margin:0"></p>
+        <div class="pick-cards" id="pick-cards"></div>
+      </div>
+    </div>
+    <div class="pick-actions">
+      <button id="pick-upg" class="btn">Améliorations</button>
+      <button id="pick-gacha" class="btn">Gacha</button>
+      <button id="pick-play" class="btn gold" data-sfx="confirm">Jouer</button>
+    </div>
     <p class="pick-credits">Fan game non commercial d'après PokéSurvivor de JPTER78 · Sprites : PMD SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Creatures / GAME FREAK</p>
   </div>
 </section>

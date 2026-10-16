@@ -32,16 +32,26 @@
 
 /* Plus de menu : choix rapide du Pokémon, pas de barre du haut */
 #topbar, #credits-line, #btn-pause-settings { display: none !important; }
-.pick-box { width: min(560px, 100%); }
-.pick-title { margin: 0; }
-.pick-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
-.pick-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 10px; border-radius: 12px;
-  background: color-mix(in srgb, var(--c) 22%, #0b1020); border: 2px solid var(--c); color: #fff; cursor: pointer; font: inherit; }
+.pick-box { width: min(720px, 100%); }
+.pick-title { margin: 0; font-size: 22px; }
+.pick-wallet { font-size: 14px; display: flex; align-items: center; gap: 4px; }
+.pick-main { display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin: 8px 0; }
+.pick-hero { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px; border-radius: 12px;
+  background: color-mix(in srgb, var(--c) 22%, #0b1020); border: 2px solid var(--c); }
+.pick-name { font-size: 18px; }
+.pick-side { min-width: 0; }
+.pick-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; margin: 6px 0; max-height: 46vh; overflow-y: auto; }
+.pick-card { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border-radius: 10px;
+  background: color-mix(in srgb, var(--c) 16%, #0b1020); border: 2px solid transparent; color: #fff; cursor: pointer; font: inherit; }
+.pick-card small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pick-card.on { border-color: #ffd23f; }
 .pick-card canvas { max-width: 100%; height: auto; }
+.pick-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.pick-actions .btn { flex: 1; }
 .pick-move { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: color-mix(in srgb, var(--m) 30%, transparent); border: 1px solid var(--m); }
 .pick-credits { font-size: 11px; color: var(--muted); margin-top: 10px; }
 .over-team { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
 .over-team > div { display: flex; flex-direction: column; align-items: center; font-size: 11px; }
 .pick-box, #scr-over .box { max-height: 94vh; overflow-y: auto; }
-.pick-cards { margin: 8px 0; }
 .pick-credits { margin-top: 6px; }
+#scr-upgrades .upg-head .row { display: none; }

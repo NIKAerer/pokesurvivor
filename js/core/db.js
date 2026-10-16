@@ -74,6 +74,7 @@ G.DB = (() => {
       updated: Date.now(),    // última modificación (para fusionar)
       coins: START_COINS,
       owned: {},              // dex -> { at, from: 'starter'|'gacha'|'wild' }
+      box: [1, 4, 7],         // version de Nika : Pokémon jouables (les 3 starters + le gacha)
       shiny: {},              // dex -> { at, from } — variantes shiny conseguidas
       partner: null,          // dex del Pokémon con el que juegas
       partnerShiny: false,    // jugar con su versión shiny (si la tienes)
