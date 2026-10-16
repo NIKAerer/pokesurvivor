@@ -105,7 +105,7 @@ G.MenuUI = (() => {
   function openDex() {
     G.UI.show('scr-dex', true);
     const s = G.DB.save;
-    if (dexSel == null) { dexSel = s.partner; dexGen = G.DEX_BY[s.partner].gen; }
+    if (dexSel == null) dexSel = s.partner;
     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
     $('dex-total').textContent = `${owned} / ${G.DEX.length}`;
 
@@ -145,7 +145,6 @@ G.MenuUI = (() => {
     const grid = $('dex-grid');
     grid.innerHTML = '';
     for (const p of G.DEX) {
-      if (p.gen !== dexGen) continue;
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
       if (dexFilter === 'own' && !own) continue;
       if (dexFilter === 'miss' && own) continue;

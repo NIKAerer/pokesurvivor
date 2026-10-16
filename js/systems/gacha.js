@@ -18,7 +18,6 @@ G.Gacha = (() => {
   /** @param use  't1' (tickets normales) o 't10' (un ticket ×10, sólo para la ×10) */
   function costOf(save, n, use = 't1') {
     const t = save.tickets || { t1: 0, t10: 0 };
-    if (n === 10 && use === 't10') return t.t10 >= 1 ? { t1: 0, t10: 1 } : null;
     return t.t1 >= n ? { t1: n, t10: 0 } : null;
   }
   const RATES = [[1, 45], [2, 30], [3, 17], [4, 6.5], [5, 1.5]];
@@ -30,15 +29,13 @@ G.Gacha = (() => {
   const RARITY_NAME = { 1: 'Común', 2: 'Poco común', 3: 'Rara', 4: 'Épica', 5: 'Legendaria' };
   const RARITY_COLOR = { 1: '#9fb1c9', 2: '#5fe08a', 3: '#4fb4ff', 4: '#c47bff', 5: '#ffcb3d' };
 
+  // Version de Nika : un seul gacha avec tous les Pokémon (gen 1-4), pas de régions.
   const BANNERS = [
-    { gen: 1, name: 'Kanto',   color: ['#3a1d6e', '#1b2f78', '#0f4d6e'] },
-    { gen: 2, name: 'Johto',   color: ['#5a2a1a', '#7a3d1f', '#2d4a6e'] },
-    { gen: 3, name: 'Hoenn',   color: ['#0f4d6e', '#1b6a5a', '#2a3d78'] },
-    { gen: 4, name: 'Sinnoh',  color: ['#2a2a5e', '#3d3d8a', '#5a2a6e'] }
+    { gen: 1, name: 'Gacha', color: ['#3a1d6e', '#1b2f78', '#0f4d6e'] }
   ];
 
   // Version de Nika : seulement les formes de base (ils évoluent pendant la partie).
-  function inBanner(p, gen) { return p.gen === gen && !!G.SPRITE_META[p.dex] && !G.EVO_FROM[p.dex]; }
+  function inBanner(p) { return !!G.SPRITE_META[p.dex] && !G.EVO_FROM[p.dex]; }
 
   /** Pokémon de una rareza en un banner. */
   function pool(rarity, gen) { return G.DEX.filter(p => inBanner(p, gen) && p.rarity === rarity); }
