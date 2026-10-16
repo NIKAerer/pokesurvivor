@@ -99,6 +99,7 @@ G.LevelUp = (() => {
     // --- nouveau Pokémon dans l'équipe (jusqu'à 6) ---
     if (G.Team.leader === pl && !G.Team.full()) {
       for (const mon of G.Team.recruitOffers(2)) {
+        G.Sprites.preload([mon.dex]);   // prêt s'il rejoint l'équipe
         out.push({
           w: 9, type: 'mon', key: 'mon:' + mon.dex, dex: mon.dex,
           icon: 'heart', color: G.U.TYPE_COLOR[mon.types[0]],

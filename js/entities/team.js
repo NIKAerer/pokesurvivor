@@ -161,7 +161,12 @@ G.Team = (() => {
   /** XP partagée : les alliés reçoivent la même XP (le chef la reçoit dans game.js). */
   function shareXp(amount) {
     for (const a of allies) a.gainXp(amount);
-    for (const m of members()) checkEvolve(m);
+    for (const m of members()) {
+      // Charger le sprite de l'évolution un peu avant, pour qu'il soit prêt.
+      const lv = evoLevel(m.dex);
+      if (lv && lv - m.level <= 3 && m.evoLoaded !== m.dex) { m.evoLoaded = m.dex; G.Sprites.preload(G.EVOS[m.dex].map(x => x[0])); }
+      checkEvolve(m);
+    }
   }
 
   /** Niveau où ce Pokémon évolue (le plus bas de ses évolutions), ou null. */
