@@ -1,0 +1,6 @@
+/* ============ nika.css — retouches de la version de Nika ============
+ * Pas de serveur : on cache les amis, le classement, la déconnexion,
+ * les dons et les nouveautés de l'original.
+ */
+.menu-item[data-go="friends"], .menu-item[data-go="rank"],
+#btn-logout, #btn-support, #btn-news { display: none !important; }
