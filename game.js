@@ -121,7 +121,7 @@ function newGame(starterId) {
   G = {
     t:0, kills:0, paused:false, over:false, pendingLevels:0,
     trainer:{ lvl:1, xp:0 },
-    player:{ x:0, y:0, vx:0, vy:0, hp:0, maxHp:0, inv:0, speed:150, regen:0.6, magnet:70, face:1 },
+    player:{ x:0, y:0, vx:0, vy:0, hp:0, maxHp:0, inv:0, speed:150, regen:0.6, magnet:70, row:0, flip:1, at:0, moving:false },
     team:[], enemies:[], shots:[], gems:[], fx:[], nums:[], zones:[], trail:[],
     spawnAcc:0, nextBoss:240, berries:[],
   };
@@ -132,7 +132,7 @@ function newGame(starterId) {
   renderTeam();
 }
 function addMember(id, lvl) {
-  const m = { sp:id, lvl, xp:0, cd:rand(0.2, 0.8), dmgMul:1, rateMul:1, x:G.player.x, y:G.player.y, flash:0, face:1 };
+  const m = { sp:id, lvl, xp:0, cd:rand(0.2, 0.8), dmgMul:1, rateMul:1, x:G.player.x, y:G.player.y, flash:0, row:0, flip:1, at:Math.random(), moving:false };
   G.team.push(m);
   return m;
 }
@@ -187,7 +187,7 @@ function spawnEnemy(boss) {
   const hp = (8 + s.hp * 0.22) * (1 + lvl * 0.16) * (boss ? 40 : 1) * (1 + G.t / 900);
   G.enemies.push({ sp:id, x:G.player.x + Math.cos(a)*R, y:G.player.y + Math.sin(a)*R, hp, max:hp, lvl, boss:!!boss,
     speed: (boss ? 55 : 38 + Math.min(s.spe, 130) * 0.28) * rand(0.9, 1.1), dmg: (4 + lvl * 0.55) * (boss ? 2.5 : 1),
-    kx:0, ky:0, slow:0, hit:0, face:1, scale: boss ? 1.8 : 0.9 + Math.min(s.bst, 600) / 2400 });
+    kx:0, ky:0, slow:0, hit:0, row:0, flip:1, at:Math.random(), moving:true, scale: boss ? 1.8 : 0.9 + Math.min(s.bst, 600) / 2400 });
   if (boss) banner(`Un <em>${s.name}</em> sauvage apparaît !`);
 }
 function damage(e, raw, type, src) {
@@ -467,11 +467,20 @@ function showStart() {
 }
 
 // ---------- Boucle ----------
+// Oriente un sprite animé : rangée bas / haut / côté (la droite est le côté gauche retourné).
+function face(o, dx, dy, dt) {
+  const l = Math.hypot(dx, dy);
+  o.moving = l > 0.15;
+  if (!o.moving) return;
+  if (Math.abs(dx) > Math.abs(dy) * 0.7) { o.row = 2; o.flip = dx > 0 ? -1 : 1; }
+  else { o.row = dy > 0 ? 0 : 1; o.flip = 1; }
+  o.at += dt;
+}
 function update(dt) {
   G.t += dt;
   const p = G.player, dir = inputDir();
   p.x += dir.x * p.speed * dt; p.y += dir.y * p.speed * dt;
-  if (dir.x) p.face = dir.x > 0 ? -1 : 1;
+  face(p, dir.x, dir.y, dt);
   p.hp = Math.min(p.maxHp, p.hp + p.regen * dt);
   p.inv -= dt;
 
@@ -480,8 +489,8 @@ function update(dt) {
   if (Math.hypot(p.x - last.x, p.y - last.y) > 5) { G.trail.unshift({ x:p.x, y:p.y }); G.trail.length = 60; }
   G.team.forEach((m, i) => {
     const tgt = i === 0 ? p : G.trail[Math.min(59, i * 7)];
-    const ox = m.x; m.x += (tgt.x - m.x) * Math.min(1, dt * (i ? 8 : 60)); m.y += (tgt.y - m.y) * Math.min(1, dt * (i ? 8 : 60));
-    if (i === 0) m.face = p.face; else if (Math.abs(m.x - ox) > 0.3) m.face = m.x > ox ? -1 : 1;
+    const ox = m.x, oy = m.y; m.x += (tgt.x - m.x) * Math.min(1, dt * (i ? 8 : 60)); m.y += (tgt.y - m.y) * Math.min(1, dt * (i ? 8 : 60));
+    if (i === 0) { m.row = p.row; m.flip = p.flip; m.moving = p.moving; m.at = p.at; } else face(m, (m.x - ox) / dt / 120, (m.y - oy) / dt / 120, dt);
     m.flash = Math.max(0, m.flash - dt);
   });
 
@@ -499,7 +508,7 @@ function update(dt) {
     const sp = e.speed * (e.slow > 0 ? 0.55 : 1);
     e.x += (dx / l * sp + e.kx) * dt; e.y += (dy / l * sp + e.ky) * dt;
     e.kx *= 0.86; e.ky *= 0.86; e.slow -= dt; e.hit -= dt;
-    e.face = dx > 0 ? -1 : 1;
+    face(e, dx, dy, dt * (e.slow > 0 ? 0.55 : 1));
     const rad = 14 * e.scale;
     near(e.x, e.y, rad, o => { if (o !== e) { const ox = e.x - o.x, oy = e.y - o.y, d = Math.hypot(ox, oy); if (d > 0 && d < rad) { e.x += ox / d * (rad - d) * 0.3; e.y += oy / d * (rad - d) * 0.3; } } });
     if (l < 16 + rad && p.inv <= 0) { p.hp -= e.dmg; p.inv = 0.45; if (p.hp <= 0) { gameOver(); return; } }
@@ -573,12 +582,17 @@ function update(dt) {
 }
 
 // ---------- Rendu ----------
-function drawSprite(id, x, y, scale, face, alpha, white) {
-  const r = D[id].r, w = r[2] * scale, h = r[3] * scale;
-  ctx.save(); ctx.translate(x, y); ctx.scale(face, 1);
+// Sprites animés PMD SpriteCollab : ANIM[id] = [page, x, y, largeur, hauteur, décalage, durées en 1/60 s]
+const animPages = ANIM_SRC.map(src => { const im = new Image(); im.src = src; return im; });
+function drawSprite(id, o, x, y, scale, alpha, white) {
+  const a = ANIM[id], img = animPages[a[0]], dur = a[6];
+  let f = 0;
+  if (o.moving) { const tot = dur.reduce((s, d) => s + d, 0); let t = Math.floor(o.at * 60) % tot; while (t >= dur[f]) { t -= dur[f]; f++; } }
+  const sx = a[1] + f * a[3], sy = a[2] + o.row * a[4], w = a[3] * scale, h = a[4] * scale;
+  ctx.save(); ctx.translate(x, y); ctx.scale(o.flip, 1);
   if (alpha !== 1) ctx.globalAlpha = alpha;
-  ctx.drawImage(atlas, r[0], r[1], r[2], r[3], -w/2, -h + 6, w, h);
-  if (white) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.6; ctx.drawImage(atlas, r[0], r[1], r[2], r[3], -w/2, -h + 6, w, h); }
+  ctx.drawImage(img, sx, sy, a[3], a[4], -w/2 + a[5] * scale, -h + 4, w, h);
+  if (white) { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.6; ctx.drawImage(img, sx, sy, a[3], a[4], -w/2 + a[5] * scale, -h + 4, w, h); }
   ctx.restore();
 }
 function shadow(x, y, w) { ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.beginPath(); ctx.ellipse(x, y + 4, w, w * 0.35, 0, 0, Math.PI * 2); ctx.fill(); }
@@ -616,12 +630,12 @@ function render() {
   for (const [, kind, o, i] of list) {
     if (kind === 0) {
       shadow(o.x, o.y, 12 * o.scale);
-      drawSprite(o.sp, o.x, o.y, 0.62 * o.scale, o.face, 1, o.hit > 0);
+      drawSprite(o.sp, o, o.x, o.y, 1.5 * o.scale, 1, o.hit > 0);
       if (o.boss || o.hp < o.max) { const w = o.boss ? 70 : 24; ctx.fillStyle = "#0008"; ctx.fillRect(o.x - w/2, o.y + 8, w, 4); ctx.fillStyle = o.boss ? "#ff6b5e" : "#9be07a"; ctx.fillRect(o.x - w/2, o.y + 8, w * Math.max(0, o.hp / o.max), 4); }
     } else {
       shadow(o.x, o.y, 13);
       const blink = i === 0 && p.inv > 0 && Math.floor(G.t * 20) % 2;
-      drawSprite(o.sp, o.x, o.y, i === 0 ? 0.8 : 0.66, o.face, blink ? 0.4 : 1, o.flash > 0 && Math.floor(o.flash * 10) % 2);
+      drawSprite(o.sp, o, o.x, o.y, i === 0 ? 1.9 : 1.6, blink ? 0.4 : 1, o.flash > 0 && Math.floor(o.flash * 10) % 2);
     }
   }
   // PV du starter

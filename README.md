@@ -23,4 +23,10 @@ Déplacement : ZQSD, WASD ou flèches. Sur mobile, pose le doigt n'importe où p
 
 - `index.html` : interface et styles.
 - `game.js` : le jeu.
+- `anim.js` : généré par `python3 tools/build_anim.py` (sprites de marche animés PMD SpriteCollab, 3 directions).
 - `data.js` : généré par `python3 tools/build_data.py` (noms français, types, stats, évolutions et atlas de sprites des Pokémon 1 à 493, depuis PokeAPI).
+
+## Crédits
+
+- Sprites animés : [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), licence CC BY-NC 4.0 (usage non commercial).
+- Données et images des cartes : [PokeAPI](https://pokeapi.co/).
