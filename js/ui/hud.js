@@ -263,7 +263,7 @@ G.HUD = (() => {
       const g = pl.slots[i] || [];
       const m = g[0];
       const fused = g.length > 1;
-      const on = i === pl.active;
+      const on = true;                     // version de Nika : toutes les attaques partent
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
       // Tocar (o hacer clic en) un icono activa ese movimiento.

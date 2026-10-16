@@ -38,6 +38,7 @@
 .pick-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 10px; border-radius: 12px;
   background: color-mix(in srgb, var(--c) 22%, #0b1020); border: 2px solid var(--c); color: #fff; cursor: pointer; font: inherit; }
 .pick-card canvas { max-width: 100%; height: auto; }
+.pick-move { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: color-mix(in srgb, var(--m) 30%, transparent); border: 1px solid var(--m); }
 .pick-credits { font-size: 11px; color: var(--muted); margin-top: 10px; }
 .over-team { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
 .over-team > div { display: flex; flex-direction: column; align-items: center; font-size: 11px; }

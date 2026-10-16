@@ -26,6 +26,9 @@ for (const s of G.STARTERS) G.STARTER_BY[s.dex] = s;
 
 /** Movimiento inicial de cualquier Pokémon (starter o del gacha). */
 G.startMoveOf = dex => {
+  // Version de Nika : chaque famille commence avec son attaque signature.
+  let root = dex; while (G.EVO_FROM && G.EVO_FROM[root]) root = G.EVO_FROM[root];
+  if (G.Moves.BY_ID['sig-' + root]) return 'sig-' + root;
   const s = G.STARTER_BY[dex];
   return s ? s.start : G.Moves.startFor(G.DEX_BY[dex]);
 };

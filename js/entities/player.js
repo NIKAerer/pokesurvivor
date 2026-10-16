@@ -136,6 +136,7 @@ G.Player = class Player {
   hasMove(id) { return this.moves.some(m => m.id === id); }
 
   setActive(i) {
+    return;                          // version de Nika : plus de changement d'attaque
     if (i < 0 || i >= this.slots.length || i === this.active) return;
     // Cinta Elección: no se puede cambiar de movimiento.
     if (this.hasItem('choiceband') && this.slots[this.active]) {
@@ -190,7 +191,8 @@ G.Player = class Player {
   }
 
   /** Movimientos que se lanzan ahora (el grupo del hueco activo). */
-  activeGroup() { return this.slots[this.active] || []; }
+  // Version de Nika : plus de changement d'attaque, toutes les attaques partent seules.
+  activeGroup() { return this.moves; }
 
   activeMove() { return this.activeGroup()[0]; }
 
@@ -276,6 +278,8 @@ G.Player = class Player {
       this.xp -= this.xpNext;
       this.level++;
       this.xpNext = Player.xpFor(this.level);
+      // Version de Nika : le starter gagne des PV à chaque niveau (pas les alliés).
+      if (!this.ally) { const g = Math.round(this.mon.hp * 0.05); this.maxHp += g; this.hp += g; }
       leveled++;
     }
     return leveled;
