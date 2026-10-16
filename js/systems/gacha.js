@@ -37,7 +37,8 @@ G.Gacha = (() => {
     { gen: 4, name: 'Sinnoh',  color: ['#2a2a5e', '#3d3d8a', '#5a2a6e'] }
   ];
 
-  function inBanner(p, gen) { return p.gen === gen && !!G.SPRITE_META[p.dex]; }
+  // Version de Nika : seulement les formes de base (ils évoluent pendant la partie).
+  function inBanner(p, gen) { return p.gen === gen && !!G.SPRITE_META[p.dex] && !G.EVO_FROM[p.dex]; }
 
   /** Pokémon de una rareza en un banner. */
   function pool(rarity, gen) { return G.DEX.filter(p => inBanner(p, gen) && p.rarity === rarity); }

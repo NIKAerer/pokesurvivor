@@ -27,9 +27,14 @@ G.LevelUp = (() => {
       apply: pl => pl.heal(pl.maxHp * 0.45) }
   ];
 
-  /** Construye el conjunto de cartas candidatas, con pesos. */
-  function candidates(pl) {
-    const out = [];
+  /**
+   * Version de Nika : les cartes de mouvement visent l'un des Pokémon de
+   * l'équipe (nouveau mouvement, amélioration, évolution de mouvement), et
+   * certaines proposent un nouveau Pokémon tant que l'équipe n'est pas à 6.
+   */
+  function memberCards(pl, out, waiting, team) {
+    const who = team > 1 ? pl.mon.name + ' · ' : '';
+    const wk = pl.ally ? 0.8 : 1;          // un peu moins pour chaque allié : le total reste équilibré
 
     // --- movimientos nuevos ---
     if (pl.slots.length < pl.maxMoves) {
@@ -38,32 +43,31 @@ G.LevelUp = (() => {
       const buffs = pl.moves.filter(m => m.kind === 'buff').length;
       const pool = G.Moves.poolFor(pl.mon).filter(id =>
         !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)) && !(buffs >= 2 && G.Moves.BY_ID[id].kind === 'buff'));
-      for (const id of G.U.pickN(pool, 6)) {
+      for (const id of G.U.pickN(pool, pl.ally ? 3 : 6)) {
         const d = G.Moves.BY_ID[id];
         out.push({
-          w: 10, type: 'new', key: 'new:' + id,
+          w: 10 * wk, type: 'new', key: 'new:' + pl.dex + ':' + id, who: team > 1 ? pl.dex : null,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: G.U.TYPE_NAME[d.type],
+          tag: who + G.U.TYPE_NAME[d.type],
           title: d.name, desc: d.desc,
-          apply: p => p.addMove(id)
+          apply: () => pl.addMove(id)
         });
       }
     }
 
     // --- evoluciones: movimiento al máximo + su condición cumplida ---
-    const waiting = {};                   // stat -> movimiento que la espera para evolucionar
     for (const m of pl.moves) {
-      const ev = G.Moves.evoInfo(m, pl.statsTaken);
+      const ev = G.Moves.evoInfo(m, pl.ally ? pl.leader.statsTaken : pl.statsTaken);
       if (!ev) continue;
-      if (!ev.ready) { waiting[ev.needs] = m; continue; }
+      if (!ev.ready) { waiting[ev.needs] = waiting[ev.needs] || m; continue; }
       out.push({
-        w: 40, type: 'evo', key: 'evo:' + m.id,
-        icon: 'move:' + m.id, color: '#ffd23f', tag: 'EVOLUCIÓN',
+        w: 40, type: 'evo', key: 'evo:' + pl.dex + ':' + m.id, who: team > 1 ? pl.dex : null,
+        icon: 'move:' + m.id, color: '#ffd23f', tag: who + 'EVOLUCIÓN',
         title: m.name + ' → ' + ev.name, desc: ev.text,
-        apply: p => {
+        apply: () => {
           G.Moves.evolve(m);
-          G.FX.ring(p.x, p.y, 8, 120, '#ffd23f', 0.8, 6);
-          G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#ffe14d', 40, 240);
+          G.FX.ring(pl.x, pl.y, 8, 120, '#ffd23f', 0.8, 6);
+          G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffe14d', 40, 240);
           G.Audio.sfx('legend');
           G.Progress.event('evolve', { move: m.id });
         }
@@ -75,12 +79,33 @@ G.LevelUp = (() => {
       const txt = G.Moves.nextUpText(m);
       if (!txt) continue;
       out.push({
-        w: 8, type: 'up', key: 'up:' + m.id,
+        w: 8 * wk, type: 'up', key: 'up:' + pl.dex + ':' + m.id, who: team > 1 ? pl.dex : null,
         icon: 'move:' + m.id, color: G.U.TYPE_COLOR[m.type],
-        tag: 'Nv.' + m.lvl + ' > ' + (m.lvl + 1),
+        tag: who + 'Nv.' + m.lvl + ' > ' + (m.lvl + 1),
         title: m.name, desc: txt,
         apply: () => G.Moves.levelUp(m)
       });
+    }
+  }
+
+  /** Construye el conjunto de cartas candidatas, con pesos. */
+  function candidates(pl) {
+    const out = [];
+    const waiting = {};                   // stat -> movimiento que la espera para evolucionar
+    const members = G.Team.leader === pl ? G.Team.members() : [pl];
+    for (const mem of members) memberCards(mem, out, waiting, members.length);
+
+    // --- nouveau Pokémon dans l'équipe (jusqu'à 6) ---
+    if (G.Team.leader === pl && !G.Team.full()) {
+      for (const mon of G.Team.recruitOffers(2)) {
+        out.push({
+          w: 9, type: 'mon', key: 'mon:' + mon.dex, dex: mon.dex,
+          icon: 'heart', color: G.U.TYPE_COLOR[mon.types[0]],
+          tag: 'Équipe ' + (members.length + 1) + '/6',
+          title: mon.name, desc: 'Rejoint ton équipe au niveau 1 et attaque avec toi. ' + mon.types.map(t => G.U.TYPE_NAME[t]).join(' / ') + '.',
+          apply: () => G.Team.recruit(mon.dex)
+        });
+      }
     }
 
     // --- stats ---

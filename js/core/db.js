@@ -832,11 +832,12 @@ G.DB = (() => {
 
   function ownsShiny(dex) { return !!(save && save.shiny && save.shiny[dex]); }
 
-  /** Mejoras compradas para un Pokémon: { id -> nivel }. */
+  /** Mejoras compradas: { id -> nivel }.
+   *  Version de Nika : la boutique est GLOBALE (les mêmes améliorations pour tous les Pokémon). */
   function upgradesOf(dex) {
     if (!save) return {};
     save.pupg = save.pupg || {};
-    return save.pupg[dex] || (save.pupg[dex] = {});
+    return save.pupg.all || (save.pupg.all = {});
   }
 
   /** Da la versión shiny (y la normal, si no la tenía). Devuelve true si es nueva. */

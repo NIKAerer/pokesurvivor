@@ -70,6 +70,23 @@ G.GachaUI = (() => {
     $('cost-10').innerHTML = `${G.Icons.html('ticket', 18)} 10`;
     $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
     $('gacha-tickets').innerHTML = `Tienes ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> tickets y ${G.Icons.html('ticket10', 18)} <b>${t.t10}</b> tickets ×10`;
+    // Version de Nika : on peut aussi acheter des tickets avec les pièces.
+    const PRICE = { t1: 120, t10: 1000 };
+    for (const k of ['t1', 't10']) {
+      const b = $('buy-' + k);
+      b.innerHTML = `Acheter ${G.Icons.html(k === 't1' ? 'ticket' : 'ticket10', 16)} · <span class="coin"></span> ${PRICE[k]}`;
+      b.disabled = s.coins < PRICE[k];
+      b.onclick = () => {
+        const sv = G.DB.save;
+        if (sv.coins < PRICE[k]) return;
+        sv.coins -= PRICE[k];
+        sv.tickets = sv.tickets || { t1: 0, t10: 0 };
+        sv.tickets[k] = (sv.tickets[k] || 0) + 1;
+        G.DB.commit(true);
+        G.Audio.sfx('buy');
+        refresh();
+      };
+    }
     $('pull-1').disabled = !G.Gacha.costOf(s, 1);
     $('pull-10').disabled = !G.Gacha.costOf(s, 10, 't1');
     $('pull-10b').disabled = !G.Gacha.costOf(s, 10, 't10');

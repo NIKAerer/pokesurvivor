@@ -45,7 +45,7 @@ G.RunUI = (() => {
       el.className = 'card';
       const tag = c.type === 'new'
         ? `<span class="tag-chip" style="background:${c.color}">Nuevo · ${c.tag}</span>`
-        : c.type === 'up' || c.type === 'evo'
+        : c.type === 'up' || c.type === 'evo' || c.type === 'mon'
           ? `<span class="tag-chip" style="background:${c.color}">${c.tag}</span>`
           : `<span class="tag-chip" style="background:${c.color === '#ffd23f' ? '#ffd23f' : '#9fb1c9'}">${c.tag}</span>`;
       if (c.type === 'evo') el.classList.add('evo');
@@ -53,6 +53,15 @@ G.RunUI = (() => {
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
          <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
          <div class="key">${i + 1}</div>`;
+      // Version de Nika : nouveau Pokémon -> son sprite ; carte pour un allié -> son petit portrait.
+      if (c.dex || c.who) {
+        const ico = el.querySelector('.ico');
+        if (c.dex) ico.innerHTML = '';
+        const cv = G.UI.spriteCanvas(c.dex || c.who, c.dex ? 44 : 22, c.dex ? 44 : 22, { scale: c.dex ? 1 : 0.5 });
+        if (!c.dex) cv.className = 'who';
+        ico.appendChild(cv);
+      }
+      if (c.type === 'mon') el.classList.add('mon');
       el.dataset.sfx = 'none';             // el juego pone su propio sonido al elegir
       el.onclick = () => pick(i);
       box.appendChild(el);
@@ -223,6 +232,7 @@ G.RunUI = (() => {
 
   function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
+    G.TypesUI.pauseTeam($('pause-team'));
     $('pause-coop').classList.toggle('hidden', !coop);
     $('btn-quit').textContent = coop ? 'Salir de la partida' : 'Abandonar run';
     G.UI.show('scr-pause');

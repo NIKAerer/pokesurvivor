@@ -112,6 +112,7 @@ G.Game = (() => {
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    G.Team.reset(pl);
     banked = { t1: 0, t10: 0 };
     caught = [];
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
@@ -474,7 +475,9 @@ G.Game = (() => {
     if (G.Coop.active) G.Coop.collected(p, who);
     if (mine || p.kind === 'bomb') G.Audio.sfx(PICK_SFX[p.kind]);
     if (p.kind === 'xp' || p.kind === 'xpBig') {
-      pendingLevels += pl.gainXp(p.value * (G.Coop.active ? G.Coop.xpFactor() : 1));
+      const xp = p.value * (G.Coop.active ? G.Coop.xpFactor() : 1);
+      pendingLevels += pl.gainXp(xp);
+      G.Team.shareXp(xp);              // version de Nika : XP partagée avec toute l'équipe
       return;
     }
     if (p.kind === 'coin') {
@@ -645,6 +648,7 @@ G.Game = (() => {
 
     pl.frozen = coop && (G.UI.isOpen('scr-pause') || G.UI.isOpen('scr-item'));
     pl.update(dt);
+    G.Team.update(dt);
     if (coop) {
       for (const p of G.Coop.puppets()) { p.netUpdate(dt); G.Combat.ghostOrbit(p, dt, time); }
       if (pl.dead) reviveTick(dt);
@@ -658,6 +662,7 @@ G.Game = (() => {
     G.EnemyMgr.update(dt, all);
     G.EnemyMgr.rebuildGrid();
     G.Combat.tick(dt, pl, time);
+    G.Team.tick(dt, time);
     G.Projectiles.update(dt, pl, G.EnemyMgr.all());
     G.Combat.resolve(dt, pl, time);
     G.Combat.updateFields(dt);
@@ -730,7 +735,7 @@ G.Game = (() => {
     ctx.save();
     ctx.scale(G.Camera.scale, G.Camera.scale);
     G.Camera.apply(ctx);
-    drawScene(G.Camera, G.Coop.active ? [pl, ...G.Coop.puppets()] : [pl]);
+    drawScene(G.Camera, G.Coop.active ? [pl, ...G.Coop.puppets()] : [pl, ...G.Team.allies]);
     G.Projectiles.draw(ctx);
     G.Combat.drawAirFields(ctx);
     G.FX.draw(ctx);

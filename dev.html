@@ -184,6 +184,7 @@
         <button class="menu-item" data-go="dex">Pokémon<small id="menu-dex-count">Tu colección</small></button>
         <button class="menu-item" data-go="upgrades">Mejoras<small>Haz más fuerte cada run</small></button>
         <button class="menu-item" data-go="gacha">Gacha<small>4 regiones · Pokémon y shinies</small></button>
+        <button class="menu-item" data-go="types">Types<small>Qui est fort contre qui</small></button>
         <button class="menu-item" data-go="goals">Misiones<small id="menu-goals-sub">Misiones, logros y perfil</small></button>
         <button class="menu-item" data-go="friends">Amigos<small id="menu-friends-sub">Juega en grupo, hasta 4</small></button>
         <button class="menu-item" data-go="rank">Ranking<small>Quién aguanta más</small></button>
@@ -452,7 +453,7 @@
     <div class="upg-head">
       <canvas id="upg-stage" class="stage" width="120" height="96"></canvas>
       <div class="grow">
-        <p class="sub" style="margin:0">Cada Pokémon tiene sus propias mejoras: sólo cuentan cuando juegas con él.</p>
+        <p class="sub" style="margin:0">Les améliorations comptent pour toute ton équipe, quel que soit le Pokémon. Le choix ci-dessous sert seulement au Veto et aux raccourcis.</p>
         <div class="row" style="margin-top:8px">
           <label for="upg-mon" style="margin:0">Pokémon</label>
           <select id="upg-mon" class="field" style="width:auto;min-width:220px"></select>
@@ -482,6 +483,7 @@
           <button id="pull-10b" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10b"></span></button>
         </div>
         <p class="note tickets-line" id="gacha-tickets"></p>
+        <p class="note row" style="gap:8px;flex-wrap:wrap"><button id="buy-t1" class="btn small gold"></button><button id="buy-t10" class="btn small gold"></button></p>
         <p class="note" id="gacha-pity"></p>
       </div>
       <div class="panel rates" id="gacha-rates"></div>
@@ -524,12 +526,23 @@
   </div>
 </section>
 
+<!-- ====== Table des types (version de Nika, js/ui/types-ui.js) ====== -->
+<section id="scr-types" class="scr dim hidden">
+  <div class="box wide types-box">
+    <div class="row between"><h2>Table des types</h2><button class="btn small ghost" data-back>Volver</button></div>
+    <p class="sub" style="margin:0 0 8px">Choisis le type de l'attaque : on te montre contre quels Pokémon sauvages elle est forte ou faible.</p>
+    <div class="chips types-pick" id="types-pick"></div>
+    <div id="types-out"></div>
+  </div>
+</section>
+
 <section id="scr-pause" class="scr dim hidden">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
     <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>1</kbd>–<kbd>4</kbd> movimiento · <kbd>Q</kbd>/<kbd>E</kbd> ciclar · <kbd>Esc</kbd> pausa</p>
     <p class="sub touch-hint">Arrastra el dedo para moverte · toca un ataque para cambiarlo</p>
     <p id="pause-coop" class="note hidden">Partida en grupo: el juego sigue mientras estás aquí.</p>
+    <div id="pause-team" class="pause-team"></div>
     <div id="pause-sound" class="sound-inline"></div>
     <div class="row" style="justify-content:center">
       <button id="btn-resume" class="btn gold">Continuar</button>
@@ -556,6 +569,7 @@
 <script defer src="js/core/settings.js"></script>
 <script defer src="js/data/music.js"></script>
 <script defer src="js/data/pokedex.js"></script>
+<script defer src="js/data/evolutions.js"></script>
 <script defer src="js/data/sprites-meta.js"></script>
 <!-- núcleo -->
 <script defer src="js/core/firebase-config.js"></script>
@@ -586,6 +600,7 @@
 <script defer src="js/entities/enemy.js"></script>
 <script defer src="js/entities/pickup.js"></script>
 <script defer src="js/entities/player.js"></script>
+<script defer src="js/entities/team.js"></script>
 <!-- sistemas -->
 <script defer src="js/systems/combat.js"></script>
 <script defer src="js/systems/spawner.js"></script>
@@ -614,6 +629,7 @@
 <script defer src="js/ui/slots.js"></script>
 <script defer src="js/ui/gacha-ui.js"></script>
 <script defer src="js/ui/run-ui.js"></script>
+<script defer src="js/ui/types-ui.js"></script>
 <script defer src="js/ui/social-ui.js"></script>
 <script defer src="js/ui/ranking-ui.js"></script>
 <script defer src="js/ui/mod-ui.js"></script>

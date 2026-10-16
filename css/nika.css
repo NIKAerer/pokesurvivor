@@ -4,3 +4,28 @@
  */
 .menu-item[data-go="friends"], .menu-item[data-go="rank"],
 #btn-logout, #btn-support, #btn-news { display: none !important; }
+
+/* Cartes de l'équipe : sprite du nouveau Pokémon, petit portrait de l'allié visé. */
+.card .ico { position: relative; }
+.card .ico canvas.who { position: absolute; right: -6px; bottom: -6px; background: #0b1020cc; border-radius: 6px; }
+.card.mon { box-shadow: 0 0 0 2px #7fe0ff inset; }
+
+/* Table des types */
+.types-box { max-height: 92vh; overflow-y: auto; }
+.types-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.type-chip { color: #fff; text-shadow: 0 1px 0 #0008; border: 0; padding: 3px 9px; border-radius: 999px; font-size: 13px; }
+.types-pick .type-chip { cursor: pointer; opacity: .55; }
+.types-pick .type-chip.on { opacity: 1; box-shadow: 0 0 0 2px #fff; }
+.types-sum { display: grid; gap: 8px; margin-bottom: 10px; text-align: left; }
+.types-sum .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.types-group { margin-bottom: 8px; text-align: left; }
+.types-group summary { cursor: pointer; }
+.types-mons { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 8px; font-size: 13px; }
+.tmon i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.tmon small { color: var(--muted); }
+/* Équipe dans la pause */
+.pause-team { text-align: left; margin: 6px 0; }
+#scr-pause .box { max-height: 94vh; overflow-y: auto; }
+.pt-row { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.pt-row .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.pt-row .type-chip { font-size: 11px; padding: 2px 7px; }
