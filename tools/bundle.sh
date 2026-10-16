@@ -5,6 +5,7 @@ cd "$(dirname "$0")/.."
 mkdir -p dist
 awk '
   /<script src="data.js"><\/script>/ { print "<script>"; while ((getline l < "data.js") > 0) print l; print "</script>"; next }
+  /<script src="anim.js"><\/script>/ { print "<script>"; while ((getline l < "anim.js") > 0) print l; print "</script>"; next }
   /<script src="game.js"><\/script>/ { print "<script>"; while ((getline l < "game.js") > 0) print l; print "</script>"; next }
   { print }' index.html > dist/pokesurvivor.html
 echo "dist/pokesurvivor.html"
