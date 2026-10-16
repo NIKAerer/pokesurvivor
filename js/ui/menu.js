@@ -115,6 +115,7 @@ G.MenuUI = (() => {
     GEN_NAMES.forEach((name, i) => {
       const g = i + 1;
       const total = G.DEX.filter(p => p.gen === g).length;
+      if (!total) return;                   // version de Nika : gens 1-4
       const have = G.DEX.filter(p => p.gen === g && s.owned[p.dex]).length;
       const b = document.createElement('button');
       b.className = 'gen-tab' + (g === dexGen ? ' on' : '');
@@ -206,8 +207,10 @@ G.MenuUI = (() => {
         ${bar('Velocidad', p.spd, max.spd, p.spd)}
         <p style="font-size:14px;margin:10px 0 4px">Empieza con <b class="gold">${G.Moves.BY_ID[G.startMoveOf(dex)].name}</b></p>
         <p class="move-icons" title="Movimientos que puede aprender">
-          ${G.Moves.poolFor(p).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
-        ${usingThis
+          ${G.Team.learnset(dex).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
+        ${!(s.box || []).includes(dex)
+          ? `<p class="note center">${G.EVO_FROM[dex] ? 'Se joue en faisant évoluer ' + G.DEX_BY[G.Team.family(dex)].name + ' en partie.' : 'Tire-le au gacha pour pouvoir jouer avec.'}</p>`
+          : usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
@@ -225,7 +228,7 @@ G.MenuUI = (() => {
       s.partnerShiny = hasSh && viewShiny;
       G.DB.commit();
       G.UI.toast(p.name + (s.partnerShiny ? ' shiny' : '') + ' es ahora tu compañero');
-      renderGrid(); showDetail(dex);
+      G.PickUI.open();                     // version de Nika : retour au menu, prêt à jouer
     };
   }
 
@@ -361,5 +364,5 @@ G.MenuUI = (() => {
     return el;
   }
 
-  return { init, open, GEN_NAMES, openUpgrades };
+  return { init, open, GEN_NAMES, openUpgrades, openDex };
 })();

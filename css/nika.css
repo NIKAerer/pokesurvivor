@@ -55,3 +55,7 @@
 .pick-box, #scr-over .box { max-height: 94vh; overflow-y: auto; }
 .pick-credits { margin-top: 6px; }
 #scr-upgrades .upg-head .row { display: none; }
+.pick-card { position: relative; }
+.pick-sh { position: absolute; top: 2px; right: 4px; }
+#scr-dex .grid { max-height: 60vh; overflow-y: auto; }
+#scr-dex .box { max-height: 94vh; overflow-y: auto; }
