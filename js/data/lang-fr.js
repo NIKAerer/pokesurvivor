@@ -198,8 +198,8 @@ G.I18n.add({
   '¡{x} necesita ayuda! · {x} m': "{x} a besoin d'aide ! · {x} m", 'CAÍDO': 'K.O.', 'Quédate a su lado': 'Reste à côté de lui',
   'Grieta · {x} m · {x} s': 'Faille · {x} m · {x} s', 'DERROTADOS ·': 'VAINCUS ·', 'MONEDAS': 'PIÈCES',
   '{x} · {x} DERROTADOS · {x} MONEDAS': '{x} · {x} VAINCUS · {x} PIÈCES',
-  'Arrastra el dedo para moverte · toca un ataque para cambiarlo': 'Fais glisser ton doigt pour bouger · touche une attaque pour la choisir',
-  'WASD moverse · 1-4 / Q / E o clic en un ataque para cambiarlo · Esc pausa': 'WASD/ZQSD se déplacer · 1-4 / Q / E ou clic sur une attaque pour la choisir · Échap pause',
+  'Arrastra el dedo para moverte · toca un ataque para cambiarlo': 'Fais glisser ton doigt pour bouger · tes attaques partent toutes seules',
+  'WASD moverse · 1-4 / Q / E o clic en un ataque para cambiarlo · Esc pausa': 'WASD/ZQSD se déplacer · tes attaques partent toutes seules · Échap pause',
   'El anfitrión ha terminado la partida': "L'hôte a terminé la partie", 'Se ha perdido la conexión con el anfitrión.': "La connexion avec l'hôte a été perdue.",
 
   // ---------------- pause et fin ----------------
@@ -413,7 +413,7 @@ G.I18n.add({
   'En móvil o tablet': 'Sur mobile ou tablette', 'En PC': 'Sur PC', 'Tamaño del joystick': 'Taille du joystick', 'Cuánto hay que arrastrar el dedo.': 'La distance à parcourir avec le doigt.',
   'Pequeño': 'Petit', 'Normal': 'Normal', 'Grande': 'Grand', 'o flechas': 'ou flèches', 'moverse': 'se déplacer', 'o clic en el icono': "ou clic sur l'icône", 'elegir ataque': "choisir l'attaque",
   'ataque anterior / siguiente': 'attaque précédente / suivante', 'elegir carta al subir de nivel': 'choisir une carte en montant de niveau',
-  'Pon el dedo en cualquier parte y arrastra para moverte: el joystick aparece donde tocas. Toca un ataque de abajo para cambiarlo y el botón de arriba a la derecha para pausar. Se juega en horizontal.': "Pose ton doigt n'importe où et fais-le glisser pour bouger : le joystick apparaît là où tu touches. Touche une attaque en bas pour la choisir et le bouton en haut à droite pour mettre en pause. On joue à l'horizontale.",
+  'Pon el dedo en cualquier parte y arrastra para moverte: el joystick aparece donde tocas. Toca un ataque de abajo para cambiarlo y el botón de arriba a la derecha para pausar. Se juega en horizontal.': "Pose ton doigt n'importe où et fais-le glisser pour bouger : le joystick apparaît là où tu touches. Tes attaques partent toutes seules ; le bouton en haut à droite pour mettre en pause. On joue à l'horizontale.",
   'Apodo': 'Pseudo', 'Es único y no se puede cambiar.': 'Il est unique et ne peut pas être changé.', 'Tipo de cuenta': 'Type de compte', 'Partida': 'Sauvegarde',
   'Cuenta de este navegador': 'Compte de ce navigateur', 'Nombre y contraseña': 'Nom et mot de passe', 'Google': 'Google',
   'Cerrar sesión': 'Se déconnecter', 'Borrar cuenta': 'Supprimer le compte', 'Crear cuenta o entrar': 'Créer un compte ou se connecter',

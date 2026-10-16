@@ -186,7 +186,10 @@ G.Team = (() => {
     p.r = G.Sprites.bodyRadius(to);
     p.bodyH = G.Sprites.bodyHeight(to);
     p.baseSpd = mon.spd; p.baseAtk = mon.atk;
-    if (!p.ally) { const gain = Math.max(0, mon.hp - old.hp); p.maxHp += gain; p.hp = Math.min(p.maxHp, p.hp + gain + p.maxHp * 0.25); }
+    // Le starter : 1,5 × les PV gagnés par l'espèce, et il récupère la moitié de sa vie.
+    if (!p.ally) { const gain = Math.round(Math.max(0, mon.hp - old.hp) * 1.5); p.maxHp += gain; p.hp = Math.min(p.maxHp, p.hp + gain + p.maxHp * 0.5); }
+    // L'attaque signature devient plus forte à chaque évolution.
+    for (const m of p.moves) if (m.def.sig) { m.dmg *= 1.25; G.FX.dmgText(p.x, p.y - p.bodyH - 18, m.name + ' +', '#ffd84a'); }
     G.Sprites.preload([to], 4000, p.shiny);
     G.FX.ring(p.x, p.y, 8, 140, '#ffffff', 0.9, 6);
     G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#fff6c2', 50, 260);
