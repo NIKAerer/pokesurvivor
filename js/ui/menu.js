@@ -258,6 +258,7 @@ G.MenuUI = (() => {
     const box = $('upg-list');
     box.innerHTML = '';
     for (const u of G.Upgrades.LIST) {
+      if (u.id === 'ban') continue;          // version de Nika : 4 attaques fixes, pas de veto
       const lvl = levels[u.id] || 0;
       const maxed = lvl >= u.max;
       const cost = maxed ? 0 : G.Upgrades.cost(u.id, lvl);
@@ -360,5 +361,5 @@ G.MenuUI = (() => {
     return el;
   }
 
-  return { init, open, GEN_NAMES };
+  return { init, open, GEN_NAMES, openUpgrades };
 })();

@@ -120,6 +120,8 @@ G.RunUI = (() => {
       <div><span>Nivel</span><b>${r.level}</b></div>
       <div><span>Derrotados</span><b>${r.kills}</b></div>
       <div><span>Jefes</span><b>${r.bosses}</b></div>
+      <div><span>Pièces gagnées</span><b class="gold"><span class="coin"></span> ${r.coins}</b></div>
+      <div><span>Tickets</span><b>${G.Icons.html('ticket', 14)} ${r.t1 || 0} · ${G.Icons.html('ticket10', 14)} ${r.t10 || 0}</b></div>
       ${r.record ? '<div style="grid-column:1/-1;text-align:center" class="gold">Nouveau record de temps !</div>' : ''}
       <div style="grid-column:1/-1"><span>Ton équipe</span><div class="over-team" id="over-team"></div></div>`;
     const ot = $('over-team');

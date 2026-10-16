@@ -89,7 +89,7 @@ G.Game = (() => {
     holdBy = []; awayBy = null;
     const save = G.DB.save;
     const mon = G.DEX_BY[save.partner];
-    const perks = G.Upgrades.perks({});      // version de Nika : pas de boutique
+    const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));   // améliorations du menu
 
     G.UI.hideAll();
     G.UI.chrome(false);
@@ -123,7 +123,7 @@ G.Game = (() => {
     pl.banned = new Set((save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque al azar.
     if (perks.startMoves >= 2) {
-      const pool = G.Moves.poolFor(mon).filter(id => !pl.hasMove(id) && !pl.banned.has(id) && G.Moves.BY_ID[id].kind !== 'buff');
+      const pool = G.Team.learnset(mon.dex).filter(id => !pl.hasMove(id) && !pl.banned.has(id) && G.Moves.BY_ID[id].kind !== 'buff');
       if (pool.length) pl.addMove(G.U.pick(pool));
       pl.setActive(0);
     }
