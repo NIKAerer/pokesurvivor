@@ -4,8 +4,8 @@ set -e
 cd "$(dirname "$0")/.."
 mkdir -p dist
 awk '
-  /<script src="data.js"><\/script>/ { print "<script>"; while ((getline l < "data.js") > 0) print l; print "</script>"; next }
-  /<script src="anim.js"><\/script>/ { print "<script>"; while ((getline l < "anim.js") > 0) print l; print "</script>"; next }
-  /<script src="game.js"><\/script>/ { print "<script>"; while ((getline l < "game.js") > 0) print l; print "</script>"; next }
+  match($0, /^<script src="[a-z]+\.js"><\/script>$/) {
+    f = substr($0, 14, length($0) - 24)
+    print "<script>"; while ((getline l < f) > 0) print l; close(f); print "</script>"; next }
   { print }' index.html > dist/pokesurvivor.html
 echo "dist/pokesurvivor.html"

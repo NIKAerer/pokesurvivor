@@ -117,18 +117,19 @@ let G = null; // partie en cours
 const STARTERS = [1,4,7,25,152,155,158,252,255,258,387,390,393];
 
 function newGame(starterId) {
-  const s = D[starterId];
+  const s = D[starterId], sh = shopMods(), o = startPoint();
   G = {
     t:0, kills:0, paused:false, over:false, pendingLevels:0,
     trainer:{ lvl:1, xp:0 },
-    player:{ x:0, y:0, vx:0, vy:0, hp:0, maxHp:0, inv:0, speed:150, regen:0.6, magnet:70, row:0, flip:1, at:0, moving:false },
+    player:{ x:o.x, y:o.y, vx:0, vy:0, hp:0, maxHp:0, inv:0, speed:150 * sh.move, regen:0.6 + sh.regen, magnet:70 * sh.magnet, row:0, flip:1, at:0, moving:false },
+    mods:{ dmg:sh.dmg, rate:sh.rate, xp:sh.xp, coin:sh.coin }, items:{}, rerolls:sh.rerolls, coins:0, tickets:0, drops:[], biome:"",
     team:[], enemies:[], shots:[], gems:[], fx:[], nums:[], zones:[], trail:[],
     spawnAcc:0, nextBoss:240, berries:[],
   };
   addMember(starterId, 5);
-  const p = G.player; p.maxHp = 70 + s.hp; p.hp = p.maxHp;
-  for (let i = 0; i < 60; i++) G.trail.push({ x:0, y:0 });
-  $("startScreen").hidden = true; $("hud").hidden = false; $("team").hidden = false; $("overScreen").hidden = true;
+  const p = G.player; p.maxHp = Math.round((70 + s.hp) * sh.hp); p.hp = p.maxHp;
+  for (let i = 0; i < 60; i++) G.trail.push({ x:o.x, y:o.y });
+  closeMenus(); $("hud").hidden = false; $("team").hidden = false; $("overScreen").hidden = true;
   renderTeam();
 }
 function addMember(id, lvl) {
@@ -181,9 +182,10 @@ function nearest(x, y, maxR, skip) {
 const enemyLevel = () => Math.floor(2 + G.t / 60 * 3.2);
 function spawnEnemy(boss) {
   const lvl = enemyLevel();
-  const id = boss ? pick(LEGENDS).id : evolveTo(pick(ROOTS).id, lvl + Math.floor(rand(-3, 3)));
-  const s = D[id];
   const a = Math.random() * Math.PI * 2, R = Math.hypot(W, H) / ZOOM / 2 + 60;
+  const pool = BIOME_POOL[biomeAt(G.player.x + Math.cos(a)*R, G.player.y + Math.sin(a)*R)];
+  const id = boss ? pick(LEGENDS).id : evolveTo(pick(pool.length ? pool : ROOTS).id, lvl + Math.floor(rand(-3, 3)));
+  const s = D[id];
   const hp = (8 + s.hp * 0.22) * (1 + lvl * 0.16) * (boss ? 40 : 1) * (1 + G.t / 900);
   G.enemies.push({ sp:id, x:G.player.x + Math.cos(a)*R, y:G.player.y + Math.sin(a)*R, hp, max:hp, lvl, boss:!!boss,
     speed: (boss ? 55 : 38 + Math.min(s.spe, 130) * 0.28) * rand(0.9, 1.1), dmg: (4 + lvl * 0.55) * (boss ? 2.5 : 1),
@@ -193,10 +195,11 @@ function spawnEnemy(boss) {
 function damage(e, raw, type, src) {
   if (e.dead) return;
   const m = eff(type, D[e.sp].types);
-  const dmg = raw * m * rand(0.9, 1.1);
+  const dmg = raw * m * G.mods.dmg * rand(0.9, 1.1);
   e.hp -= dmg; e.hit = 0.12;
   if (G.nums.length < 70) G.nums.push({ x:e.x + rand(-6,6), y:e.y - 20, v:Math.round(dmg), m, life:0.7 });
   if (src && src.heal) G.player.hp = Math.min(G.player.maxHp, G.player.hp + 0.4);
+  if (G.items.grelot) G.player.hp = Math.min(G.player.maxHp, G.player.hp + dmg * 0.006 * G.items.grelot);
   if (e.hp <= 0) kill(e);
 }
 function kill(e) {
@@ -204,6 +207,8 @@ function kill(e) {
   const v = e.boss ? 60 + e.lvl * 4 : 1 + Math.floor(e.lvl / 6);
   G.gems.push({ x:e.x, y:e.y, v, big:e.boss || v >= 5 });
   if (Math.random() < (e.boss ? 1 : 0.012)) G.berries.push({ x:e.x + 10, y:e.y });
+  if (Math.random() < (e.boss ? 1 : 0.08)) G.drops.push({ x:e.x - 8, y:e.y + 4, k:"coin", v: e.boss ? 50 : 1 + Math.floor(e.lvl / 8) });
+  if (Math.random() < (e.boss ? 1 : 0.004)) G.drops.push({ x:e.x + 8, y:e.y - 4, k:"ticket", v: e.boss ? 10 : 1 });
   if (e.boss) { G.pendingLevels++; banner(`<em>${D[e.sp].name}</em> est K.O. ! Carte bonus.`); }
 }
 function knock(e, fx, fy, f) { const l = Math.hypot(fx, fy) || 1; e.kx += fx / l * f * (e.boss ? 0.15 : 1); e.ky += fy / l * f * (e.boss ? 0.15 : 1); }
@@ -314,6 +319,7 @@ function fire(m) {
 
 // ---------- XP, niveaux, évolution ----------
 function gainXp(v) {
+  v *= G.mods.xp;
   for (const m of G.team) {
     m.xp += v;
     while (m.xp >= pokeNeed(m.lvl)) { m.xp -= pokeNeed(m.lvl); m.lvl++; checkEvo(m); }
@@ -343,19 +349,42 @@ function offerPokemon() {
   const root = legOk ? pick(LEGENDS.filter(s => !owned.has(rootOf(s.id)))) : weighted(pool, s => clamp(1.5 - s.bst / 450, 0.12, 1));
   return { id: evolveTo(root.id, lvl), lvl };
 }
+// Objets tenus en partie : ils s'appliquent à toute l'équipe (ou au starter), jusqu'au niveau 3.
+const ITEMS = {
+  restes:   { name:"Restes", max:3, d:"Le starter récupère +0,8 PV/s." },
+  bandeau:  { name:"Bandeau Choix", max:3, d:"Toute l'équipe fait 15 % de dégâts en plus." },
+  orbe:     { name:"Orbe Vie", max:3, d:"+30 % de dégâts, mais le starter perd 0,8 PV/s." },
+  griffe:   { name:"Vive Griffe", max:3, d:"Toutes les attaques se relancent 10 % plus vite." },
+  mouchoir: { name:"Mouchoir Choix", max:3, d:"Le starter se déplace 10 % plus vite." },
+  ceinture: { name:"Ceinture Force", max:1, d:"Une fois par partie, le starter survit à un K.O. avec 1 PV." },
+  grelot:   { name:"Grelot Coque", max:3, d:"Les dégâts infligés soignent un peu le starter." },
+  aimant:   { name:"Aimant", max:3, d:"Ramasse l'XP et les pièces 40 % plus loin." },
+  multiexp: { name:"Multi Exp", max:3, d:"+15 % d'XP pour toute l'équipe." },
+  rune:     { name:"Pièce Rune", max:3, d:"+25 % de pièces gagnées." },
+};
+const ITEM_COL = { restes:"#7ccf6a", bandeau:"#ff8a5c", orbe:"#b07cff", griffe:"#ffd75e", mouchoir:"#8fd3ff", ceinture:"#e0a050", grelot:"#ffb3d1", aimant:"#ff6b5e", multiexp:"#6be0c8", rune:"#ffe066" };
 function makeCards() {
   const cards = [], used = new Set();
   const teamFull = G.team.length >= 6;
-  const tries = ["poke","candy","dmg","rate","heal","speed","magnet","regen"];
+  const itemKeys = Object.keys(ITEMS).filter(k => (G.items[k] || 0) < ITEMS[k].max);
   if (!teamFull && Math.random() < (G.team.length === 1 ? 0.85 : 0.45)) { cards.push({ k:"poke", ...offerPokemon() }); used.add("poke"); }
+  const kinds = ["poke","candy","dmg","rate","heal","item","item2"];
   while (cards.length < 3) {
-    const k = weighted(tries, k => used.has(k) ? 0 : ({ poke:teamFull?0:0.5, candy:1.2, dmg:1, rate:1, heal: G.player.hp < G.player.maxHp*0.6 ? 0.8 : 0.25, speed:0.3, magnet:0.3, regen:0.3 })[k]);
+    const k = weighted(kinds, k => used.has(k) ? 0 : ({ poke:teamFull?0:0.5, candy:1.1, dmg:0.9, rate:0.9, heal: G.player.hp < G.player.maxHp*0.6 ? 0.9 : 0.2, item: itemKeys.length ? 1.2 : 0, item2: itemKeys.length > 1 ? 0.5 : 0 })[k]);
     used.add(k);
     if (k === "poke") cards.push({ k, ...offerPokemon() });
     else if (["candy","dmg","rate"].includes(k)) cards.push({ k, m: pick(G.team) });
+    else if (k.startsWith("item")) { const left = itemKeys.filter(i => !cards.some(c => c.item === i)); if (left.length) cards.push({ k:"item", item: pick(left) }); }
     else cards.push({ k });
   }
   return cards;
+}
+function itemIcon(key, size) {
+  const cv = document.createElement("canvas"); cv.width = cv.height = size; const c = cv.getContext("2d");
+  c.fillStyle = "#0006"; c.beginPath(); c.arc(size/2, size/2, size*0.42, 0, 7); c.fill();
+  c.fillStyle = ITEM_COL[key]; c.beginPath(); c.arc(size/2, size/2, size*0.3, 0, 7); c.fill();
+  c.fillStyle = "#fff8"; c.beginPath(); c.arc(size*0.42, size*0.4, size*0.09, 0, 7); c.fill();
+  return cv;
 }
 function cardHtml(c) {
   const B = document.createElement("button"); B.className = "card"; B.type = "button";
@@ -364,12 +393,10 @@ function cardHtml(c) {
   else if (c.k === "candy") { sprite = c.m.sp; kind = `<span class="k">Super Bonbon</span>`; title = D[c.m.sp].name; desc = `<span class="d">+3 niveaux (Nv. ${c.m.lvl} → ${c.m.lvl + 3}).</span>`; }
   else if (c.k === "dmg") { sprite = c.m.sp; kind = `<span class="k">Attaque +</span>`; title = D[c.m.sp].name; desc = `<span class="d">${moveOf(c.m).name} fait 25 % de dégâts en plus.</span>`; }
   else if (c.k === "rate") { sprite = c.m.sp; kind = `<span class="k">Vitesse +</span>`; title = D[c.m.sp].name; desc = `<span class="d">${moveOf(c.m).name} se relance 15 % plus vite.</span>`; }
-  else {
-    const it = { heal:["Potion","Soigne 50 % des PV du starter et +10 PV max."], speed:["Poudre Vite","Le starter se déplace 10 % plus vite."], magnet:["Aimant","Ramasse l'XP de 40 % plus loin."], regen:["Restes","Le starter récupère des PV plus vite."] }[c.k];
-    kind = `<span class="k">Objet</span>`; title = it[0]; desc = `<span class="d">${it[1]}</span>`; sprite = G.team[0].sp;
-  }
+  else if (c.k === "item") { const it = ITEMS[c.item], lv = (G.items[c.item] || 0) + 1; kind = `<span class="k">Objet${it.max > 1 ? ` · Nv. ${lv}/${it.max}` : ""}</span>`; title = it.name; desc = `<span class="d">${it.d}</span>`; }
+  else { kind = `<span class="k">Soin</span>`; title = "Hyper Potion"; desc = `<span class="d">Soigne 50 % des PV du starter et +10 PV max.</span>`; sprite = G.team[0].sp; }
   B.innerHTML = `${kind}<strong>${title}</strong>${desc}`;
-  B.prepend(mini(sprite, 56));
+  B.prepend(c.k === "item" ? itemIcon(c.item, 56) : mini(sprite, 56));
   return B;
 }
 function applyCard(c) {
@@ -379,9 +406,11 @@ function applyCard(c) {
   if (c.k === "dmg") c.m.dmgMul *= 1.25;
   if (c.k === "rate") c.m.rateMul *= 0.85;
   if (c.k === "heal") { p.maxHp += 10; p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.5); }
-  if (c.k === "speed") p.speed *= 1.1;
-  if (c.k === "magnet") p.magnet *= 1.4;
-  if (c.k === "regen") p.regen += 0.8;
+  if (c.k === "item") {
+    G.items[c.item] = (G.items[c.item] || 0) + 1;
+    ({ restes:() => p.regen += 0.8, bandeau:() => G.mods.dmg *= 1.15, orbe:() => G.mods.dmg *= 1.3, griffe:() => G.mods.rate *= 0.9,
+       mouchoir:() => p.speed *= 1.1, aimant:() => p.magnet *= 1.4, multiexp:() => G.mods.xp *= 1.15, rune:() => G.mods.coin *= 1.25 })[c.item]?.();
+  }
   renderTeam();
 }
 function showLevel() {
@@ -394,6 +423,7 @@ function showLevel() {
     b.onclick = () => { applyCard(c); G.pendingLevels--; $("levelScreen").hidden = true; G.paused = false; };
     box.appendChild(b);
   });
+  const rr = $("rerollBtn"); rr.hidden = G.rerolls <= 0; rr.textContent = `Relancer (${G.rerolls})`;
   $("levelScreen").hidden = false;
   box.firstChild.focus({ preventScroll:true });
 }
@@ -418,6 +448,7 @@ function updateHud() {
   $("tXp").style.width = `${t.xp / trainerNeed(t.lvl) * 100}%`;
   $("time").textContent = fmtTime(G.t);
   $("kills").textContent = `${G.kills} K.O.`;
+  $("coinsHud").textContent = `${G.coins} ◎`;
   const sig = G.team.map(m => m.sp + ":" + m.lvl + ":" + Math.floor(m.xp / pokeNeed(m.lvl) * 10)).join("|");
   if (sig !== teamSig) { teamSig = sig; renderTeam(); }
 }
@@ -437,33 +468,21 @@ function togglePause() {
   if (!G || G.over || !$("levelScreen").hidden) return;
   G.paused = !G.paused;
   $("pauseScreen").hidden = !G.paused;
-  if (G.paused) teamCards($("pauseTeam"));
+  if (G.paused) { teamCards($("pauseTeam")); renderRunStats(); }
 }
 $("pauseBtn").onclick = togglePause;
 $("resumeBtn").onclick = togglePause;
 $("quitBtn").onclick = () => { $("pauseScreen").hidden = true; gameOver(); };
-$("againBtn").onclick = () => { $("overScreen").hidden = true; showStart(); };
+$("againBtn").onclick = () => { $("overScreen").hidden = true; showMenu(); };
 function gameOver() {
   G.over = true; G.paused = true;
-  const best = store.get("ps-best", 0);
-  if (G.t > best) store.set("ps-best", G.t);
+  const best = SAVE.best || 0;
+  const earned = Math.round((G.coins + Math.floor(G.t / 6) + Math.floor(G.kills / 10)) * G.mods.coin);
+  SAVE.coins += earned; SAVE.tickets += G.tickets; SAVE.best = Math.max(best, G.t); save();
   $("overTitle").textContent = `${D[G.team[0].sp].name} est K.O.`;
-  $("overStats").innerHTML = `<div><span>Survie</span>${fmtTime(G.t)}</div><div><span>K.O.</span>${G.kills}</div><div><span>Niveau</span>${G.trainer.lvl}</div><div><span>Record</span>${fmtTime(Math.max(best, G.t))}</div>`;
+  $("overStats").innerHTML = `<div><span>Survie</span>${fmtTime(G.t)}</div><div><span>K.O.</span>${G.kills}</div><div><span>Niveau</span>${G.trainer.lvl}</div><div><span>Record</span>${fmtTime(SAVE.best)}</div><div><span>Pièces</span>+${earned}</div><div><span>Tickets</span>+${G.tickets}</div>`;
   teamCards($("overTeam"));
   $("overScreen").hidden = false; $("hud").hidden = true; $("team").hidden = true;
-}
-function showStart() {
-  const box = $("starters"); box.innerHTML = "";
-  for (const id of STARTERS) {
-    const b = document.createElement("button"); b.className = "pick"; b.type = "button";
-    b.innerHTML = `<span>${D[id].name}</span>${typeChips(D[id].types)}`;
-    b.prepend(mini(id, 64));
-    b.onclick = () => newGame(id);
-    box.appendChild(b);
-  }
-  const best = store.get("ps-best", 0);
-  $("best").textContent = best ? `Record : ${fmtTime(best)} de survie.` : "";
-  $("startScreen").hidden = false;
 }
 
 // ---------- Boucle ----------
@@ -511,7 +530,7 @@ function update(dt) {
     face(e, dx, dy, dt * (e.slow > 0 ? 0.55 : 1));
     const rad = 14 * e.scale;
     near(e.x, e.y, rad, o => { if (o !== e) { const ox = e.x - o.x, oy = e.y - o.y, d = Math.hypot(ox, oy); if (d > 0 && d < rad) { e.x += ox / d * (rad - d) * 0.3; e.y += oy / d * (rad - d) * 0.3; } } });
-    if (l < 16 + rad && p.inv <= 0) { p.hp -= e.dmg; p.inv = 0.45; if (p.hp <= 0) { gameOver(); return; } }
+    if (l < 16 + rad && p.inv <= 0) { p.hp -= e.dmg; p.inv = 0.45; if (p.hp <= 0) { if (G.items.ceinture === 1) { G.items.ceinture = 2; p.hp = 1; p.inv = 1.5; banner(`<em>Ceinture Force</em> : le starter tient bon !`); } else { gameOver(); return; } } }
     if (l > 1600 && !e.boss) e.dead = true;
   }
 
@@ -520,7 +539,7 @@ function update(dt) {
     m.cd -= dt;
     if (m.cd <= 0) {
       const mv = moveOf(m), s = D[m.sp];
-      if (fire(m)) m.cd = mv.cd * m.rateMul / (1 + Math.min(s.spe, 150) / 260); else m.cd = 0.15;
+      if (fire(m)) m.cd = mv.cd * m.rateMul * G.mods.rate / (1 + Math.min(s.spe, 150) / 260); else m.cd = 0.15;
     }
   }
 
@@ -575,6 +594,15 @@ function update(dt) {
   if (G.gems.length > 350) { const a = G.gems.splice(0, 100); const v = a.reduce((s, g) => s + g.v, 0); G.gems.push({ x:a[0].x, y:a[0].y, v, big:true }); }
   for (const b of G.berries) if (Math.hypot(p.x - b.x, p.y - b.y) < 22) { b.taken = true; p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.3); banner(`Baie Oran : <em>+30 % PV</em>`); }
   G.berries = G.berries.filter(b => !b.taken);
+  for (const d of G.drops) {
+    const dd = Math.hypot(p.x - d.x, p.y - d.y);
+    if (dd < p.magnet * 0.8) { const k = Math.min(1, dt * 9); d.x += (p.x - d.x) * k; d.y += (p.y - d.y) * k; }
+    if (dd < 18) { d.taken = true; if (d.k === "coin") G.coins += d.v; else { G.tickets += d.v; banner(`<em>+${d.v} ticket${d.v > 1 ? "s" : ""}</em> de gacha !`); } }
+  }
+  G.drops = G.drops.filter(d => !d.taken);
+  if (G.items.orbe) p.hp = Math.max(1, p.hp - 0.8 * G.items.orbe * dt);
+  const bk = biomeAt(p.x, p.y);
+  if (bk !== G.biome) { if (G.biome) banner(`<em>${BIOMES[bk].name}</em>`); G.biome = bk; $("biome").textContent = BIOMES[bk].name; }
   for (const n of G.nums) { n.life -= dt; n.y -= 30 * dt; }
   G.nums = G.nums.filter(n => n.life > 0);
 
@@ -616,10 +644,14 @@ function render() {
   if (!G) { ctx.fillStyle = "#2f5a35"; ctx.fillRect(0, 0, W, H); return; }
   const p = G.player;
   ctx.setTransform(DPR*ZOOM, 0, 0, DPR*ZOOM, DPR*(W/2 - p.x*ZOOM), DPR*(H/2 - p.y*ZOOM));
-  drawGround(p.x, p.y);
+  drawWorld(p.x, p.y);
 
   for (const z of G.zones) { ctx.fillStyle = TYPE_COL[z.type] + "55"; ctx.beginPath(); ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); ctx.fill(); }
   for (const g of G.gems) { ctx.fillStyle = g.big ? "#ffd75e" : "#8fd3ff"; ctx.beginPath(); const r = g.big ? 7 : 4.5; ctx.moveTo(g.x, g.y - r); ctx.lineTo(g.x + r*0.7, g.y); ctx.lineTo(g.x, g.y + r); ctx.lineTo(g.x - r*0.7, g.y); ctx.fill(); }
+  for (const d of G.drops) {
+    if (d.k === "coin") { ctx.fillStyle = "#b8860b"; ctx.beginPath(); ctx.arc(d.x, d.y + 1, 6, 0, 7); ctx.fill(); ctx.fillStyle = "#ffd75e"; ctx.beginPath(); ctx.arc(d.x, d.y, 6, 0, 7); ctx.fill(); ctx.fillStyle = "#b8860b"; ctx.fillRect(d.x - 1, d.y - 3, 2, 6); }
+    else { ctx.fillStyle = "#ff6b8a"; ctx.fillRect(d.x - 8, d.y - 5, 16, 10); ctx.fillStyle = "#fff"; ctx.fillRect(d.x - 4, d.y - 1, 8, 2); }
+  }
   for (const b of G.berries) { ctx.fillStyle = "#3d7be0"; ctx.beginPath(); ctx.arc(b.x, b.y, 7, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = "#6bbf3f"; ctx.fillRect(b.x - 1, b.y - 11, 3, 5); }
 
   // personnages triés par profondeur
@@ -678,5 +710,3 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 addEventListener("visibilitychange", () => { if (document.hidden && G && !G.paused && !G.over) togglePause(); });
-showStart();
-requestAnimationFrame(frame);
