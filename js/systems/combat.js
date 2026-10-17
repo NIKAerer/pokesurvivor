@@ -527,6 +527,21 @@ G.Combat = (() => {
   const CRIT_MUL = 1.5;
   const isCrit = pl => !ghost && pl.critChance > 0 && Math.random() < pl.critChance;
 
+  const VAMP = 0.10;
+  let vampAcc = 0, vampT = 0;
+  function vamp(t, amount) {
+    if (!t || t.dead || t.hp >= t.maxHp) return;
+    const before = t.hp;
+    t.hp = Math.min(t.maxHp, t.hp + amount);
+    vampAcc += t.hp - before;
+    const now = performance.now();
+    if (now - vampT > 700 && vampAcc >= 1) {
+      vampT = now;
+      G.FX.dmgText(t.x + 10, t.y - t.bodyH - 4, '+' + Math.round(vampAcc), '#ff7ab0');
+      vampAcc = 0;
+    }
+  }
+
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
     const k = typeK(m.type, e);
     const crit = isCrit(pl);
@@ -534,6 +549,9 @@ G.Combat = (() => {
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
     pl.dmgDealt += dmg;
+    // Version de Nika : omnivampirisme des attaques au corps à corps (melee et ruée) :
+    // 10 % des dégâts rendus en PV à ton Pokémon (les alliés soignent le chef).
+    if (!ghost && (m.kind === 'melee' || m.kind === 'dash')) vamp(pl.ally ? pl.leader : pl, dmg * VAMP);
     if (m.burn) e.applyBurn(m.burn);
     if (m.poison) e.applyPoison(m.poison);
     if (m.slow) e.applySlow(m.slow);

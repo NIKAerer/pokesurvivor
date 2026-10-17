@@ -34,7 +34,7 @@ G.RunUI = (() => {
   }
 
   function renderCards(list) {
-    offers = list;
+    offers = list; forgetting = null;
     const left = rerollsLeft();
     $('lvl-rr-n').textContent = left;
     $('lvl-reroll').classList.toggle('hidden', left <= 0);
@@ -44,20 +44,20 @@ G.RunUI = (() => {
       const el = document.createElement('div');
       el.className = 'card';
       const tag = c.type === 'new'
-        ? `<span class="tag-chip" style="background:${c.color}">Nuevo · ${c.tag}</span>`
+        ? `<span class="tag-chip" style="background:${c.color}">${c.forget ? 'À la place d\'une autre' : 'Nuevo'} · ${c.tag}</span>`
         : c.type === 'up' || c.type === 'evo' || c.type === 'mon'
           ? `<span class="tag-chip" style="background:${c.color}">${c.tag}</span>`
           : `<span class="tag-chip" style="background:${c.color === '#ffd23f' ? '#ffd23f' : '#9fb1c9'}">${c.tag}</span>`;
       if (c.type === 'evo') el.classList.add('evo');
       el.innerHTML =
-        `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 32)}</div>
+        `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 56)}</div>
          <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
          <div class="key">${i + 1}</div>`;
       // Version de Nika : nouveau Pokémon -> son sprite ; carte pour un allié -> son petit portrait.
       if (c.dex || c.who) {
         const ico = el.querySelector('.ico');
         if (c.dex) ico.innerHTML = '';
-        const cv = G.UI.spriteCanvas(c.dex || c.who, c.dex ? 44 : 22, c.dex ? 44 : 22, { scale: c.dex ? 1 : 0.5 });
+        const cv = G.UI.spriteCanvas(c.dex || c.who, c.dex ? 80 : 34, c.dex ? 80 : 34, { scale: c.dex ? 2 : 0.8 });
         if (!c.dex) cv.className = 'who';
         ico.appendChild(cv);
       }
@@ -68,8 +68,46 @@ G.RunUI = (() => {
     });
   }
 
+  // Version de Nika : apprendre une 5e attaque → choisir laquelle oublier.
+  let forgetting = null;            // { card, moves }
+  function askForget(c) {
+    const pl = c.target, list = offers;
+    const moves = pl.moves.slice();
+    forgetting = { card: c, moves };
+    $('lvl-reroll').classList.add('hidden');
+    const box = $('cards');
+    box.innerHTML = `<p class="forget-head">${pl.mon.name} veut apprendre <b>${c.title}</b>, mais connaît déjà 4 attaques. Laquelle oublier ?</p>`;
+    moves.forEach((m, k) => {
+      const el = document.createElement('div');
+      const sig = !!(m.def && m.def.sig);
+      el.className = 'card forget' + (sig ? ' off' : '');
+      el.innerHTML = `<div class="ico" style="background:${G.U.TYPE_COLOR[m.type]}33">${G.Icons.html('move:' + m.id, 52)}</div>
+        <div class="txt"><div class="nm">${m.name} <span class="tag-chip" style="background:${G.U.TYPE_COLOR[m.type]}">Nv.${m.lvl}</span></div>
+        <div class="ds">${sig ? 'Attaque signature : elle ne s\'oublie pas' : 'Oublier cette attaque'}</div></div>
+        <div class="key">${k + 1}</div>`;
+      el.dataset.sfx = 'none';
+      if (!sig) el.onclick = () => pickForget(k);
+      box.appendChild(el);
+    });
+    const no = document.createElement('div');
+    no.className = 'card forget no';
+    no.innerHTML = `<div class="txt"><div class="nm">Ne pas apprendre ${c.title}</div><div class="ds">Retour aux choix</div></div>`;
+    no.onclick = () => { forgetting = null; G.Audio.sfx('back'); renderCards(list); };
+    box.appendChild(no);
+    G.Audio.sfx('select');
+  }
+  function pickForget(k) {
+    const f = forgetting, m = f && f.moves[k];
+    if (!m || (m.def && m.def.sig)) return;
+    forgetting = null;
+    f.card.forgetId = m.id;
+    pick(offers.indexOf(f.card));
+  }
+
   function pick(i) {
+    if (forgetting) { pickForget(i); return; }
     if (!offers || !offers[i]) return;
+    if (offers[i].forget && !offers[i].forgetId) { askForget(offers[i]); return; }
     const c = offers[i], cb = offerCb;
     offers = null; offerCb = null;
     $('lvl-reroll').classList.add('hidden');
@@ -93,7 +131,7 @@ G.RunUI = (() => {
   }
 
   function closeLevelUp() {
-    offers = null; offerCb = null;
+    offers = null; offerCb = null; forgetting = null;
     $('cards').classList.remove('done');
     G.UI.hide('scr-levelup');
   }

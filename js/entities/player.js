@@ -135,6 +135,16 @@ G.Player = class Player {
 
   hasMove(id) { return this.moves.some(m => m.id === id); }
 
+  /** Version de Nika : oublie une attaque (pour en apprendre une autre). */
+  forgetMove(id) {
+    const m = this.moves.find(x => x.id === id);
+    if (!m) return false;
+    this.moves.splice(this.moves.indexOf(m), 1);
+    this.slots = this.slots.map(g => g.filter(x => x !== m)).filter(g => g.length);
+    this.active = Math.max(0, Math.min(this.active, this.slots.length - 1));
+    return true;
+  }
+
   setActive(i) {
     return;                          // version de Nika : plus de changement d'attaque
     if (i < 0 || i >= this.slots.length || i === this.active) return;
