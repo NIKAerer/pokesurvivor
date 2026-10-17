@@ -25,7 +25,26 @@ G.Spawner = (() => {
   let acc = 0, bossIdx = 0, surgeT = 32, announce = null, announceT = 0, preloadT = 0;
   let forceShiny = 0;           // para pruebas: los N próximos salen shiny
 
+  // Version de Nika : vagues annoncées (une vague = un nouveau groupe d'espèces).
+  let waveIdx = 0;
+  function wave() { return waveIdx; }
+  function nextBossIn(t) { const b = G.Enemies.BOSSES[bossIdx]; return b ? Math.max(0, b.at - t) : null; }
+  function checkWave(t) {
+    const cast = G.Enemies.cast;
+    let n = 0;
+    for (const tier of cast) if (tier.from <= t) n++;
+    if (n <= waveIdx) return;
+    waveIdx = n;
+    const tier = cast[n - 1];
+    if (!tier || n === 1) return;           // la 1re vague, c'est le début
+    const names = [...new Set(tier.list.map(e => G.DEX_BY[e.dex] ? G.DEX_BY[e.dex].name : e.name))].slice(0, 3);
+    const more = new Set(tier.list.map(e => e.dex)).size - names.length;
+    say('Vague ' + n + ' : ' + names.join(', ') + (more > 0 ? ' et ' + more + ' autres' : '') + ' arrivent !', 3.4, true);
+    G.Audio.sfx('surge');
+  }
+
   function reset() {
+    waveIdx = 0;
     acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
     G.Enemies.rollRun();
     G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
@@ -117,6 +136,7 @@ G.Spawner = (() => {
     preloadT -= dt;
     if (preloadT <= 0) { preloadT = 10; G.Sprites.preload(G.Enemies.upcomingDex(t, 60)); }
 
+    checkWave(t);
     // --- jefes ---
     const b = G.Enemies.BOSSES[bossIdx];
     if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
@@ -179,6 +199,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP,
+  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP, wave, nextBossIn,
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();
