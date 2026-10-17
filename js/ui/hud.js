@@ -25,42 +25,75 @@ G.HUD = (() => {
     }
   }
 
+  // Dégâts par seconde de toute l'équipe, une valeur par seconde (60 dernières).
+  const dps = { t: 0, last: 0, list: [] };
+  function drawDps(ctx, w, st, team, touch) {
+    const total = team.reduce((a, m) => a + (m.dmgDealt || 0), 0);
+    if (st.time < dps.t) { dps.t = 0; dps.last = 0; dps.list = []; }   // nouvelle partie
+    if (st.time - dps.t >= 1) {
+      dps.list.push(Math.max(0, total - dps.last) / (st.time - dps.t));
+      if (dps.list.length > 60) dps.list.shift();
+      dps.last = total; dps.t = st.time;
+    }
+    const BW = 150, BH = 52;
+    const x0 = w - BW - 14 - (touch ? 56 : 0), y0 = 12;
+    roundRect(ctx, x0, y0, BW, BH, 9);
+    ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
+    const cur = dps.list.length ? dps.list[dps.list.length - 1] : 0;
+    ctx.font = F(800, 10); ctx.textAlign = 'left'; ctx.fillStyle = '#ffcb3d';
+    ctx.fillText('DÉGÂTS/S ' + Math.round(cur), x0 + 8, y0 + 13);
+    const L = dps.list;
+    if (L.length < 2) return;
+    const max = Math.max(1, ...L);
+    const gx = x0 + 8, gy = y0 + 18, gw = BW - 16, gh = BH - 24;
+    ctx.beginPath();
+    L.forEach((v, i) => {
+      const X = gx + (i / 59) * gw, Y = gy + gh - (v / max) * gh;
+      if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y);
+    });
+    ctx.strokeStyle = '#ff8a5c'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.lineTo(gx + ((L.length - 1) / 59) * gw, gy + gh); ctx.lineTo(gx, gy + gh); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,138,92,.18)'; ctx.fill();
+  }
+
   function draw(ctx, w, h, pl, st) {
     ctx.save();
     ctx.textBaseline = 'alphabetic';
     G.Touch.clearButtons();
     const touch = G.Touch.active;
 
-    // ---------- barra de experiencia (borde superior) ----------
-    const xpF = pl.xp / pl.xpNext;
-    ctx.fillStyle = 'rgba(0,0,0,.5)';
-    ctx.fillRect(0, 0, w, 7);
-    const g = ctx.createLinearGradient(0, 0, w, 0);
-    g.addColorStop(0, '#4fd1ff'); g.addColorStop(1, '#a98bff');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w * G.U.clamp(xpF, 0, 1), 7);
+    // ---------- version de Nika : l'équipe en haut à gauche ----------
+    // Chaque Pokémon : nom, niveau, ses attaques (icônes) et sa barre d'XP.
+    const px = 10, py = 10;
+    const team = G.Team.members().length ? G.Team.members() : [pl];
+    const RW = 168, RH = 34;
+    roundRect(ctx, px - 4, py - 4, RW + 8, team.length * RH + 6, 10);
+    ctx.fillStyle = 'rgba(8,12,24,.55)'; ctx.fill();
+    team.forEach((m, i) => {
+      const y = py + i * RH;
+      ctx.textAlign = 'left';
+      ctx.font = F(800, 11);
+      ctx.fillStyle = G.U.TYPE_COLOR[m.mon.types[0]] || '#eaf2ff';
+      ctx.fillText(m.mon.name, px, y + 10);
+      ctx.font = F(700, 9);
+      ctx.fillStyle = '#ffcb3d';
+      ctx.fillText('N.' + m.level, px, y + 26);
+      for (let k = 0; k < 4; k++) {
+        const mv = m.moves[k];
+        const x = px + RW - 4 * 17 + k * 17, iy = y;
+        if (mv) G.Icons.draw(ctx, 'move:' + mv.id, x, iy, 15);
+        else { roundRect(ctx, x + 1, iy + 1, 13, 13, 4); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill(); }
+      }
+      const g = ctx.createLinearGradient(px, 0, px + RW, 0);
+      g.addColorStop(0, '#4fd1ff'); g.addColorStop(1, '#a98bff');
+      bar(ctx, px + 30, y + 20, RW - 30, 6, m.xp / m.xpNext, g);
+    });
 
-    // ---------- vida + nivel ----------
-    const px = 16, py = 20;
-    ctx.font = F(800, 13);
-    ctx.fillStyle = '#eaf2ff';
-    ctx.textAlign = 'left';
-    ctx.fillText(pl.mon.name, px, py + 10);
-
-    ctx.font = F(700, 11);
-    ctx.fillStyle = '#ffcb3d';
-    ctx.fillText('Nv. ' + pl.level, px, py + 26);
-
-    bar(ctx, px + 48, py + 17, 168, 11, pl.hp / pl.maxHp, '#ff5f6d');
-    ctx.font = F(700, 10);
-    ctx.fillStyle = 'rgba(255,255,255,.95)';
-    ctx.textAlign = 'center';
-    ctx.fillText(Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), px + 48 + 84, py + 26);
-
-    // buffs activos
+    // buffs actifs (sous l'équipe)
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     const LBL = { atk: 'ATK', spd: 'VEL', def: 'DEF', regen: 'REG' };
     let bx = px;
+    const byy = py + team.length * RH + 6;
     ctx.textAlign = 'left';
     for (const k in pl.buffs) {
       const b = pl.buffs[k];
@@ -68,12 +101,15 @@ G.HUD = (() => {
       ctx.font = F(800, 9);
       const txt = LBL[k] + ' ×' + b.n;
       const tw = ctx.measureText(txt).width + 12;
-      roundRect(ctx, bx, py + 34, tw, 15, 7);
+      roundRect(ctx, bx, byy, tw, 15, 7);
       ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fill();
       ctx.fillStyle = COL[k];
-      ctx.fillText(txt, bx + 6, py + 45);
+      ctx.fillText(txt, bx + 6, byy + 11);
       bx += tw + 5;
     }
+
+    // ---------- version de Nika : courbe des dégâts (en haut à droite) ----------
+    drawDps(ctx, w, st, team, touch);
 
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
@@ -91,7 +127,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 14;
+      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 76;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
@@ -145,7 +181,7 @@ G.HUD = (() => {
       bx += tw + 5;
     }
 
-    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, py + (bx > px ? 56 : 40));
+    if (G.Coop.active) drawCoop(ctx, w, h, pl, px, byy + 20);
 
     // Grieta: flecha grande que late en el borde si no se ve, y si se ve, una
     // flecha que bota encima; en la arena, cuenta atrás.
@@ -257,6 +293,16 @@ G.HUD = (() => {
       sy = G.U.clamp(pb[1] * h - S / 2, 24, h - S - 6);
     }
     const BOND = '#ff8ad8';
+    // Version de Nika : grosse barre de PV juste au-dessus des attaques.
+    {
+      const hw = Math.max(260, Math.max(n, pl.maxMoves) * (S + GAP));
+      const hx = sx + totalW / 2 - hw / 2, hy = sy - 40;
+      bar(ctx, hx, hy, hw, 16, pl.hp / pl.maxHp, pl.hp / pl.maxHp < 0.3 ? '#ff3b4d' : '#5fe08a');
+      ctx.font = F(800, 11);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('PV ' + Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp), hx + hw / 2, hy + 12);
+    }
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
 
     for (let i = 0; i < n; i++) {
@@ -383,7 +429,7 @@ G.HUD = (() => {
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
       ctx.fillText(touch ? 'Arrastra el dedo para moverte  ·  toca un ataque para cambiarlo'
-                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 4);
+                         : 'WASD moverse  ·  1-4 / Q / E o clic en un ataque para cambiarlo  ·  Esc pausa', w / 2, h - 2);
     }
 
     ctx.restore();

@@ -343,11 +343,13 @@ G.Player = class Player {
     this.svy = slide ? G.U.damp(this.svy || 0, ay * s * 1.15, 1.6, dt) : ay * s;
     this.x += this.svx * dt;
     this.y += this.svy * dt;
-    G.World.collide(this);
+    // Version de Nika : les types Vol (et ceux qui flottent) passent au-dessus des obstacles.
+    const flies = this.mon.types.includes('flying') || G.Sprites.hovers(this.dex);
+    if (!flies) G.World.collide(this);
     if (this.walking) this.moveAngle = Math.atan2(ay, ax);
 
     // --- terreno líquido ---
-    this.inLiquid = G.World.isLiquid(this.x, this.y);
+    this.inLiquid = !flies && G.World.isLiquid(this.x, this.y);
     if (this.inLiquid) {
       const le = G.World.liquidEffect(this.mon.types);
       if (le.dmg) {
