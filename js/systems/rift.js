@@ -192,12 +192,29 @@ G.Rift = (() => {
     arena.phase = 'won'; arena.endT = 5;
     G.Progress.event('rift', { type: arena.type });
     G.Pickups.pullAll();
-    G.Spawner.say('¡Has vencido a ' + G.DEX_BY[arena.dex].name + '! Recoge el premio…', 3.4, true);
     G.Audio.sfx('legend');
     const pl = G.Game.player;
+    // Version de Nika : le légendaire battu est capturé (jouable au menu),
+    // ou rapporte 10 tickets si on l'a déjà.
+    const name = G.DEX_BY[arena.dex].name;
+    const s = G.DB.save;
+    let msg;
+    if (s) {
+      s.box = s.box || [1, 4, 7];
+      if (!s.box.includes(arena.dex)) {
+        s.box.push(arena.dex);
+        G.DB.grant(arena.dex, 'rift');
+        msg = name + ' est capturé ! Il rejoint ton menu.';
+        if (G.DB.commit) G.DB.commit(true);
+        if (G.Sprites.preload) G.Sprites.preload([arena.dex]);
+      } else if (pl) {
+        pl.t1 += 10;
+        msg = name + ' vaincu ! +10 tickets';
+      }
+    }
+    G.Spawner.say(msg || (name + ' vaincu !'), 3.4, true);
     if (pl) {
-      pl.bonds++;
-      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, '¡Vínculo!', '#ff8ad8', true);
+      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, msg && msg.includes('ticket') ? '+10 tickets' : 'Capturé !', '#ff8ad8', true);
       G.FX.ring(pl.x, pl.y, 8, 90, '#ff8ad8', 0.7, 5);
     }
   }
@@ -229,7 +246,6 @@ G.Rift = (() => {
     if (pl.dead) pl.revive(0.3);
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     G.Game.flash('#c9a6ff', 0.8);
-    if (pl.bonds > 0) G.Game.offerBond();
   }
 
   // ---------------- dibujo ----------------

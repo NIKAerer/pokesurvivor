@@ -149,9 +149,10 @@ G.World = (() => {
       let type = null, kind = 0;
       // Interactivos (raros), lejos del claro del principio.
       const hs = H(tx, ty, seed + 909);
-      if (open && Math.hypot(tx, ty) > 12 && hs < 0.0032) {
-        type = hs < 0.0004 ? 'altar' : hs < 0.0008 ? 'spring' : hs < 0.0011 ? 'bigchest' : 'trap';
-        kind = Math.floor(H(tx, ty, seed + 910) * (type === 'altar' ? 4 : 3));
+      // Version de Nika : + buissons à baies et marchands (Kecleon).
+      if (open && Math.hypot(tx, ty) > 12 && hs < 0.0059) {
+        type = hs < 0.0004 ? 'altar' : hs < 0.0008 ? 'spring' : hs < 0.0011 ? 'bigchest' : hs < 0.0032 ? 'trap' : hs < 0.0056 ? 'bush' : 'shop';
+        kind = Math.floor(H(tx, ty, seed + 910) * (type === 'altar' || type === 'bush' ? 4 : 3));
       }
       if (type) { /* ya elegido */ }
       else if (open && h < (grove ? 0.07 : 0.006)) type = 'tree';
@@ -174,9 +175,11 @@ G.World = (() => {
     altar:    { solid: true,  hp: Infinity, r: 9 },
     spring:   { solid: false, hp: Infinity, r: 22, flat: true },
     bigchest: { solid: true,  hp: Infinity, r: 14 },
-    trap:     { solid: false, hp: Infinity, r: 9, flat: true }
+    trap:     { solid: false, hp: Infinity, r: 9, flat: true },
+    bush:     { solid: true,  hp: Infinity, r: 12 },
+    shop:     { solid: true,  hp: Infinity, r: 16 }
   };
-  const SPECIAL = new Set(['altar', 'spring', 'bigchest', 'trap']);
+  const SPECIAL = new Set(['altar', 'spring', 'bigchest', 'trap', 'bush', 'shop']);
 
   function makeProp(type, tx, ty, kind = 0) {
     const d = PROP[type];
@@ -495,7 +498,8 @@ G.World = (() => {
                   : p.type === 'rock' ? (p.hp < p.maxHp * 0.5 ? 1 : 0)
                   : p.type === 'altar' ? p.kind * 2 + (p.used ? 1 : 0)
                   : p.type === 'spring' ? (p.charge < 0.15 ? 1 : 0)
-                  : p.type === 'trap' ? p.kind : 0;
+                  : p.type === 'trap' ? p.kind
+                  : p.type === 'bush' ? p.kind * 2 + (p.used ? 1 : 0) : 0;
     const img = G.Tiles.propSprite(biome, p.type, variant);
     const w = img.width * P, h = img.height * P;
     if (p.flat) {
@@ -514,6 +518,18 @@ G.World = (() => {
       ctx.fillStyle = col;
       ctx.beginPath(); ctx.arc(p.x, p.y - h + 11 * P, 13, 0, 6.2832); ctx.fill();
       ctx.restore();
+    }
+    if (p.type === 'shop') {
+      // Kecleon derrière son comptoir.
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r * 1.2, p.r * 0.4, 0, 0, 6.2832); ctx.fill();
+      G.Interact.drawKeeper(ctx, p.x, p.y - 4);
+      ctx.drawImage(img, Math.round(p.x - w / 2), Math.round(p.y - h + 2), w, h);
+      if (!p.used) {
+        const bob = Math.sin(t * 3 + p.wiggle) * 3;
+        G.Icons.draw(ctx, 'coin', p.x - 10, p.y - 122 + bob, 20);
+      }
+      return;
     }
     if (p.type === 'bigchest' && p.open > 0) {
       ctx.save();

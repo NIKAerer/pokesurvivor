@@ -62,3 +62,12 @@
 /* Un seul gacha, un seul ticket, pas de régions */
 #gacha-gens, #dex-gens, #pull-10b, #buy-t10 { display: none !important; }
 #set-tabs [data-t="acc"] { display: none; }
+
+/* Marchand Kecleon */
+#scr-shop .card.off { opacity: .45; cursor: default; }
+#scr-shop .card .key { width: auto; min-width: 44px; padding: 0 8px; white-space: nowrap; }
+#shop-close { margin-top: 10px; }
+#scr-shop .box { max-height: calc(100vh - 16px); overflow-y: auto; padding-top: 10px; padding-bottom: 10px; }
+#scr-shop .cards { gap: 6px; }
+#scr-shop .card { padding-top: 6px; padding-bottom: 6px; }
+#scr-shop h2 { margin: 0 0 2px; }

@@ -585,6 +585,46 @@ G.Tiles = (() => {
       return P.canvas();
     },
 
+    /** Buisson à baies (version de Nika). variante = baie*2 + (cueilli ? 1 : 0).
+     *  0 Oran (bleue) · 1 Lichii (rouge) · 2 Sailak (verte) · 3 Pitaye (jaune) */
+    bush(B, variant) {
+      const P = Pix(26, 22);
+      const leaf = ['#2f7d3a', '#43a04c', '#6cc463'].map(h => pack(h));
+      disc(P, 13, 12, 9.5, (x, y, d) => {
+        const lit = (13 - x) * 0.3 + (12 - y) * 0.6;
+        return lit > 3 ? leaf[2] : d > 0.8 || lit < -2.5 ? leaf[0] : leaf[1];
+      });
+      disc(P, 6.5, 15, 5.5, (x, y, d) => d > 0.75 ? leaf[0] : leaf[1]);
+      disc(P, 19.5, 15, 5.5, (x, y, d) => d > 0.75 ? leaf[0] : leaf[1]);
+      if (!(variant & 1)) {
+        const BC = [['#3d7bff', '#a9c8ff'], ['#ff3d4f', '#ffb0b8'], ['#2fd08a', '#b6ffd9'], ['#ffd23f', '#fff3b0']][variant >> 1];
+        const c = pack(BC[0]), l = pack(BC[1]);
+        for (const [x, y] of [[8, 9], [16, 7], [13, 13], [6, 15], [19, 14], [11, 18]]) {
+          P.set(x, y, c); P.set(x + 1, y, c); P.set(x, y + 1, c); P.set(x + 1, y + 1, c); P.set(x, y, l);
+        }
+      }
+      outline(P, pack('#10220f'));
+      return P.canvas();
+    },
+
+    /** Comptoir du marchand Kecleon (version de Nika). */
+    shop() {
+      const P = Pix(40, 16);
+      const wood = pack('#8e5329'), woodL = pack('#b5743a'), woodD = pack('#5a3216');
+      const cloth = pack('#5fd4ff'), clothD = pack('#2a8fd0');
+      for (let y = 3; y < 16; y++) for (let x = 1; x < 39; x++) {
+        let c = y < 6 ? woodL : (x % 6 === 0 ? woodD : wood);
+        if (y >= 7 && y <= 9) c = (x >> 2) % 2 ? cloth : clothD;
+        if (y === 15 || x === 1 || x === 38) c = woodD;
+        P.set(x, y, c);
+      }
+      // Marchandises sur le comptoir.
+      const goods = [['#ff5f6d', 6], ['#ffd23f', 13], ['#7dffb0', 20], ['#c9a6ff', 27], ['#3d7bff', 33]];
+      for (const [h, x] of goods) { const c = pack(h); for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) P.set(x + a, b, c); }
+      outline(P, pack('#1e0f06'));
+      return P.canvas();
+    },
+
     /** Grieta hacia la arena del legendario. variante = fotograma 0..3. */
     rift(B, variant) {
       const P = Pix(30, 46);

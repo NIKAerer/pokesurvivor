@@ -26,8 +26,10 @@ G.Interact = (() => {
   const authority = () => !G.Coop.active || G.Coop.isHost;
   let healShown = 0, healAcc = 0;
 
+  let keeperLoaded = false;
   function update(dt, pl) {
     if (!pl) return;
+    if (!keeperLoaded) { keeperLoaded = true; G.Sprites.preload([352]); }
     for (const p of G.World.specialsNear(pl.x, pl.y, 720)) {
       const d2 = G.U.dist2(pl.x, pl.y, p.x, p.type === 'spring' || p.type === 'trap' ? p.y - 8 : p.y);
       switch (p.type) {
@@ -43,6 +45,15 @@ G.Interact = (() => {
             p.open += dt;
             if (p.open >= CHEST_TIME) { p.open = 0; G.World.breakProp(p); }
           } else if (p.open > 0) p.open = Math.max(0, p.open - dt * 1.5);
+          break;
+        case 'bush':
+          if (p.used) { p.charge += dt / 60; if (p.charge >= 1) { p.used = false; p.charge = 1; } }
+          else if (!pl.dead && d2 < (p.r + pl.r + 14) ** 2) eatBerry(pl, p);
+          break;
+        case 'shop':
+          keeper.update(dt);
+          if (d2 > (p.r + pl.r + 60) ** 2) p.away = true;
+          else if (p.away !== false && !pl.dead && d2 < (p.r + pl.r + 22) ** 2) { p.away = false; openShop(pl, p); }
           break;
         case 'trap':
           if (!pl.dead && d2 < 13 * 13) G.World.breakProp(p);
@@ -68,6 +79,87 @@ G.Interact = (() => {
       G.Audio.sfx('xp');
     }
     if (p.charge <= 0.02) G.Spawner.say('El manantial se ha secado (se recarga solo)', 2.2, true);
+  }
+
+  // ---------------- version de Nika : baies et marchand ----------------
+
+  const BERRY_TIME = 20;
+  const BERRIES = [
+    { name: 'Baie Oran', desc: 'soigne 35% des PV', color: '#5f9bff' },
+    { name: 'Baie Lichii', desc: 'dégâts ×1,5', color: '#ff5f6d', on: p => { p.atkMul *= 1.5; }, off: p => { p.atkMul /= 1.5; } },
+    { name: 'Baie Sailak', desc: '+35% vitesse', color: '#2fd08a', on: p => { p.spdMul *= 1.35; }, off: p => { p.spdMul /= 1.35; } },
+    { name: 'Baie Pitaye', desc: '-30% recharge', color: '#ffd23f', on: p => { p.cdMul *= 0.7; }, off: p => { p.cdMul /= 0.7; } }
+  ];
+
+  function eatBerry(pl, p) {
+    p.used = true; p.charge = 0;
+    const b = BERRIES[p.kind];
+    if (b.on) pl.addPower({ id: 'berry' + p.kind, name: b.name, desc: b.desc, color: b.color, on: b.on, off: b.off }, BERRY_TIME);
+    else { const h = Math.round(pl.maxHp * 0.35); pl.hp = Math.min(pl.maxHp, pl.hp + h); G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + h, '#5fe08a'); }
+    G.FX.burst(p.x, p.y - 14, b.color, 16, 120);
+    G.Audio.sfx('heal');
+    G.Spawner.say(b.name + ' : ' + b.desc + (b.on ? ' pendant ' + BERRY_TIME + ' s' : ''), 2.6, true);
+  }
+
+  // Kecleon, le marchand : un seul animateur pour tous les comptoirs.
+  const keeper = new G.Sprites.Animator(352, 1.6);
+  function drawKeeper(ctx, x, y) { keeper.dir = 0; keeper.draw(ctx, x, y); }
+
+  const WARES = [
+    { id: 'potion', name: 'Potion', desc: 'soigne tous les PV', icon: 'berry', price: 15, buy: pl => { pl.hp = pl.maxHp; } },
+    { id: 'power', name: 'Élixir', desc: 'un pouvoir d\'autel au hasard (25 s)', icon: 'magnet', price: 20,
+      buy: pl => { const pw = G.U.pick(POWERS); pl.addPower(pw, POWER_TIME); G.Spawner.say('Pouvoir ' + pw.name + ' ! ' + pw.desc, 2.6, true); } },
+    { id: 'ticket', name: 'Ticket', desc: '+1 ticket pour le gacha', icon: 'ticket', price: 30, buy: pl => { pl.t1++; } },
+    { id: 'candy', name: 'Super Bonbon', desc: '+1 niveau', icon: 'ticket10', price: 40, buy: pl => { pl.gainXp(Math.max(1, pl.xpNext - pl.xp)); } },
+    { id: 'item', name: 'Objet tenu', desc: 'un objet au hasard', icon: 'bomb', price: 50, after: true, buy: () => G.Game.offerItem(G.Items.roll()) }
+  ];
+
+  let shop = null;               // { pl, p, after }
+
+  function openShop(pl, p) {
+    if (!p.offers) p.offers = WARES.map(w => w.id).sort(() => Math.random() - 0.5).slice(0, 3);
+    if (p.offers.every(id => (p.sold || []).includes(id))) return;
+    if (!G.Game.beginChoice()) return;
+    shop = { pl, p, after: null };
+    G.Audio.sfx('select');
+    renderShop();
+    document.getElementById('shop-close').onclick = closeShop;
+    G.UI.show('scr-shop');
+  }
+
+  function renderShop() {
+    const { pl, p } = shop;
+    p.sold = p.sold || [];
+    document.getElementById('shop-coins').textContent = pl.coins;
+    const box = document.getElementById('shop-cards');
+    box.innerHTML = '';
+    p.offers.forEach(id => {
+      const w = WARES.find(x => x.id === id);
+      const sold = p.sold.includes(id), poor = pl.coins < w.price;
+      const el = document.createElement('div');
+      el.className = 'card' + (sold || poor ? ' off' : '');
+      el.innerHTML = `<div class="ico">${G.Icons.html(w.icon, 36)}</div>
+        <div class="txt"><div class="nm">${w.name} · ${sold ? 'vendu' : w.price + ' pièces'}</div><div class="ds">${w.desc}</div></div>`;
+      if (!sold && !poor) el.onclick = () => {
+        pl.coins -= w.price;
+        p.sold.push(id);
+        G.Audio.sfx('coin');
+        if (w.after) { shop.after = w.buy; closeShop(); return; }
+        w.buy(pl);
+        renderShop();
+      };
+      box.appendChild(el);
+    });
+  }
+
+  function closeShop() {
+    if (!shop) return;
+    const after = shop.after, pl = shop.pl;
+    if (shop.p.offers.every(id => shop.p.sold.includes(id))) shop.p.used = true;
+    shop = null;
+    G.UI.hide('scr-shop');
+    G.Game.endChoice();
+    if (after) after(pl);
   }
 
   function usePower(pl, p) {
@@ -116,5 +208,5 @@ G.Interact = (() => {
     }
   }
 
-  return { update, trapEffect, POWERS, CHEST_TIME };
+  return { update, trapEffect, POWERS, CHEST_TIME, drawKeeper, closeShop, BERRIES, get shopOpen() { return !!shop; } };
 })();
