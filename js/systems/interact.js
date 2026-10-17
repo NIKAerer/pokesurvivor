@@ -98,6 +98,7 @@ G.Interact = (() => {
     else { const h = Math.round(pl.maxHp * 0.35); pl.hp = Math.min(pl.maxHp, pl.hp + h); G.FX.dmgText(pl.x, pl.y - pl.bodyH - 6, '+' + h, '#5fe08a'); }
     G.FX.burst(p.x, p.y - 14, b.color, 16, 120);
     G.Audio.sfx('heal');
+    G.Progress.event('berry');
     G.Spawner.say(b.name + ' : ' + b.desc + (b.on ? ' pendant ' + BERRY_TIME + ' s' : ''), 2.6, true);
   }
 
@@ -144,6 +145,7 @@ G.Interact = (() => {
         pl.coins -= w.price;
         p.sold.push(id);
         G.Audio.sfx('coin');
+        G.Progress.event('shop');
         if (w.after) { shop.after = w.buy; closeShop(); return; }
         w.buy(pl);
         renderShop();

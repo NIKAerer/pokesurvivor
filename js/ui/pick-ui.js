@@ -104,6 +104,10 @@ G.PickUI = (() => {
       list.appendChild(b);
     }
     $('pick-count').textContent = `Tes Pokémon (${mons.length})`;
+    // Missions terminées dont la récompense attend.
+    const pend = G.Progress.pending();
+    $('pick-goals-n').textContent = pend;
+    $('pick-goals-n').classList.toggle('hidden', !pend);
   }
 
   function play() {
@@ -118,6 +122,7 @@ G.PickUI = (() => {
     $('pick-upg').onclick = () => G.MenuUI.openUpgrades();
     $('pick-gacha').onclick = () => G.GachaUI.open();
     $('pick-dex').onclick = () => G.MenuUI.openDex();
+    $('pick-goals').onclick = () => G.GoalsUI.open('missions');
     $('pick-set').innerHTML = G.Icons.html('gear', 18);
     $('pick-set').onclick = () => G.SettingsUI.open('sound');
     // « Retour » des écrans Améliorations et Gacha : revient ici.

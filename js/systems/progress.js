@@ -115,14 +115,15 @@ G.Progress = (() => {
     s.tickets = s.tickets || { t1: 0, t10: 0 };
     if (r.coins) s.coins += r.coins;
     if (r.t1) s.tickets.t1 += r.t1;
-    if (r.t10) s.tickets.t10 += r.t10;
+    if (r.t10) s.tickets.t1 += r.t10 * 10;
     if (G.UI && G.UI.refreshCoins && !document.getElementById('topbar').classList.contains('hidden')) G.UI.refreshCoins();
   }
 
   function rewardText(r) {
     const p = [];
-    if (r.t10) p.push(G.Icons.html('ticket10', 12) + ' ' + r.t10 + ' ×10');
-    if (r.t1) p.push(G.Icons.html('ticket', 12) + ' ' + r.t1);
+    // Version de Nika : un seul type de ticket (×10 = 10 tickets).
+    const t = (r.t1 || 0) + (r.t10 || 0) * 10;
+    if (t) p.push(G.Icons.html('ticket', 12) + ' ' + t);
     if (r.coins) p.push('<span class="coin"></span> ' + r.coins);
     return p.join(' &nbsp;');
   }
@@ -210,7 +211,6 @@ G.Progress = (() => {
   // ---------------- avisos ----------------
 
   function notify(title, sub, ach) {
-    return;                         // version de Nika : pas de succès/missions, que la partie
     toastQ.push({ title, sub, ach });
     if (toastQ.length === 1) showNext();
   }
