@@ -61,7 +61,7 @@ G.Ally = class Ally extends G.Player {
     if (this.walking) {
       const k = Math.min(1, s * dt / d);
       this.x += dx * k; this.y += dy * k;
-      if (!G.Sprites.hovers(this.dex)) G.World.collide(this);
+      if (!G.Sprites.hovers(this.dex) && !this.mon.types.includes('flying')) G.World.collide(this);
       this.moveAngle = Math.atan2(dy, dx);
     }
     // --- viser l'ennemi le plus proche (le boss s'il est à portée) ---

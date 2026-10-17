@@ -297,9 +297,10 @@ G.Combat = (() => {
     const col = G.U.TYPE_COLOR[m.type], vis = G.VFX.forMove(m);
     const ca = Math.cos(pl.aim), sa = Math.sin(pl.aim);
     const sx = pl.x, sy = pl.y;
+    const flier = pl.mon.types.includes('flying') || G.Sprites.hovers(pl.dex);   // version de Nika : vole au-dessus
     let len = 0;
     for (let d = 8; d <= m.radius; d += 8) {
-      if (!G.World.isFree(sx + ca * d, sy + sa * d, pl.r * 0.8, true)) break;
+      if (!flier && !G.World.isFree(sx + ca * d, sy + sa * d, pl.r * 0.8, true)) break;
       len = d;
     }
     // Estela: varias copias del golpe a lo largo del recorrido.
@@ -307,7 +308,7 @@ G.Combat = (() => {
     G.FX.slash(sx + ca * len, sy + sa * len - G.LIFT * 0.5, pl.aim, 34, 2.2, col, vis);
     if (ghost) return;
     pl.x = sx + ca * len; pl.y = sy + sa * len;
-    G.World.collide(pl);
+    if (!flier) G.World.collide(pl);
     pl.invuln = Math.max(pl.invuln || 0, 0.3);
     const w = m.width || 34;
     const mx = sx + ca * len / 2, my = sy + sa * len / 2;
