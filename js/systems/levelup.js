@@ -50,9 +50,32 @@ G.LevelUp = (() => {
           w: 10 * wk, type: 'new', key: 'new:' + pl.dex + ':' + id, who: team > 1 ? pl.dex : null,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
           tag: who + G.U.TYPE_NAME[d.type],
-          title: d.name, desc: d.desc,
+          title: d.name, desc: d.desc + (d.kind === 'melee' || d.kind === 'dash' ? ' · Vol de vie 10 %' : ''),
           apply: () => pl.addMove(id)
         });
+      }
+    }
+
+    // --- version de Nika : déjà 4 attaques → en apprendre une en oubliant une autre ---
+    else {
+      const pool = G.Team.learnset(pl.dex).filter(id => !pl.hasMove(id) && !(pl.banned && pl.banned.has(id)));
+      for (const id of G.U.pickN(pool, pl.ally ? 1 : 2)) {
+        const d = G.Moves.BY_ID[id];
+        const card = {
+          w: 5 * wk, type: 'new', forget: true, key: 'new:' + pl.dex + ':' + id, who: team > 1 ? pl.dex : null,
+          icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
+          tag: who + G.U.TYPE_NAME[d.type],
+          title: d.name, desc: d.desc + ' · Oublie une attaque pour l\'apprendre.',
+          target: pl, moveId: id
+        };
+        // L'écran des cartes demande quelle attaque oublier (card.forgetId).
+        card.apply = () => {
+          const old = G.Moves.BY_ID[card.forgetId];
+          if (!old || !pl.forgetMove(card.forgetId)) return;
+          pl.addMove(id);
+          G.Spawner.say(pl.mon.name + ' oublie ' + old.name + ' et apprend ' + d.name + ' !', 2.8, true);
+        };
+        out.push(card);
       }
     }
 

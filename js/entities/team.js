@@ -127,11 +127,12 @@ G.Team = (() => {
   }
 
   /**
-   * Les 4 attaques qu'un Pokémon peut apprendre (version de Nika) : son attaque de
-   * départ + 3 autres, toujours les mêmes pour sa famille (elles restent après
+   * Les 7 attaques qu'un Pokémon peut apprendre (version de Nika) : son attaque de
+   * départ + 6 autres (il n'en garde que 4 : il faut en oublier une pour en apprendre une autre), toujours les mêmes pour sa famille (elles restent après
    * l'évolution). On prend surtout les types de la famille, au plus 1 bonus (buff).
    */
   const sets = {};
+  const LEARN = 7;
   function learnset(dex) {
     const root = family(dex);
     if (sets[root]) return sets[root];
@@ -147,15 +148,15 @@ G.Team = (() => {
     const out = [start];
     let buffs = G.Moves.BY_ID[start].kind === 'buff' ? 1 : 0;
     for (const id of [...typed, ...normal]) {
-      if (out.length >= 4) break;
+      if (out.length >= LEARN) break;
       const m = G.Moves.BY_ID[id];
-      if (m.kind === 'buff' && buffs >= 1) continue;
+      if (m.kind === 'buff' && buffs >= 2) continue;
       // varier : pas deux attaques de la même famille tant qu'il y a le choix
       if (out.some(o => G.Moves.BY_ID[o].kind === m.kind) && typed.length + normal.length > 6 && out.length < 3) continue;
       if (m.kind === 'buff') buffs++;
       out.push(id);
     }
-    for (const id of [...typed, ...normal]) { if (out.length >= 4) break; if (!out.includes(id)) out.push(id); }
+    for (const id of [...typed, ...normal]) { if (out.length >= LEARN) break; if (!out.includes(id)) out.push(id); }
     return (sets[root] = out);
   }
 
