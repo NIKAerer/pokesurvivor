@@ -205,6 +205,7 @@ G.Team = (() => {
     p.invuln = Math.max(p.invuln || 0, EVO_T + 0.5);
     G.Audio.sfx('levelup');
     G.FX.ring(p.x, p.y, 4, 60, '#ffffff', 0.6, 3);
+    G.Game.startEvolving();
     try { G.DB.grant(to, 'evo'); } catch (e) { /* pas grave */ }
     checkEvolve(p);                    // plusieurs niveaux d'un coup : peut ré-évoluer
   }

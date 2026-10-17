@@ -51,13 +51,14 @@ G.RunUI = (() => {
       if (c.type === 'evo') el.classList.add('evo');
       el.innerHTML =
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 56)}</div>
-         <div class="txt"><div class="nm">${c.title} ${tag}</div><div class="ds">${c.desc}</div></div>
+         <div class="txt"><div class="nm">${c.title} ${tag}</div>${c.types ? `<div class="lv-types">${G.UI.typeChips(c.types)}</div>
+           <div class="lv-evo">${c.evo ? 'Évolue au N. ' + c.evo : 'N\'évolue pas'}</div>` : ''}<div class="ds">${c.desc}</div></div>
          <div class="key">${i + 1}</div>`;
       // Version de Nika : nouveau Pokémon -> son sprite ; carte pour un allié -> son petit portrait.
       if (c.dex || c.who) {
         const ico = el.querySelector('.ico');
         if (c.dex) ico.innerHTML = '';
-        const cv = G.UI.spriteCanvas(c.dex || c.who, c.dex ? 80 : 34, c.dex ? 80 : 34, { scale: c.dex ? 2 : 0.8 });
+        const cv = G.UI.spriteCanvas(c.dex || c.who, c.dex ? 132 : 40, c.dex ? 112 : 40, c.dex ? { scale: 4, hero: true, lively: true } : { scale: 2, hero: true });
         if (!c.dex) cv.className = 'who';
         ico.appendChild(cv);
       }
