@@ -121,6 +121,7 @@ G.Team = (() => {
     G.FX.ring(a.x, a.y, 6, 90, '#7fe0ff', 0.6, 5);
     G.FX.burst(a.x, a.y - a.bodyH * 0.5, '#bdf3ff', 24, 180);
     G.Spawner.say(a.mon.name + ' rejoint ton équipe !', 2.8, true);
+    G.Progress.event('recruit', { size: allies.length + 1 });
     G.Audio.sfx('shiny');
     try { G.DB.grant(dex, 'team'); } catch (e) { /* collection : pas grave */ }
     return a;
@@ -206,6 +207,7 @@ G.Team = (() => {
     G.Audio.sfx('levelup');
     G.FX.ring(p.x, p.y, 4, 60, '#ffffff', 0.6, 3);
     G.Game.startEvolving();
+    G.Progress.event('pevolve', { dex: to });
     try { G.DB.grant(to, 'evo'); } catch (e) { /* pas grave */ }
     checkEvolve(p);                    // plusieurs niveaux d'un coup : peut ré-évoluer
   }

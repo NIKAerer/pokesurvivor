@@ -205,6 +205,7 @@ G.Rift = (() => {
         s.box.push(arena.dex);
         G.DB.grant(arena.dex, 'rift');
         msg = name + ' est capturé ! Il rejoint ton menu.';
+        G.Progress.event('capture', { dex: arena.dex });
         if (G.DB.commit) G.DB.commit(true);
         if (G.Sprites.preload) G.Sprites.preload([arena.dex]);
       } else if (pl) {

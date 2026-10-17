@@ -33,7 +33,20 @@ G.MissionDefs = (() => {
     { id: 'item', ev: 'item', goals: [1], reward: { t1: 2, coins: 150 },
       text: () => 'Encuentra un objeto equipable' },
     { id: 'evolve', ev: 'evolve', goals: [1], reward: { t1: 3, coins: 250 },
-      text: () => 'Evoluciona un movimiento' }
+      text: () => 'Evoluciona un movimiento' },
+    // Version de Nika
+    { id: 'pevolve', ev: 'pevolve', goals: [1, 2, 3], reward: { t1: 3, coins: 250 },
+      text: n => (n === 1 ? 'Fais évoluer un Pokémon' : `Fais évoluer ${n} Pokémon`) },
+    { id: 'recruit', ev: 'recruit', goals: [3, 5], reward: { t1: 2, coins: 200 },
+      text: n => `Recrute ${n} Pokémon dans ton équipe` },
+    { id: 'team6', ev: 'recruit', mode: 'max', value: d => d.size, goals: [6], reward: { t1: 3, coins: 250 },
+      text: () => 'Complète une équipe de 6 Pokémon' },
+    { id: 'berry', ev: 'berry', goals: [3, 5], reward: { t1: 2, coins: 150 },
+      text: n => `Mange ${n} baies` },
+    { id: 'shop', ev: 'shop', goals: [1, 3], reward: { t1: 2, coins: 150 },
+      text: n => (n === 1 ? 'Achète un article au marchand Kecleon' : `Achète ${n} articles au marchand Kecleon`) },
+    { id: 'forget', ev: 'forget', goals: [1], reward: { t1: 2, coins: 150 },
+      text: () => 'Fais oublier une attaque pour en apprendre une autre' }
   ];
 
   const weekly = [
@@ -48,7 +61,12 @@ G.MissionDefs = (() => {
     { id: 'wevolve', ev: 'evolve', goals: [3, 5], reward: { t10: 1, coins: 900 },
       text: n => `Evoluciona ${n} movimientos` },
     { id: 'wdaily', ev: 'missionDone', match: d => d.daily, goals: [8, 12], reward: { t10: 1, coins: 800 },
-      text: n => `Completa ${n} misiones diarias` }
+      text: n => `Completa ${n} misiones diarias` },
+    // Version de Nika
+    { id: 'wpevolve', ev: 'pevolve', goals: [8, 12], reward: { t1: 10, coins: 900 },
+      text: n => `Fais évoluer ${n} Pokémon` },
+    { id: 'wcapture', ev: 'capture', goals: [1], reward: { t1: 10, coins: 1000 },
+      text: () => 'Capture un Pokémon légendaire' }
   ];
 
   const BY = {};

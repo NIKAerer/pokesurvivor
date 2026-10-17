@@ -172,3 +172,10 @@
   #scr-levelup .card.mon { gap: 4px; }
   #scr-levelup .card.mon .txt { gap: 4px; }
 }
+
+/* Missions */
+#pick-goals { position: relative; }
+.pick-badge { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  background: #ff3b4d; color: #fff; font-size: 12px; line-height: 20px; box-shadow: 0 0 0 2px #0b1020; }
+#goals-tabs .tab[data-tab="profile"] { display: none; }
+#scr-goals .box { max-height: 94vh; overflow-y: auto; }

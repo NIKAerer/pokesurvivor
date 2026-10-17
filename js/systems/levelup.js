@@ -73,6 +73,7 @@ G.LevelUp = (() => {
           const old = G.Moves.BY_ID[card.forgetId];
           if (!old || !pl.forgetMove(card.forgetId)) return;
           pl.addMove(id);
+          G.Progress.event('forget');
           G.Spawner.say(pl.mon.name + ' oublie ' + old.name + ' et apprend ' + d.name + ' !', 2.8, true);
         };
         out.push(card);
