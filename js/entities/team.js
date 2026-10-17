@@ -45,6 +45,7 @@ G.Ally = class Ally extends G.Player {
 
   update(dt) {
     this.anim.update(dt);
+    if (this.evoFx) G.Team.evoTick(this, dt);
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
     for (const k in this.buffs) {
@@ -78,7 +79,7 @@ G.Ally = class Ally extends G.Player {
 
   draw(ctx) {
     G.Sprites.drawShadow(ctx, this.dex, this.x, this.y);
-    this.anim.draw(ctx, this.x, this.y, { color: '#9fb1c9' });
+    if (!G.Team.drawEvo(ctx, this)) this.anim.draw(ctx, this.x, this.y, { color: '#9fb1c9' });
     // Petit niveau au-dessus de la tête.
     ctx.save();
     ctx.font = '700 7px Pixelify,"Segoe UI",sans-serif';
@@ -187,6 +188,7 @@ G.Team = (() => {
     const old = p.mon, mon = G.DEX_BY[to];
     p.mon = mon; p.dex = to;
     p.shiny = p.shiny && G.Sprites.hasShiny(to);
+    const oldAnim = p.anim;
     p.anim = new G.Sprites.Animator(to, 1, p.shiny);
     p.r = G.Sprites.bodyRadius(to);
     p.bodyH = G.Sprites.bodyHeight(to);
@@ -196,12 +198,48 @@ G.Team = (() => {
     // L'attaque signature devient plus forte à chaque évolution.
     for (const m of p.moves) if (m.def.sig) { m.dmg *= 1.25; G.FX.dmgText(p.x, p.y - p.bodyH - 18, m.name + ' +', '#ffd84a'); }
     G.Sprites.preload([to], 4000, p.shiny);
-    G.FX.ring(p.x, p.y, 8, 140, '#ffffff', 0.9, 6);
-    G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#fff6c2', 50, 260);
-    G.Audio.sfx('legend');
-    G.Spawner.say(old.name + ' évolue en ' + mon.name + ' !', 3.2, true);
+    // Animation d'évolution : silhouette blanche qui alterne entre l'ancienne et
+    // la nouvelle forme, de plus en plus vite, puis éclat (voir drawEvo).
+    p.evoFx = { t: 0, old: p.evoFx ? p.evoFx.old : oldAnim, from: p.evoFx ? p.evoFx.from : old.name, to: mon.name };
+    p.invuln = Math.max(p.invuln || 0, EVO_T + 0.5);
+    G.Audio.sfx('levelup');
+    G.FX.ring(p.x, p.y, 4, 60, '#ffffff', 0.6, 3);
     try { G.DB.grant(to, 'evo'); } catch (e) { /* pas grave */ }
     checkEvolve(p);                    // plusieurs niveaux d'un coup : peut ré-évoluer
+  }
+
+  const EVO_T = 2.4;
+
+  function evoTick(p, dt) {
+    const e = p.evoFx;
+    e.t += dt;
+    if (Math.random() < dt * 30) G.FX.twinkle(p.x + G.U.rand(-p.r * 2, p.r * 2), p.y - G.U.rand(0, p.bodyH * 1.6));
+    if (e.t < EVO_T) return;
+    p.evoFx = null;
+    G.FX.ring(p.x, p.y, 8, 150, '#ffffff', 0.9, 6);
+    G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#fff6c2', 60, 280);
+    if (!p.ally) G.Game.flash('#ffffff', 0.5);
+    G.Audio.sfx('legend');
+    G.Spawner.say(e.from + ' évolue en ' + e.to + ' !', 3.2, true);
+  }
+
+  /** Dessine l'évolution en cours ; renvoie false s'il n'y en a pas. */
+  function drawEvo(ctx, p) {
+    const e = p.evoFx;
+    if (!e) return false;
+    const k = Math.min(1, e.t / EVO_T);
+    const a = Math.floor(k * k * 18) % 2 === 0 ? e.old : p.anim;
+    a.dir = p.anim.dir;
+    ctx.save();
+    const cy = p.y - p.bodyH * 0.5, R = p.r * 2.4 + 20 * k;
+    const g = ctx.createRadialGradient(p.x, cy, 2, p.x, cy, R);
+    g.addColorStop(0, 'rgba(255,255,255,' + (0.35 + 0.5 * k) + ')');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(p.x, cy, R, 0, 6.2832); ctx.fill();
+    ctx.restore();
+    a.draw(ctx, p.x, p.y, { flash: true });
+    return true;
   }
 
   /** Nouveaux Pokémon possibles pour les cartes : formes de base, hasard pondéré par rareté. */
@@ -222,6 +260,6 @@ G.Team = (() => {
   function update(dt) { for (const a of allies) a.update(dt); }
   function tick(dt, now) { if (!leader || leader.dead) return; for (const a of allies) G.Combat.tick(dt, a, now); }
 
-  return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, update, tick, family,
+  return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, update, tick, family, evoTick, drawEvo,
            get allies() { return allies; }, get leader() { return leader; } };
 })();

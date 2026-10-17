@@ -318,6 +318,7 @@ G.Player = class Player {
   // ---------------- ciclo ----------------
   update(dt) {
     this.anim.update(dt);
+    if (this.evoFx) G.Team.evoTick(this, dt);
     if (this.dead) return;
     if (this.invuln > 0) this.invuln -= dt;
     if (this.flash > 0) this.flash -= dt;
@@ -460,7 +461,7 @@ G.Player = class Player {
     }
 
     const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
-    this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
+    if (!G.Team.drawEvo(ctx, this)) this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
 
     // Arcos de buff alrededor de los pies.
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };

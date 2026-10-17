@@ -35,17 +35,17 @@ G.HUD = (() => {
       if (dps.list.length > 60) dps.list.shift();
       dps.last = total; dps.t = st.time;
     }
-    const BW = 150, BH = 52;
+    const BW = 180, BH = 64;
     const x0 = w - BW - 14 - (touch ? 56 : 0), y0 = 12;
     roundRect(ctx, x0, y0, BW, BH, 9);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     const cur = dps.list.length ? dps.list[dps.list.length - 1] : 0;
-    ctx.font = F(800, 10); ctx.textAlign = 'left'; ctx.fillStyle = '#ffcb3d';
+    ctx.font = F(800, 12); ctx.textAlign = 'left'; ctx.fillStyle = '#ffcb3d';
     ctx.fillText('DÉGÂTS/S ' + Math.round(cur), x0 + 8, y0 + 13);
     const L = dps.list;
     if (L.length < 2) return;
     const max = Math.max(1, ...L);
-    const gx = x0 + 8, gy = y0 + 18, gw = BW - 16, gh = BH - 24;
+    const gx = x0 + 8, gy = y0 + 22, gw = BW - 16, gh = BH - 28;
     ctx.beginPath();
     L.forEach((v, i) => {
       const X = gx + (i / 59) * gw, Y = gy + gh - (v / max) * gh;
@@ -66,34 +66,58 @@ G.HUD = (() => {
     // Chaque Pokémon : nom, niveau, ses attaques (icônes) et sa barre d'XP.
     const px = 10, py = 10;
     const team = G.Team.members().length ? G.Team.members() : [pl];
-    const RW = 168, RH = 34;
-    roundRect(ctx, px - 4, py - 4, RW + 8, team.length * RH + 6, 10);
-    ctx.fillStyle = 'rgba(8,12,24,.55)'; ctx.fill();
+    const RW = 236, RH = 48, PW = 40;
+    const best = Math.max(1, ...team.map(m => m.dmgDealt || 0));
+    roundRect(ctx, px - 4, py - 4, RW + 8, team.length * RH + 4, 10);
+    ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     team.forEach((m, i) => {
       const y = py + i * RH;
+      // portrait animé
+      roundRect(ctx, px, y, PW, PW, 8);
+      ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill();
+      ctx.save();
+      roundRect(ctx, px, y, PW, PW, 8); ctx.clip();
+      const k = Math.min(1, 30 / Math.max(10, m.bodyH || 30));
+      ctx.translate(px + PW / 2, y + PW / 2 + (m.bodyH || 30) * 0.5 * k);
+      ctx.scale(k, k);
+      const dir = m.anim.dir; m.anim.dir = 0;
+      m.anim.draw(ctx, 0, 0, {});
+      m.anim.dir = dir;
+      ctx.restore();
+      const tx = px + PW + 6, tw = RW - PW - 6;
       ctx.textAlign = 'left';
-      ctx.font = F(800, 11);
+      ctx.font = F(800, 13);
       ctx.fillStyle = G.U.TYPE_COLOR[m.mon.types[0]] || '#eaf2ff';
-      ctx.fillText(m.mon.name, px, y + 10);
-      ctx.font = F(700, 9);
+      ctx.fillText(m.mon.name, tx, y + 12);
+      const nw = ctx.measureText(m.mon.name).width;
+      ctx.font = F(700, 10);
       ctx.fillStyle = '#ffcb3d';
-      ctx.fillText('N.' + m.level, px, y + 26);
-      for (let k = 0; k < 4; k++) {
-        const mv = m.moves[k];
-        const x = px + RW - 4 * 17 + k * 17, iy = y;
-        if (mv) G.Icons.draw(ctx, 'move:' + mv.id, x, iy, 15);
-        else { roundRect(ctx, x + 1, iy + 1, 13, 13, 4); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill(); }
+      ctx.fillText('N.' + m.level, tx + nw + 5, y + 12);
+      for (let q = 0; q < 4; q++) {
+        const mv = m.moves[q];
+        const x = px + RW - 4 * 19 + q * 19, iy = y - 1;
+        if (mv) G.Icons.draw(ctx, 'move:' + mv.id, x, iy, 17);
+        else { roundRect(ctx, x + 1, iy + 1, 15, 15, 4); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill(); }
       }
-      const g = ctx.createLinearGradient(px, 0, px + RW, 0);
+      // barre d'XP
+      const g = ctx.createLinearGradient(tx, 0, tx + tw, 0);
       g.addColorStop(0, '#4fd1ff'); g.addColorStop(1, '#a98bff');
-      bar(ctx, px + 30, y + 20, RW - 30, 6, m.xp / m.xpNext, g);
+      bar(ctx, tx, y + 19, tw, 6, m.xp / m.xpNext, g);
+      // jauge de dégâts (comparée au meilleur de l'équipe)
+      const d = m.dmgDealt || 0;
+      const dg = ctx.createLinearGradient(tx, 0, tx + tw, 0);
+      dg.addColorStop(0, '#ff8a5c'); dg.addColorStop(1, '#ffcb3d');
+      bar(ctx, tx, y + 30, tw - 44, 9, d / best, dg);
+      ctx.font = F(800, 10); ctx.textAlign = 'right';
+      ctx.fillStyle = d >= best && d > 0 && team.length > 1 ? '#ffcb3d' : '#ffd9c2';
+      ctx.fillText(d >= 10000 ? (d / 1000).toFixed(1) + 'k' : String(Math.round(d)), px + RW, y + 39);
     });
 
     // buffs actifs (sous l'équipe)
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };
     const LBL = { atk: 'ATK', spd: 'VEL', def: 'DEF', regen: 'REG' };
     let bx = px;
-    const byy = py + team.length * RH + 6;
+    const byy = py + team.length * RH + 4;
     ctx.textAlign = 'left';
     for (const k in pl.buffs) {
       const b = pl.buffs[k];
@@ -127,7 +151,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 76;
+      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 84;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
