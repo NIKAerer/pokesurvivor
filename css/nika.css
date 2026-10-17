@@ -143,3 +143,32 @@
 #scr-pick .pick-actions .btn { padding: 8px 6px; font-size: 15px; }
 #scr-pick .pick-actions #pick-play { flex: 1.4; font-size: 18px; }
 #scr-pick .pick-credits { font-size: 9px; margin: 4px 0 0; }
+
+/* Cartes de recrue : types + niveau d'évolution, grand sprite */
+#scr-levelup .card.mon .ico { width: 140px; height: 116px; background: radial-gradient(closest-side, #ffffff22, transparent) !important; }
+#scr-levelup .card.mon .ico canvas { max-width: 100%; height: auto; }
+#scr-levelup .lv-types { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
+#scr-levelup .lv-types .type-chip { font-size: 13px; padding: 3px 10px; }
+#scr-levelup .lv-evo { font-size: 14px; font-weight: 700; color: #ffcb3d; }
+#scr-levelup .card .ico canvas.who { width: 40px; height: 40px; }
+/* Grand écran (PC) : tout en plus grand */
+@media (min-height: 600px) and (min-width: 900px) {
+  #scr-levelup .box { width: min(1200px, 100%); padding: 18px 22px; }
+  #scr-levelup .box h2 { font-size: 34px; }
+  #scr-levelup .card { min-height: min(60vh, 460px); padding: 22px 16px; gap: 12px; }
+  #scr-levelup .card .ico { width: 140px; height: 140px; }
+  #scr-levelup .card .ico canvas:not(.who), #scr-levelup .card .ico img { width: 112px !important; height: 112px !important; image-rendering: pixelated; }
+  #scr-levelup .card.mon .ico { width: 220px; height: 190px; }
+  #scr-levelup .card.mon .ico canvas:not(.who) { width: 220px !important; height: 186px !important; }
+  #scr-levelup .card .ico canvas.who { width: 60px; height: 60px; }
+  #scr-levelup .card .nm { font-size: 28px; }
+  #scr-levelup .card .ds { font-size: 18px; }
+  #scr-levelup .lv-evo { font-size: 18px; }
+  #scr-levelup .lv-types .type-chip, #scr-levelup .tag-chip { font-size: 15px; }
+}
+@media (max-height: 520px) {
+  #scr-levelup .card.mon .ico { width: 120px; height: 92px; }
+  #scr-levelup .card.mon .ds { display: none; }
+  #scr-levelup .card.mon { gap: 4px; }
+  #scr-levelup .card.mon .txt { gap: 4px; }
+}

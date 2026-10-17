@@ -601,6 +601,7 @@ G.Game = (() => {
     handleKeys();
 
     if (state === 'playing') update(dt);
+    else if (state === 'evolving') evolvingTick(dt);
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
     // La red se atiende siempre (también con las cartas de nivel abiertas).
     if (G.Coop.active && pl && state !== 'ui' && state !== 'over') G.Coop.tick(dt);
@@ -727,6 +728,41 @@ G.Game = (() => {
     }
   }
 
+  // ---------------- version de Nika : l'évolution met le jeu en pause ----------------
+  let evoBack = 'playing';
+  const evolvers = () => G.Team.members().filter(m => m.evoFx);
+  function startEvolving() {
+    if (state !== 'playing' && state !== 'held') return;
+    evoBack = state; state = 'evolving';
+  }
+  function evolvingTick(dt) {
+    const list = evolvers();
+    for (const m of list) { G.Team.evoTick(m, dt); m.anim.update(dt); }
+    G.FX.update(dt);
+    G.Camera.follow(pl.x, pl.y, dt);
+    if (!evolvers().length) { state = evoBack; afterLevelUp(); }
+  }
+  /** Le monde s'assombrit, seuls les Pokémon qui évoluent restent visibles. */
+  function drawEvolving(ctx) {
+    const C = G.Camera;
+    ctx.fillStyle = 'rgba(4,6,18,.74)';
+    ctx.fillRect(C.left() - 60, C.top() - 60, C.w + 120, C.h + 120);
+    for (const m of evolvers()) G.Team.drawEvo(ctx, m);
+  }
+  function drawEvoBanner(ctx) {
+    const e = evolvers()[0];
+    if (!e) return;
+    const txt = 'Quoi ? ' + e.evoFx.from + ' évolue !';
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '800 26px Pixelify,"Segoe UI",system-ui,sans-serif';
+    ctx.lineWidth = 5; ctx.strokeStyle = '#0b1020';
+    const y = h * 0.2;
+    ctx.strokeText(txt, w / 2, y);
+    ctx.fillStyle = '#fff6c2'; ctx.fillText(txt, w / 2, y);
+    ctx.restore();
+  }
+
   function render() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
@@ -740,6 +776,7 @@ G.Game = (() => {
     G.Combat.drawAirFields(ctx);
     G.FX.draw(ctx);
     G.Judgment.drawAir(ctx);
+    if (state === 'evolving') drawEvolving(ctx);
     ctx.restore();
 
     G.Weather.draw(ctx, w, h, frameDt);
@@ -754,6 +791,7 @@ G.Game = (() => {
       ctx.fillRect(0, 0, w, h);
     }
     if (!G.Judgment.cinematic) G.HUD.draw(ctx, w, h, pl, st);
+    if (state === 'evolving') drawEvoBanner(ctx);
     G.Judgment.drawOverlay(ctx, w, h);
     G.Touch.draw(ctx);
     if (G.Settings.get('fps')) {
@@ -873,7 +911,7 @@ G.Game = (() => {
     debugTime(t) { tampered = true; time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
     debugSpeed(k) { if (k > 1) tampered = true; speedK = k; },
-    togglePause,
+    togglePause, startEvolving,
     /** Version de Nika : le marchand met la partie en pause le temps des achats. */
     beginChoice() { if (state !== 'playing' && state !== 'held') return false; state = 'choice'; return true; },
     endChoice() { if (state === 'choice') state = holdBy.length ? 'held' : 'playing'; afterLevelUp(); },

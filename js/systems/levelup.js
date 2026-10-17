@@ -127,7 +127,8 @@ G.LevelUp = (() => {
           w: 9, type: 'mon', key: 'mon:' + mon.dex, dex: mon.dex,
           icon: 'heart', color: G.U.TYPE_COLOR[mon.types[0]],
           tag: 'Équipe ' + (members.length + 1) + '/6',
-          title: mon.name, desc: 'Rejoint ton équipe au niveau 1 et attaque avec toi. ' + mon.types.map(t => G.U.TYPE_NAME[t]).join(' / ') + '.',
+          title: mon.name, desc: 'Rejoint ton équipe au niveau 1 et attaque avec toi.',
+          types: mon.types, evo: G.Team.evoLevel(mon.dex),
           apply: () => G.Team.recruit(mon.dex)
         });
       }
