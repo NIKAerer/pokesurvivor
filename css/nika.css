@@ -247,3 +247,4 @@
 .ps-mv .cat.S { background: #c99bff33; color: #d9bcff; }
 .pick-card { position: relative; }
 .pick-card .pick-role { position: absolute; left: 3px; bottom: 16px; font-size: 11px; line-height: 1; filter: drop-shadow(0 1px 1px #000); }
+.ps-role { font-size: 12px; margin: 2px 0 6px; line-height: 1.6; color: #cfe0f7; }

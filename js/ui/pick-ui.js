@@ -79,7 +79,7 @@ G.PickUI = (() => {
     stage.appendChild(G.UI.spriteCanvas(mon.dex, 170, 130, { lively: true, scale: 4, hero: true, shiny }));
     hero.appendChild(stage);
     hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
-      <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex, true)}
+      <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex)}
       ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
     // Version de Nika : le rang du Pokémon (monte avec des Poké Balls).
     {
@@ -96,7 +96,7 @@ G.PickUI = (() => {
     const info = $('pick-info');
     const statBar = (lbl, v, max, txt, col) => `<div class="ps-row"><span>${lbl}</span>
       <i><b style="width:${Math.round(Math.min(1, v / max) * 100)}%;background:${col}"></b></i><em>${txt}</em></div>`;
-    let html = '<h4>Statistiques</h4>' +
+    let html = `<h4>Rôle</h4><p class="ps-role">${G.Roles.chip(mon.dex)} Bonus d'équipe : ${G.Roles.info(mon.dex).team} (compte double pour ton chef).</p><h4>Statistiques</h4>` +
       statBar('PV', mon.hp, 185, mon.hp, '#5fe08a') +
       statBar('Vitesse', mon.spd, 145, mon.spd, '#5fd4ff');
     // Version de Nika : les vraies stats (physique / spécial).
