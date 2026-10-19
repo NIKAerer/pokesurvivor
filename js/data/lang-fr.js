@@ -409,6 +409,7 @@ G.I18n.add({
   'Pantalla': 'Affichage', 'Números de daño': 'Chiffres de dégâts', 'Los números que salen al golpear y al recibir daño.': 'Les chiffres qui apparaissent quand tu frappes ou que tu es touché.',
   'Menos sacudidas y destellos': 'Moins de secousses et de flashs', 'La cámara tiembla menos y los fogonazos son suaves.': 'La caméra tremble moins et les flashs sont plus doux.',
   'Mostrar FPS': 'Afficher les FPS', 'Fotogramas por segundo, en la esquina de abajo.': 'Images par seconde, dans le coin en bas.',
+  'Forzar horizontal': 'Forcer le mode horizontal', 'El juego se queda en horizontal aunque el móvil tenga la rotación bloqueada: gíralo hacia la izquierda. Sólo en la app de la pantalla de inicio.': 'Le jeu reste à l\'horizontale même si la rotation de ton téléphone est verrouillée : tourne-le vers la gauche. Seulement dans l\'appli de l\'écran d\'accueil.',
   'Pantalla completa': 'Plein écran', 'Sin barras del navegador.': 'Sans les barres du navigateur.', 'Activar': 'Activer', 'Sí': 'Oui', 'No': 'Non',
   'Idioma': 'Langue', 'El juego se recarga al cambiarlo.': 'Le jeu se recharge quand tu la changes.',
   'En móvil o tablet': 'Sur mobile ou tablette', 'En PC': 'Sur PC', 'Tamaño del joystick': 'Taille du joystick', 'Cuánto hay que arrastrar el dedo.': 'La distance à parcourir avec le doigt.',

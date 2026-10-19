@@ -116,6 +116,7 @@ G.Touch = (() => {
   function safeArea() {
     // Se recalcula si cambia la pantalla (iOS gira después del evento resize).
     const key = innerWidth + 'x' + innerHeight;
+    try { if (window.parent !== window && parent.PS_SHELL) return parent.PS_SHELL.safe(); } catch (e) { /* otro origen */ }
     if (safe && key === safeKey) return safe;
     safeKey = key;
     const d = document.createElement('div');

@@ -408,6 +408,7 @@ G.I18n.add({
   'Pantalla': 'Display', 'Números de daño': 'Damage numbers', 'Los números que salen al golpear y al recibir daño.': 'The numbers that pop up when you hit or get hit.',
   'Menos sacudidas y destellos': 'Less shaking and flashing', 'La cámara tiembla menos y los fogonazos son suaves.': 'The camera shakes less and flashes are softer.',
   'Mostrar FPS': 'Show FPS', 'Fotogramas por segundo, en la esquina de abajo.': 'Frames per second, in the bottom corner.',
+  'Forzar horizontal': 'Force landscape', 'El juego se queda en horizontal aunque el móvil tenga la rotación bloqueada: gíralo hacia la izquierda. Sólo en la app de la pantalla de inicio.': 'The game stays landscape even if your phone\'s rotation is locked: turn it to the left. Home screen app only.',
   'Pantalla completa': 'Fullscreen', 'Sin barras del navegador.': 'Without browser bars.', 'Activar': 'Turn on', 'Sí': 'Yes', 'No': 'No',
   'Idioma': 'Language', 'El juego se recarga al cambiarlo.': 'The game reloads when you change it.',
   'En móvil o tablet': 'On mobile or tablet', 'En PC': 'On PC', 'Tamaño del joystick': 'Joystick size', 'Cuánto hay que arrastrar el dedo.': 'How far you need to drag your finger.',
