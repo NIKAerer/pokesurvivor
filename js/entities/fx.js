@@ -257,11 +257,12 @@ G.FX = (() => {
       ctx.globalAlpha = Math.min(1, k * 2.2);
       const sup = t.kind === 'super', weak = t.kind === 'weak';
       // Super efficace : pop d'entrée + police plus grosse et plus grasse.
-      const pop = sup ? 1 + Math.max(0, 0.6 - t.t * 4) : 1;
-      ctx.font = (sup ? '800 ' + Math.round(24 * pop) + 'px' : weak ? '400 12px' : t.big ? '700 20px' : '700 13px') + ' Pixelify,"Segoe UI",sans-serif';
+      // Version de Nika : tailles réduites, les « -60! » cachaient les Pokémon (surtout sur téléphone).
+      const pop = sup ? 1 + Math.max(0, 0.3 - t.t * 2) : 1;
+      ctx.font = (sup ? '800 ' + Math.round(17 * pop) + 'px' : weak ? '400 10px' : t.big ? '700 15px' : '700 11px') + ' Pixelify,"Segoe UI",sans-serif';
       ctx.textAlign = 'center';
       if (weak) ctx.globalAlpha *= 0.85;
-      ctx.lineWidth = sup ? 5 : 3;
+      ctx.lineWidth = sup ? 4 : 3;
       ctx.strokeStyle = sup ? 'rgba(150,10,20,.95)' : 'rgba(0,0,0,.75)';
       ctx.strokeText(t.s, t.x, t.y);
       ctx.fillStyle = t.color;
