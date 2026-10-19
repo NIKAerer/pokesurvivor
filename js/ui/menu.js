@@ -208,7 +208,7 @@ G.MenuUI = (() => {
         <p class="move-icons" title="Movimientos que puede aprender">
           ${G.Team.learnset(dex).map(id => `<span title="${G.Moves.BY_ID[id].name}">${G.Icons.html('move:' + id, 16)}</span>`).join('')}</p>
         ${!(s.box || []).includes(dex)
-          ? `<p class="note center">${G.EVO_FROM[dex] ? 'Se joue en faisant évoluer ' + G.DEX_BY[G.Team.family(dex)].name + ' en partie.' : 'Tire-le au gacha pour pouvoir jouer avec.'}</p>`
+          ? `<p class="note center">${G.EVO_FROM[dex] ? 'Se joue en faisant évoluer ' + G.DEX_BY[G.Team.family(dex)].name + ' en partie.' : 'Obtiens-le à la Boutique pour pouvoir jouer avec.'}</p>`
           : usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
           : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}

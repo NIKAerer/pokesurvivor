@@ -20,7 +20,7 @@ G.PickUI = (() => {
     let el = document.getElementById('starter-pick');
     if (!el) { el = document.createElement('div'); el.id = 'starter-pick'; document.body.appendChild(el); }
     el.innerHTML = `<div class="sp-box"><h2>Choisis ton starter</h2>
-      <p class="sub">Les autres Pokémon s'obtiennent avec le gacha (tu as 5 tickets pour commencer).</p>
+      <p class="sub">Les autres Pokémon s'obtiennent à la Boutique (tu as 5 tickets pour commencer).</p>
       <div class="sp-grid"></div></div>`;
     const grid = el.querySelector('.sp-grid');
     for (const d of STARTERS.filter(x => G.DEX_BY[x] && G.SPRITE_META[x])) {
