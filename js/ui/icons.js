@@ -244,6 +244,36 @@ G.Icons = (() => {
     cone:       ['....#', '..###', '#####', '..###', '....#']
   };
 
+  /**
+   * Version de Nika : grand dessin au centre des icônes d'attaque, selon le
+   * genre de l'attaque (et la stat pour les boosts). La couleur du disque
+   * donne le type ; deux attaques d'un même type ne se ressemblent plus.
+   */
+  const MOVE_GLYPH = {
+    projectile: ['.....###.', '##..#####', '....#####', '.##.#####', '.....###.'],
+    melee:      ['..#.#.#', '..#.#.#', '.#.#.#.', '.#.#.#.', '#.#.#..', '#.#.#..'],
+    dash:       ['###..#...', '.....##..', '####.###.', '.....##..', '###..#...'],
+    beam:       ['#........', '##.......', '#########', '#########', '##.......', '#........'],
+    orbit:      ['...#...', '.#...#.', '.......', '#..#..#', '.......', '.#...#.', '...#...'],
+    nova:       ['#..#..#', '.#.#.#.', '..###..', '#######', '..###..', '.#.#.#.', '#..#..#'],
+    aura:       ['.#####.', '#.....#', '#.###.#', '#.#.#.#', '#.###.#', '#.....#', '.#####.'],
+    boomerang:  ['....###', '..####.', '.###...', '###....', '.###...', '..####.', '....###'],
+    chain:      ['#.......', '##...#..', '.##.###.', '..###.##', '...#...#'],
+    mine:       ['....#.#', '.....#.', '..###..', '.#####.', '#######', '#######', '.#####.', '..###..'],
+    meteor:     ['#......', '.#.....', '..#.##.', '...####', '..#####', '...###.'],
+    turret:     ['..###..', '..#.#..', '..###..', '...#...', '.#####.', '#######'],
+    trail:      ['#.#....', '.......', '..#.#..', '.......', '....#.#'],
+    cone:       ['.....##', '...####', '#######', '...####', '.....##'],
+    buff:       ['...#...', '..###..', '.#####.', '#######', '..###..', '..###..', '..###..'],
+    buff_atk:   ['...#...', '..###..', '..###..', '..###..', '#######', '...#...', '...#...'],
+    buff_def:   ['#######', '#######', '#######', '.#####.', '..###..', '...#...'],
+    buff_spd:   ['#...#..', '##..##.', '.##..##', '##..##.', '#...#..'],
+    buff_regen: ['..###..', '..###..', '#######', '#######', '#######', '..###..', '..###..'],
+    buff_heal:  ['..###..', '..###..', '#######', '#######', '#######', '..###..', '..###..'],
+    buff_shield: ['#######', '#.....#', '#.....#', '#.....#', '.#...#.', '..#.#..', '...#...']
+  };
+  const glyphOf = m => m.kind === 'buff' && MOVE_GLYPH['buff_' + m.stat] ? 'buff_' + m.stat : m.kind;
+
   // ---------------- render ----------------
 
   const cache = new Map();      // clave -> canvas a 1×
@@ -295,14 +325,16 @@ G.Icons = (() => {
       else if ((x - 7.5) + (y - 7.5) < -6.5) f = lite;
       c.fillStyle = f; c.fillRect(x, y, 1, 1);
     }
-    const g = TYPE_GLYPH[type] || TYPE_GLYPH.normal;
+    // Version de Nika : une attaque montre son genre en grand, un type son glyphe.
+    const g = (kind && MOVE_GLYPH[kind]) || TYPE_GLYPH[type] || TYPE_GLYPH.normal;
+    const gw = Math.max(...g.map(r => r.length)), ox = Math.floor((16 - gw) / 2), oy = Math.floor((16 - g.length) / 2);
     // Sombra del glifo y glifo.
     c.fillStyle = dark;
-    g.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') c.fillRect(x + 5, y + 5, 1, 1); }));
+    g.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') c.fillRect(x + ox + 1, y + oy + 1, 1, 1); }));
     c.fillStyle = '#ffffff';
-    g.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') c.fillRect(x + 4, y + 4, 1, 1); }));
+    g.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '#') c.fillRect(x + ox, y + oy, 1, 1); }));
 
-    if (kind && KIND_GLYPH[kind]) {
+    if (kind && KIND_GLYPH[kind] && !MOVE_GLYPH[kind]) {
       c.fillStyle = K; c.fillRect(9, 9, 7, 7);
       c.fillStyle = '#2b3454'; c.fillRect(10, 10, 5, 5);
       c.fillStyle = '#ffd23f';
@@ -316,7 +348,7 @@ G.Icons = (() => {
     if (cv) return cv;
     if (name.startsWith('move:')) {
       const m = G.Moves.BY_ID[name.slice(5)];
-      cv = emblem(m ? m.type : 'normal', m ? m.kind : null);
+      cv = emblem(m ? m.type : 'normal', m ? glyphOf(m) : null);
     } else if (name.startsWith('type:')) {
       cv = emblem(name.slice(5));
     } else {

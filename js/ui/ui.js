@@ -277,6 +277,14 @@ G.UI = (() => {
   /** Crea un <canvas> con un sprite animado (para rejillas). */
   function spriteCanvas(dex, w, h, opts) {
     const cv = document.createElement('canvas');
+    // Version de Nika : opts.fit = le Pokémon remplit sa case, quelle que soit
+    // sa taille, dessiné en haute définition pour garder des pixels nets.
+    if (opts && opts.fit) {
+      const r = Math.min(3, Math.max(1, Math.round(window.devicePixelRatio || 1)));
+      w *= r; h *= r;
+      cv.style.width = w / r + 'px';
+      opts = Object.assign({}, opts, { scale: 99, hero: true });
+    }
     cv.width = w; cv.height = h;
     sprite(cv, dex, opts);
     return cv;

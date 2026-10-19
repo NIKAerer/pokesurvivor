@@ -28,7 +28,7 @@ G.PickUI = (() => {
       const b = document.createElement('button');
       b.className = 'pick-card';
       b.style.setProperty('--c', G.U.TYPE_COLOR[mon.types[0]]);
-      b.appendChild(G.UI.spriteCanvas(d, 64, 54, { scale: 2, hero: true, lively: true }));
+      b.appendChild(G.UI.spriteCanvas(d, 64, 54, { fit: true, lively: true }));
       b.insertAdjacentHTML('beforeend', `<small>${mon.name}</small>`);
       b.onclick = () => {
         const s = G.DB.save;
@@ -158,7 +158,7 @@ G.PickUI = (() => {
       b.className = 'pick-card' + (dex === s.partner ? ' on' : '');
       b.style.setProperty('--c', G.U.TYPE_COLOR[G.DEX_BY[dex].types[0]]);
       b.title = G.DEX_BY[dex].name;
-      b.appendChild(G.UI.spriteCanvas(dex, 64, 54, { scale: 2, hero: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
+      b.appendChild(G.UI.spriteCanvas(dex, 64, 54, { fit: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
       if (G.DB.ownsShiny(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-sh">${G.Icons.html('shiny', 10)}</span>`);
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
       if (G.Rank.of(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-rk">${G.Rank.of(dex)}</span>`);
