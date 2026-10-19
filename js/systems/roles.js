@@ -18,8 +18,8 @@
  */
 G.Roles = (() => {
   const INFO = {
-    tankA: { name: 'Tank armure', ico: 'role_tankA', color: '#b0bfd2', team: 'PV max + résiste aux coups physiques' },
-    tankM: { name: 'Tank magique', ico: 'role_tankM', color: '#9fd0ff', team: 'PV max + résiste aux attaques spéciales' },
+    tankA: { name: 'Tank', ico: 'role_tank', color: '#b0bfd2', team: 'PV max + résiste aux coups physiques' },
+    tankM: { name: 'Tank', ico: 'role_tank', color: '#b0bfd2', team: 'PV max + résiste aux attaques spéciales' },
     melee: { name: 'Mêlée', ico: 'role_melee', color: '#ff8a5c', team: 'Vol de vie sur tous les dégâts' },
     mage:  { name: 'Mage', ico: 'role_mage', color: '#c99bff', team: 'Dégâts de toute l\'équipe' },
     dps:   { name: 'DPS', ico: 'role_dps', color: '#ffd23f', team: 'Vitesse d\'attaque de toute l\'équipe' },
@@ -130,9 +130,9 @@ G.Roles = (() => {
     const out = [];
     const pct = v => Math.round(v * 100) + ' %';
     const L = (r, txt) => out.push({ ico: 'role_' + r, txt });
-    if (b.hp) L('tankA', 'PV max +' + pct(b.hp));
-    if (b.physRed) L('tankA', 'Dégâts physiques -' + pct(b.physRed));
-    if (b.specRed) L('tankM', 'Dégâts spéciaux -' + pct(b.specRed));
+    if (b.hp) L('tank', 'PV max +' + pct(b.hp));
+    if (b.physRed) L('tank', 'Dégâts physiques -' + pct(b.physRed));
+    if (b.specRed) L('tank', 'Dégâts spéciaux -' + pct(b.specRed));
     if (b.vamp) L('melee', 'Vol de vie ' + (Math.round(b.vamp * 1000) / 10) + ' %');
     if (b.dmg) L('mage', 'Dégâts +' + pct(b.dmg));
     if (b.cd < 1) L('dps', 'Vitesse d\'attaque +' + pct(1 / b.cd - 1));
@@ -149,8 +149,8 @@ G.Roles = (() => {
   const CAT_NAME = { P: 'Physique', S: 'Spéciale' };
   const MOVE_ROLE = { tank: 'Tank', melee: 'Mêlée', mage: 'Mage', dps: 'DPS', soin: 'Soin', vit: 'Vitesse' };
   /** Icône du rôle d'une attaque (tank, melee, mage, dps, soin, vit). */
-  const moveIco = role => role ? 'role_' + (role === 'tank' ? 'tankA' : role) : null;
-  /** <img> pixel de l'icône d'un rôle ('tankA', 'mage'...). */
+  const moveIco = role => role ? 'role_' + role : null;
+  /** <img> pixel de l'icône d'un rôle ('tank', 'mage'...). */
   const iconHtml = (role, size = 12) => G.Icons.html('role_' + role, size, 'role-ico');
 
   return { INFO, CAT_NAME, MOVE_ROLE, moveIco, iconHtml, chip, of, info, moveRole, stats, catMul, catK, guardK, foeK, recompute, reset, onDamage, update, lines,

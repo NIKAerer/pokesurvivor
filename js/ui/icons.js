@@ -53,12 +53,9 @@ G.Icons = (() => {
       '....kkkk....', '..kkyyyykk..', '.kyywwwwyyk.', '.kywwwkwwyk.', 'kywwwwkwwwyk', 'kywwwwkwwwyk',
       'kywwwwkkkwyk', 'kywwwwwwwwyk', '.kywwwwwwyk.', '.kyyowwwyyk.', '..kkyyyykk..', '....kkkk....'] },
     // Version de Nika : icônes des rôles (tank, mêlée, mage, DPS, soin, vitesse).
-    role_tankA: { pal: { s: '#c9d3e0', d: '#7d8aa0', w: '#f4f8ff', r: '#8e9bb3' }, rows: [
+    role_tank: { pal: { s: '#c9d3e0', d: '#7d8aa0', w: '#f4f8ff', r: '#8e9bb3' }, rows: [
       '............', '.kkkkkkkkkk.', '.kwwsssssdk.', '.kwssrrssdk.', '.kwssrrssdk.', '.ksrrrrrrdk.',
       '.ksrrrrrrdk.', '..kssrrsdk..', '..kssssddk..', '...ksssdk...', '....kddk....', '.....kk.....'] },
-    role_tankM: { pal: { s: '#8fc4ff', d: '#4a6fc0', w: '#e6f4ff', r: '#fff1a0' }, rows: [
-      '............', '.kkkkkkkkkk.', '.kwwsssssdk.', '.kwsssrssdk.', '.kwssrrrsdk.', '.ksrrrrrrdk.',
-      '.kssrrrrsdk.', '..ksrrsrdk..', '..kssssddk..', '...ksssdk...', '....kddk....', '.....kk.....'] },
     role_melee: { pal: { w: '#f4f8ff', s: '#9fb1c9', y: '#ffd23f', b: '#a0603a' }, rows: [
       '.........kkk', '........kwwk', '.......kwwsk', '......kwwsk.', '.....kwwsk..', '.kk.kwwsk...',
       '.kykwwsk....', '..kyysk.....', '..kbyyk.....', '.kbbkkyk....', 'kbbk..kk....', 'kkk.........'] },
