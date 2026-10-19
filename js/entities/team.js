@@ -24,6 +24,10 @@ G.Ally = class Ally extends G.Player {
   get cdMul() { return this.leader ? this.leader.cdMul : 1; } set cdMul(v) { /* chef */ }
   get xpMul() { return this.leader ? this.leader.xpMul : 1; } set xpMul(v) { /* chef */ }
   get critChance() { return this.leader ? this.leader.critChance : 0; } set critChance(v) { /* chef */ }
+  // Les capacités de soutien (Hâte, Danse Lames, Armure...) d'un allié profitent à
+  // toute l'équipe : ses bonus vont au chef (vitesse, défense, soin) et l'attaque
+  // est partagée. Avant, ils restaient sur l'allié et ne servaient à rien.
+  get buffs() { return this.leader ? this.leader.buffs : this._buffs; } set buffs(v) { this._buffs = v; }
 
   /** Les alliés lancent tous leurs mouvements à la fois. */
   activeGroup() { return this.moves; }
@@ -48,10 +52,7 @@ G.Ally = class Ally extends G.Player {
     if (this.evoFx) G.Team.evoTick(this, dt);
     if (this.flash > 0) this.flash -= dt;
     if (this.attackFace > 0) this.attackFace -= dt;
-    for (const k in this.buffs) {
-      const b = this.buffs[k];
-      if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
-    }
+    // (les bonus sont ceux du chef : c'est lui qui les fait expirer)
     // --- suivre le chef ---
     const L = this.leader;
     const [tx, ty] = this.spot();
@@ -189,6 +190,7 @@ G.Team = (() => {
   function evolve(p, to) {
     const old = p.mon, mon = G.DEX_BY[to];
     p.mon = mon; p.dex = to;
+    p.evoLearn = true;                 // une chance d'apprendre une nouvelle attaque (levelup.js)
     p.shiny = p.shiny && G.Sprites.hasShiny(to);
     const oldAnim = p.anim;
     p.anim = new G.Sprites.Animator(to, 1, p.shiny);
@@ -203,7 +205,7 @@ G.Team = (() => {
     // Animation d'évolution : silhouette blanche qui alterne entre l'ancienne et
     // la nouvelle forme, de plus en plus vite, puis éclat (voir drawEvo).
     p.evoFx = { t: 0, old: p.evoFx ? p.evoFx.old : oldAnim, from: p.evoFx ? p.evoFx.from : old.name, to: mon.name };
-    p.invuln = Math.max(p.invuln || 0, EVO_T + 0.5);
+    p.invuln = Math.max(p.invuln || 0, EVO_T + REVEAL_T + 0.5);
     G.Audio.sfx('levelup');
     G.FX.ring(p.x, p.y, 4, 60, '#ffffff', 0.6, 3);
     G.Game.startEvolving();
@@ -212,25 +214,45 @@ G.Team = (() => {
     checkEvolve(p);                    // plusieurs niveaux d'un coup : peut ré-évoluer
   }
 
-  const EVO_T = 2.4;
+  const EVO_T = 2.4, REVEAL_T = 1.6;   // silhouette, puis le nouveau Pokémon en couleur
 
   function evoTick(p, dt) {
     const e = p.evoFx;
     e.t += dt;
-    if (Math.random() < dt * 30) G.FX.twinkle(p.x + G.U.rand(-p.r * 2, p.r * 2), p.y - G.U.rand(0, p.bodyH * 1.6));
-    if (e.t < EVO_T) return;
-    p.evoFx = null;
-    G.FX.ring(p.x, p.y, 8, 150, '#ffffff', 0.9, 6);
-    G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#fff6c2', 60, 280);
-    if (!p.ally) G.Game.flash('#ffffff', 0.5);
-    G.Audio.sfx('legend');
-    G.Spawner.say(e.from + ' évolue en ' + e.to + ' !', 3.2, true);
+    if (e.t < EVO_T) {
+      if (Math.random() < dt * 30) G.FX.twinkle(p.x + G.U.rand(-p.r * 2, p.r * 2), p.y - G.U.rand(0, p.bodyH * 1.6));
+      return;
+    }
+    if (!e.shown) {
+      // Éclat : on révèle la nouvelle forme en couleur un moment avant la reprise.
+      e.shown = true;
+      G.FX.ring(p.x, p.y, 8, 150, '#ffffff', 0.9, 6);
+      G.FX.burst(p.x, p.y - p.bodyH * 0.5, '#fff6c2', 60, 280);
+      if (!p.ally) G.Game.flash('#ffffff', 0.5);
+      G.Audio.sfx('legend');
+      if (G.Game.state !== 'evolving') G.Spawner.say(e.from + ' évolue en ' + e.to + ' !', 3.2, true);
+    }
+    if (Math.random() < dt * 8) G.FX.twinkle(p.x + G.U.rand(-p.r * 2, p.r * 2), p.y - G.U.rand(0, p.bodyH * 1.6));
+    if (e.t >= EVO_T + REVEAL_T) p.evoFx = null;
   }
 
   /** Dessine l'évolution en cours ; renvoie false s'il n'y en a pas. */
   function drawEvo(ctx, p) {
     const e = p.evoFx;
     if (!e) return false;
+    if (e.t >= EVO_T) {
+      // Révélation : halo doré qui s'éteint, le Pokémon évolué en couleur.
+      const f = 1 - Math.min(1, (e.t - EVO_T) / REVEAL_T), cy = p.y - p.bodyH * 0.5, R = p.r * 3 + 30;
+      ctx.save();
+      const g = ctx.createRadialGradient(p.x, cy, 2, p.x, cy, R);
+      g.addColorStop(0, 'rgba(255,236,150,' + (0.25 + 0.45 * f) + ')');
+      g.addColorStop(1, 'rgba(255,236,150,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(p.x, cy, R, 0, 6.2832); ctx.fill();
+      ctx.restore();
+      p.anim.draw(ctx, p.x, p.y);
+      return true;
+    }
     const k = Math.min(1, e.t / EVO_T);
     const a = Math.floor(k * k * 18) % 2 === 0 ? e.old : p.anim;
     a.dir = p.anim.dir;

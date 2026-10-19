@@ -495,26 +495,17 @@
   <canvas id="slot" width="176" height="170" title="Clic para acelerar"></canvas>
   <div class="pull-results" id="pull-results"></div>
   <button id="pull-close" class="btn gold hidden">Continuar</button>
+  <button id="pull-skip" class="btn small ghost hidden" data-sfx="none">Passer ⏭</button>
 </div>
 
 <!-- ====== Durante la run ====== -->
 <section id="scr-levelup" class="scr dim hidden">
   <div class="box center">
-    <h2>¡Nivel <span id="lvl-num">2</span>!</h2>
+    <h2 class="lvl-head"><span id="lvl-who"></span><span>¡Nivel <span id="lvl-num">2</span>!</span></h2>
     <p class="sub">Elige una recompensa · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></p>
     <div id="cards" class="cards"></div>
     <button id="lvl-reroll" class="btn small ghost hidden" data-sfx="none" style="margin-top:10px">Cambiar opciones (<span id="lvl-rr-n">1</span>) · <kbd>R</kbd></button>
     <p id="lvl-wait" class="note hidden"></p>
-  </div>
-</section>
-
-<section id="scr-bond" class="scr dim hidden">
-  <div class="box center">
-    <h2 class="bond-title">¡Vínculo!</h2>
-    <p class="sub bond-hint">Los movimientos unidos se lanzan a la vez y ocupan un solo hueco</p>
-    <p id="bond-sub" class="sub"></p>
-    <div id="bond-cards" class="cards"></div>
-    <div class="row" style="justify-content:center"><button id="bond-back" class="btn hidden">Atrás</button></div>
   </div>
 </section>
 
@@ -551,7 +542,12 @@
       <div class="pick-hero" id="pick-hero"></div>
       <div class="pick-info" id="pick-info"></div>
       <div class="pick-side">
-        <p class="sub" id="pick-count" style="margin:0"></p>
+        <div class="pick-sorthead"><p class="sub" id="pick-count" style="margin:0"></p>
+          <label class="pick-sort">Trier <select id="pick-sort">
+            <option value="new">Récents</option><option value="dex">N° Pokédex</option>
+            <option value="rare">Rareté</option><option value="type">Type</option>
+            <option value="name">Nom</option><option value="bst">Puissance</option>
+          </select></label></div>
         <div class="pick-cards" id="pick-cards"></div>
       </div>
     </div>

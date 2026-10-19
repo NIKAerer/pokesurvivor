@@ -198,3 +198,17 @@
 .cr-team { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .cr-badges { display: flex; justify-content: center; gap: 6px; margin: 6px 0 10px; }
 .cr-badge { width: 22px; height: 22px; border-radius: 50%; background: var(--c); border: 2px solid #fff; box-shadow: 0 0 8px var(--c); }
+
+/* En-tête des cartes : le Pokémon du joueur sous sa forme actuelle */
+.lvl-head { display: flex; align-items: center; justify-content: center; gap: 10px; }
+#lvl-who { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+#lvl-who small { font-size: 12px; opacity: .8; margin-top: -4px; }
+@media (max-height: 460px) { #lvl-who canvas { width: 48px; height: 42px; } }
+
+/* Gacha : bouton pour passer l'animation */
+#pull-skip { position: fixed; top: max(12px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); z-index: 41; }
+
+/* Menu : trier ses Pokémon */
+.pick-sorthead { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.pick-sort { font-size: 12px; opacity: .9; display: inline-flex; align-items: center; gap: 6px; }
+.pick-sort select { background: rgba(10,16,32,.8); color: #eaf2ff; border: 1px solid rgba(140,170,210,.35); border-radius: 8px; padding: 3px 6px; font: inherit; }

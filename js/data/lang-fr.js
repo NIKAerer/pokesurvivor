@@ -123,6 +123,7 @@ G.I18n.add({
   'Pañuelo Elección': 'Mouchoir Choix', 'Casco Dentado': 'Casque Brut', 'Chaleco Asalto': 'Veste de Combat',
   'Recuperas un 1,5% de tu vida por segundo.': 'Tu récupères 1,5 % de tes PV par seconde.',
   '+40% de daño, pero no puedes cambiar de movimiento.': '+40 % de dégâts, mais tu ne peux pas changer de capacité.',
+  '+40% de daño, pero -15% de velocidad.': '+40 % de dégâts, mais -15 % de vitesse.',
   '-20% de recarga en todos tus movimientos.': '-20 % de recharge sur toutes tes capacités.',
   'Un golpe que te dejaría KO te deja con 1 de vida (cada 60 s).': 'Un coup qui te mettrait K.O. te laisse à 1 PV (toutes les 60 s).',
   'Recuperas vida con el daño que haces.': 'Tu récupères des PV grâce aux dégâts que tu infliges.', '+50% de Pokémonedas al acabar la run.': '+50 % de Poképièces à la fin de la partie.',

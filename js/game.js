@@ -231,12 +231,10 @@ G.Game = (() => {
     /** Grupo: quién está eligiendo fusión. Mientras haya alguien, todo parado. */
     hold(names) {
       holdBy = names || [];
-      const mine = G.UI.isOpen('scr-bond');
       if (holdBy.length) {
         if (state === 'playing') state = 'held';
-        if (pl && pl.bonds > 0) offerBond(true);      // si tú también tienes vínculo, eliges a la vez
         const others = holdBy.filter(n => n !== (G.Social.me && G.Social.me.name) && n !== 'Tú');
-        if (!mine && others.length) G.Spawner.say('Pausa: ' + others.join(', ') + ' ' + (others.length > 1 ? 'están eligiendo…' : 'está eligiendo…'), 999, true);
+        if (others.length) G.Spawner.say('Pausa: ' + others.join(', ') + ' ' + (others.length > 1 ? 'están eligiendo…' : 'está eligiendo…'), 999, true);
         else if (!others.length) G.Spawner.say(awayBy ? awayText() : '', awayBy ? 999 : 0, true);   // sólo tú: sin aviso viejo
       } else {
         if (state === 'held' && !awayBy) state = 'playing';
@@ -378,37 +376,7 @@ G.Game = (() => {
     });
   }
 
-  // ---------------- vínculos ----------------
 
-  /**
-   * Vínculo de un legendario: eliges qué movimientos se fusionan.
-   * Si ahora no se puede (no hay dos sueltos), se guarda hasta que aprendas
-   * otro movimiento. Se mira en cada fotograma: si otra pantalla la tapa (cartas
-   * de nivel en grupo, pausa), vuelve a salir al cerrarla.
-   * @param quiet  no avisar si todavía no se puede
-   */
-  function offerBond(quiet = false) {
-    if (!pl || pl.bonds <= 0 || pl.dead || (state !== 'playing' && state !== 'held') || G.Rift.inArena) return;
-    if (['scr-bond', 'scr-pause', 'scr-item', 'scr-levelup'].some(G.UI.isOpen)) return;
-    const opt = pl.bondOptions();
-    if (!opt) {
-      if (!quiet) G.Spawner.say('Guardas el vínculo: aprende otro movimiento para usarlo', 3, true);
-      return;
-    }
-    // Se para el juego; en grupo, para todos hasta que cada uno elige (G.Coop.holdStart).
-    state = 'choice';
-    if (G.Coop.active) G.Coop.holdStart();
-    G.Audio.sfx('levelup');
-    G.RunUI.showBond(opt, picked => {
-      const group = pl.fuse(picked, opt.group);
-      G.Audio.sfx('legend');
-      G.FX.ring(pl.x, pl.y, 8, 130, '#ff8ad8', 0.8, 6);
-      G.FX.burst(pl.x, pl.y - pl.bodyH * 0.5, '#ffb3e6', 40, 240);
-      G.Spawner.say('¡Vínculo! ' + group.length + ' movimientos a la vez', 2.6, true);
-      if (state === 'choice') state = holdBy.length ? 'held' : 'playing';
-      if (G.Coop.active) G.Coop.holdEnd();
-    });
-  }
 
   // ---------------- recogida ----------------
 
@@ -531,12 +499,6 @@ G.Game = (() => {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
       }
       if (G.Input.tap('keyr')) G.RunUI.reroll();
-      return;
-    }
-    if (G.UI.isOpen('scr-bond')) {
-      for (let i = 0; i < 4; i++) {
-        if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pickBond(i);
-      }
       return;
     }
     if (G.UI.isOpen('scr-item')) {
@@ -678,7 +640,6 @@ G.Game = (() => {
 
     G.Audio.music(G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? 'rift' : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
-    if (pl.bonds > 0) offerBond(true);
     if (G.Coop.isHost) checkAllDown(dt);
   }
 
@@ -736,6 +697,7 @@ G.Game = (() => {
     evoBack = state; state = 'evolving';
   }
   function evolvingTick(dt) {
+    if (flashT > 0) flashT -= dt;      // l'éclat blanc s'efface aussi pendant la pause (avant : écran tout blanc)
     const list = evolvers();
     for (const m of list) { G.Team.evoTick(m, dt); m.anim.update(dt); }
     G.FX.update(dt);
@@ -752,7 +714,7 @@ G.Game = (() => {
   function drawEvoBanner(ctx) {
     const e = evolvers()[0];
     if (!e) return;
-    const txt = 'Quoi ? ' + e.evoFx.from + ' évolue !';
+    const txt = e.evoFx.shown ? e.evoFx.from + ' est devenu ' + e.evoFx.to + ' !' : 'Quoi ? ' + e.evoFx.from + ' évolue !';
     ctx.save();
     ctx.textAlign = 'center';
     ctx.font = '800 26px Pixelify,"Segoe UI",system-ui,sans-serif';
@@ -906,7 +868,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, offerBond,
+    init, startRun, everyone, levelXp, flash,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { tampered = true; time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

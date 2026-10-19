@@ -199,6 +199,7 @@ G.Combat = (() => {
     pl.addBuff(m.stat, m.amount, m.dur, m.stacks | 0);
     const col = G.U.TYPE_COLOR[m.type];
     G.FX.ring(pl.x, pl.y, pl.r * 2.4, pl.r * 1.1, col, 0.35, 2.5);
+    if (pl.ally && pl.leader) G.FX.ring(pl.leader.x, pl.leader.y, pl.leader.r * 2.4, pl.leader.r * 1.1, col, 0.35, 2.5);
     const vis = G.VFX.forMove(m);
     for (let i = 0; i < 3; i++) {
       G.FX.sp(vis.buff || 'arrow', vis.pal, pl.x + G.U.rand(-pl.r * 1.4, pl.r * 1.4),

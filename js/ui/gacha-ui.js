@@ -107,6 +107,11 @@ G.GachaUI = (() => {
     $('pull-close').classList.add('hidden');
     slot.style.display = '';
     fx.classList.remove('hidden');
+    // Version de Nika : bouton pour passer l'animation.
+    let skipped = false;
+    const sk = $('pull-skip');
+    sk.classList.remove('hidden');
+    sk.onclick = () => { skipped = true; sk.classList.add('hidden'); G.Slots.stop(); };
 
     // La tragaperras (ui/slots.js) y luego las cartas.
     await G.Slots.play(slot, res);
@@ -125,9 +130,9 @@ G.GachaUI = (() => {
         : `Repetido · <span class="coin"></span> +${r.refund}`;
       c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
       out.appendChild(c);
-      G.Audio.sfx('reveal', { rarity: r.rarity });
-      await wait(n === 10 ? 150 : 0);
+      if (!skipped) { G.Audio.sfx('reveal', { rarity: r.rarity }); await wait(n === 10 ? 150 : 0); }
     }
+    sk.classList.add('hidden');
     $('pull-close').classList.remove('hidden');
     busy = false;
   }
