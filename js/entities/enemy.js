@@ -187,7 +187,7 @@
       if (this.legend) {
         // El legendario de la grieta: tickets sueltos y monedas (el ×10, como
         // la mitad de las veces; antes daba 2 siempre).
-        for (let i = 0; i < 3; i++) G.Pickups.drop('ticket', this.x + G.U.rand(-30, 30), this.y + G.U.rand(-20, 20), 1);
+        for (let i = 0, n = Math.random() < 0.5 ? 1 : 2; i < n; i++) G.Pickups.drop('ticket', this.x + G.U.rand(-30, 30), this.y + G.U.rand(-20, 20), 1);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-50, 50), this.y + G.U.rand(-35, 35), 8);
       }
       G.Audio.sfx(this.boss ? 'bossDown' : 'faint');
@@ -426,7 +426,8 @@
       if (!ai.fury && this.hp < this.maxHp * 0.5) this.enrage();
       const k = ai.fury ? 1.25 : 1;
       if (ai.cast) return this.bossCast(dt, pl);
-      ai.modeT -= dt; ai.cd -= dt * k;
+      // Version de Nika (2026-10-19) : les boss attaquent 25 % plus souvent.
+      ai.modeT -= dt; ai.cd -= dt * k * 1.25;
       // Alterna siempre: en su distancia favorita está más rato (7-9 s) que en la otra (4-5 s).
       if (ai.modeT <= 0) {
         ai.mode = ai.mode === 'far' ? 'close' : 'far';

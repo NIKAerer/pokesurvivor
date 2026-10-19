@@ -276,3 +276,39 @@
 .pick-card { position: relative; }
 .pick-card .pick-role { position: absolute; left: 3px; bottom: 16px; font-size: 11px; line-height: 1; filter: drop-shadow(0 1px 1px #000); }
 .ps-role { font-size: 12px; margin: 2px 0 6px; line-height: 1.6; color: #cfe0f7; }
+
+/* ---- Version de Nika (2026-10-19) : téléphone à l'horizontale ----
+ * Pas de barre du haut dans cette version : on ne lui garde plus de place,
+ * on évite l'encoche de l'iPhone, et la Boutique tient sans défiler. */
+@media (max-height: 520px) {
+  .scr { padding: 6px max(10px, env(safe-area-inset-right, 0px)) 6px max(10px, env(safe-area-inset-left, 0px)); }
+  .scr > .box { max-height: 100%; overflow-y: auto; }
+  #scr-gacha .split { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 10px; margin-top: 4px !important; }
+  #scr-gacha .banner { padding: 8px 12px; }
+  #scr-gacha .banner h3 { font-size: 18px; }
+  #scr-gacha #banner-desc { font-size: 12px; margin: 2px 0 !important; }
+  #scr-gacha .banner .feat { height: 92px; margin: 2px -6px -8px; }
+  #scr-gacha .banner .feat canvas { height: 88px !important; width: auto !important; }
+  #scr-gacha .row[style] { margin-top: 8px !important; }
+  #scr-gacha .note { margin-top: 6px; }
+  #scr-gacha .rates { font-size: 12px; max-height: calc(100vh - 70px); overflow-y: auto; }
+  #scr-pick .pick-credits { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Missions : une ligne par mission (texte + barre, récompense, bouton). */
+  #scr-goals .tabs { margin-bottom: 4px; }
+  #scr-goals .tab { padding-top: 5px; padding-bottom: 5px; }
+  .goals-body { max-height: none; }
+  .mission { grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; padding: 5px 10px; margin-bottom: 4px; }
+  .mission .bar { margin: 3px 0 1px; }
+  /* Améliorations : pas de grand portrait, la liste tout de suite. */
+  #scr-upgrades .upg-head { margin: 2px 0 6px; }
+  #scr-upgrades .upg-head .stage { display: none; }
+  #scr-upgrades .upg { gap: 6px; }
+  #scr-upgrades .upg-item { padding-top: 6px; padding-bottom: 6px; }
+  /* Pause : plus large, et « Continuer » toujours visible en bas. */
+  #scr-pause .box { width: min(780px, 100%) !important; max-height: 100%; padding-bottom: 0; }
+  #scr-pause .touch-hint { display: none; }
+  #pause-team { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; }
+  #pause-team > h3, #pause-team > .note { grid-column: 1 / -1; }
+  #scr-pause .box > .row:last-child { position: sticky; bottom: 0; margin: 0 -24px; padding: 8px 0 10px;
+    background: linear-gradient(180deg, transparent, var(--box2) 40%); }
+}
