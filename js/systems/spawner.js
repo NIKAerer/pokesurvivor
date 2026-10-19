@@ -102,6 +102,9 @@ G.Spawner = (() => {
     const shiny = rollShiny(def.dex);
     const e = new G.Enemy(def, pt[0], pt[1], scaled(G.Enemies.scale(t), G.Coop.scaleHp(players.length) * hpK(t) * G.League.diff()));
     e.dmg *= DMG_K * G.League.dmgK(); e.xp = Math.round(e.xp * XP_K);
+    // Version de Nika : plus l'équipe frappe fort, plus ils sont costauds (power.js).
+    const pk = G.Power.mobK();
+    e.maxHp = e.hp = Math.round(e.maxHp * pk.hp); e.dmg *= pk.dmg;
     if (G.EnemyMgr.count >= CAP * ELITE_FROM) { e.maxHp = e.hp = Math.round(e.maxHp * 1.6); e.dmg *= 1.25; e.xp = Math.round(e.xp * 1.6); }
     if (shiny) e.makeShiny();
     if (G.Events.golden) e.makeGolden();
@@ -122,6 +125,8 @@ G.Spawner = (() => {
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), BOSS_HP * G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1) * G.League.diff()), true);
     e.dmg *= G.League.dmgK() * BOSS_DMG;
     e.spd *= BOSS_SPD;
+    // Assez de PV pour tenir face à ton équipe (power.js).
+    e.maxHp = e.hp = G.Power.bossHp(e.maxHp, 'boss'); G.Power.tag(e, 'boss');
     if (rollShiny(b.dex)) e.makeShiny();
     G.EnemyMgr.add(e);
     say('¡' + e.name + (e.shiny ? ' shiny' : '') + ' salvaje apareció!', 3.2);
