@@ -27,10 +27,11 @@ G.HUD = (() => {
 
   // Dégâts par seconde de toute l'équipe, une valeur par seconde (60 dernières).
   /** Version de Nika : la Ligue en haut à droite (badges et prochain défi). */
-  function drawLeague(ctx, w, st, touch) {
+  function drawLeague(ctx, w, st, touch, sa, small) {
     const L = G.League, cur = L.current(), i = L.step(), S = L.STEPS;
-    const BW = 190, BH = 64;
-    const x0 = w - BW - 14 - (touch ? 56 : 0), y0 = 12;
+    const BW = small ? 168 : 190, BH = 64;
+    // À gauche du bouton pause (lui-même décalé par l'encoche de l'iPhone).
+    const x0 = w - BW - 14 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = 12;
     roundRect(ctx, x0, y0, BW, BH, 9);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     ctx.textAlign = 'left';
@@ -73,12 +74,19 @@ G.HUD = (() => {
     ctx.textBaseline = 'alphabetic';
     G.Touch.clearButtons();
     const touch = G.Touch.active;
+    // Version de Nika : téléphone à l'horizontale (écran bas) = HUD compact,
+    // et rien sous l'encoche de l'iPhone.
+    const sa = touch ? G.Touch.safeArea() : { top: 0, right: 0, bottom: 0, left: 0 };
+    const small = h < 500;
 
     // ---------- version de Nika : l'équipe en haut à gauche ----------
     // Chaque Pokémon : nom, niveau, ses attaques (icônes) et sa barre d'XP.
-    const px = 10, py = 10;
+    const px = 10 + Math.min(48, sa.left), py = small ? 8 : 10;
     const team = G.Team.members().length ? G.Team.members() : [pl];
-    const RW = 236, RH = 48, PW = 40;
+    const RW = small ? 190 : 236, RH = small ? 33 : 48, PW = small ? 29 : 40;
+    // Positions dans une ligne : nom, icônes d'attaques, barre d'XP, jauge de dégâts.
+    const RL = small ? { name: 10, fn: 11, ic: 13, icg: 14, xp: 14, xph: 4, dg: 21, dgh: 7, dt: 28, port: 22 }
+                    : { name: 12, fn: 13, ic: 17, icg: 19, xp: 19, xph: 6, dg: 30, dgh: 9, dt: 39, port: 30 };
     const best = Math.max(1, ...team.map(m => m.dmgDealt || 0));
     roundRect(ctx, px - 4, py - 4, RW + 8, team.length * RH + 4, 10);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
@@ -89,7 +97,7 @@ G.HUD = (() => {
       ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill();
       ctx.save();
       roundRect(ctx, px, y, PW, PW, 8); ctx.clip();
-      const k = Math.min(1, 30 / Math.max(10, m.bodyH || 30));
+      const k = Math.min(1, RL.port / Math.max(10, m.bodyH || 30));
       ctx.translate(px + PW / 2, y + PW / 2 + (m.bodyH || 30) * 0.5 * k);
       ctx.scale(k, k);
       const dir = m.anim.dir; m.anim.dir = 0;
@@ -98,33 +106,33 @@ G.HUD = (() => {
       ctx.restore();
       const tx = px + PW + 6, tw = RW - PW - 6;
       ctx.textAlign = 'left';
-      ctx.font = F(800, 13);
+      ctx.font = F(800, RL.fn);
       ctx.fillStyle = G.U.TYPE_COLOR[m.mon.types[0]] || '#eaf2ff';
-      ctx.fillText(m.mon.name, tx, y + 12);
+      ctx.fillText(m.mon.name, tx, y + RL.name);
       const nw = ctx.measureText(m.mon.name).width;
       ctx.font = F(700, 10);
       ctx.fillStyle = '#ffcb3d';
-      ctx.fillText('N.' + m.level, tx + nw + 5, y + 12);
+      ctx.fillText('N.' + m.level, tx + nw + 5, y + RL.name);
       // Version de Nika : l'icône de son rôle.
-      G.Icons.draw(ctx, G.Roles.info(m.dex).ico, tx + nw + 7 + ctx.measureText('N.' + m.level).width + 4, y + 1, 12);
+      G.Icons.draw(ctx, G.Roles.info(m.dex).ico, tx + nw + 7 + ctx.measureText('N.' + m.level).width + 4, y + RL.name - 11, small ? 10 : 12);
       for (let q = 0; q < 4; q++) {
         const mv = m.moves[q];
-        const x = px + RW - 4 * 19 + q * 19, iy = y - 1;
-        if (mv) G.Icons.draw(ctx, 'move:' + mv.id, x, iy, 17);
-        else { roundRect(ctx, x + 1, iy + 1, 15, 15, 4); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill(); }
+        const x = px + RW - 4 * RL.icg + q * RL.icg, iy = y - 1;
+        if (mv) G.Icons.draw(ctx, 'move:' + mv.id, x, iy, RL.ic);
+        else { roundRect(ctx, x + 1, iy + 1, RL.ic - 2, RL.ic - 2, 4); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill(); }
       }
       // barre d'XP
       const g = ctx.createLinearGradient(tx, 0, tx + tw, 0);
       g.addColorStop(0, '#4fd1ff'); g.addColorStop(1, '#a98bff');
-      bar(ctx, tx, y + 19, tw, 6, m.xp / m.xpNext, g);
+      bar(ctx, tx, y + RL.xp, tw, RL.xph, m.xp / m.xpNext, g);
       // jauge de dégâts (comparée au meilleur de l'équipe)
       const d = m.dmgDealt || 0;
       const dg = ctx.createLinearGradient(tx, 0, tx + tw, 0);
       dg.addColorStop(0, '#ff8a5c'); dg.addColorStop(1, '#ffcb3d');
-      bar(ctx, tx, y + 30, tw - 44, 9, d / best, dg);
-      ctx.font = F(800, 10); ctx.textAlign = 'right';
+      bar(ctx, tx, y + RL.dg, tw - 44, RL.dgh, d / best, dg);
+      ctx.font = F(800, small ? 9 : 10); ctx.textAlign = 'right';
       ctx.fillStyle = d >= best && d > 0 && team.length > 1 ? '#ffcb3d' : '#ffd9c2';
-      ctx.fillText(d >= 10000 ? (d / 1000).toFixed(1) + 'k' : String(Math.round(d)), px + RW, y + 39);
+      ctx.fillText(d >= 10000 ? (d / 1000).toFixed(1) + 'k' : String(Math.round(d)), px + RW, y + RL.dt);
     });
 
     // buffs actifs (sous l'équipe)
@@ -162,7 +170,7 @@ G.HUD = (() => {
     }
 
     // ---------- version de Nika : la Ligue (en haut à droite) ----------
-    drawLeague(ctx, w, st, touch);
+    drawLeague(ctx, w, st, touch, sa, small);
 
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
@@ -192,7 +200,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16 - (touch ? 56 : 0), y0 = 84;
+      const x0 = w - tw - 16 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = 84;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
@@ -477,7 +485,6 @@ G.HUD = (() => {
 
     // ---------- botón de pausa (táctil) ----------
     if (touch) {
-      const sa = G.Touch.safeArea();
       const pp = G.Touch.spot('pause');
       const bx = pp ? G.U.clamp(pp[0] * w - 20, 4, w - 44) : w - 52 - Math.min(44, sa.right);
       const by = pp ? G.U.clamp(pp[1] * h - 20, 10, h - 44) : 12 + Math.min(20, sa.top), bs = 40;

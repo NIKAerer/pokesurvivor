@@ -406,9 +406,9 @@ G.World = (() => {
       G.FX.ring(p.x, p.y - 8, 6, 80, '#f2c443', 0.6, 5);
       G.Camera.kick(0.4);
       for (let i = 0; i < 9; i++) G.Pickups.drop('coin', p.x + G.U.rand(-22, 22), p.y + G.U.rand(-14, 14), 4);
-      const tk = G.U.randInt(1, 3);
+      const tk = G.U.randInt(0, 2);   // version de Nika : moitié moins de Poké Balls
       for (let i = 0; i < tk; i++) G.Pickups.drop('ticket', p.x + G.U.rand(-16, 16), p.y + G.U.rand(-10, 10), 1);
-      if (Math.random() < 0.15) G.Pickups.drop('ticket10', p.x, p.y - 10, 1);
+      if (Math.random() < 0.08) G.Pickups.drop('ticket10', p.x, p.y - 10, 1);
       if (Math.random() < 0.5) G.Pickups.drop('item', p.x + 14, p.y - 14, G.Items.roll());
       G.Pickups.dropXp(p.x, p.y, G.Game.levelXp());
       G.Progress.event('chest');

@@ -209,8 +209,8 @@ G.Rift = (() => {
         if (G.DB.commit) G.DB.commit(true);
         if (G.Sprites.preload) G.Sprites.preload([arena.dex]);
       } else if (pl) {
-        pl.t1 += 10;
-        msg = name + ' vaincu ! +10 Poké Balls';
+        pl.t1 += 5;
+        msg = name + ' vaincu ! +5 Poké Balls';
       }
     }
     G.Spawner.say(msg || (name + ' vaincu !'), 3.4, true);

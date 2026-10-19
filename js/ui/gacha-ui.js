@@ -60,7 +60,7 @@ G.GachaUI = (() => {
       <span>${w}% · ${G.Gacha.pool(r, gen).length}</span></div>`).join('') +
       `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
-       · A las ${G.Gacha.PITY_5} tiradas sin Legendaria, la siguiente lo es.<br>
+       · Après ${G.Gacha.PITY_5} ouvertures sans Légendaire, la suivante en est une.<br>
        · Los repetidos dan Pokémonedas. Los shiny no se repiten.<br>
        · Les Poké Balls se gagnent en partie ou s'achètent avec des pièces (le prix monte à chaque achat).</p>`;
 
