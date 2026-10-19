@@ -272,7 +272,9 @@ G.Team = (() => {
   const RARE_W = { 1: 10, 2: 6, 3: 3, 4: 1.2, 5: 0.4 };
   function recruitOffers(n) {
     if (full()) return [];
-    const pool = G.DEX.filter(p => !G.EVO_FROM[p.dex] && !p.leg && G.SPRITE_META[p.dex] && !has(p.dex));
+    // Version de Nika : seulement les Pokémon que tu possèdes (ta boîte du menu).
+    const own = new Set((G.DB.save && G.DB.save.box) || []);
+    const pool = G.DEX.filter(p => own.has(p.dex) && !G.EVO_FROM[p.dex] && !p.leg && G.SPRITE_META[p.dex] && !has(p.dex));
     const out = [];
     for (let i = 0; i < n && pool.length; i++) {
       const total = pool.reduce((s, p) => s + (RARE_W[p.rarity] || 1), 0);

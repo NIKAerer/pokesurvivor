@@ -155,7 +155,7 @@ G.Interact = (() => {
     const r = Math.random();
     let gift;
     if (r < 0.45) { gift = 'un objet tenu'; G.Game.offerItem(G.Items.roll()); }
-    else if (r < 0.75) { const n = t < 600 ? 1 : 2; pl.t1 += n; gift = '+' + n + ' ticket' + (n > 1 ? 's' : ''); }
+    else if (r < 0.75) { const n = t < 600 ? 3 : 5; pl.balls = (pl.balls || 0) + n; G.Game.addBalls(n); gift = '+' + n + ' Poké Balls'; }
     else { const pw = G.U.pick(POWERS); pl.addPower(pw, POWER_TIME); gift = 'le pouvoir ' + pw.name + ' (' + pw.desc + ')'; }
     G.Spawner.say(p.who + ' est battu ! +' + coins + ' pièces et ' + gift, 3.6, true);
     G.Audio.sfx('legend');

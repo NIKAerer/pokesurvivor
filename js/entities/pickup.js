@@ -21,12 +21,14 @@ G.Pickups = (() => {
     coin:  { color: '#ffd23f', glow: '#b8860b', r: 5.5 },
     ticket:   { color: '#ffd23f', glow: '#c08a10', r: 7 },
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
-    item:     { color: '#ffd23f', glow: '#c08a10', r: 9 }       // value = id del objeto
+    item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
+    ball:     { color: '#ff4b4b', glow: '#b81f2a', r: 7 }       // version de Nika : Poké Ball
   };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
-  const BOSS_T10 = 1 / 3;               // ticket ×10 de un jefe normal
+  const BOSS_T10 = 1 / 5;               // ticket ×10 de un jefe normal (version de Nika : 1/3 -> 1/5)
   const LEGEND_T10 = 1 / 2;             // ticket ×10 del legendario de la grieta
-  const TICKET_RATE = 1 / 400;          // (antes 1/260; más raros desde 2026-10-10)
+  const TICKET_RATE = 0;                // version de Nika : plus de tickets sur les ennemis normaux (gacha plus rare)
+  const BALL_RATE = 1 / 35;             // version de Nika : Poké Ball sur un ennemi normal
 
   function clear() { list = []; }
   function all() { return list; }
@@ -83,10 +85,12 @@ G.Pickups = (() => {
       // Ticket ×10: siempre el legendario de la grieta; un jefe normal, 1 de cada 3 veces.
       // (Hasta el 12-10-2026 el legendario de la grieta daba siempre 2: salían demasiados.)
       if (Math.random() < (legend ? LEGEND_T10 : BOSS_T10)) push(orb('ticket10', x, y - 20, 1));
+      for (let i = 0; i < 4; i++) push(orb('ball', x + G.U.rand(-40, 40), y + G.U.rand(-30, 30), 1));
       return;
     }
     push(orb(value >= 20 ? 'xpBig' : 'xp', x, y, value));
     if (Math.random() < TICKET_RATE) push(orb('ticket', x + G.U.rand(-6, 6), y, 1));
+    if (Math.random() < BALL_RATE) push(orb('ball', x + G.U.rand(-8, 8), y, 1));
 
     // Drops ocasionales.
     const r = Math.random();
@@ -182,7 +186,7 @@ G.Pickups = (() => {
         ctx.beginPath(); ctx.ellipse(p.x, y, r * sx * 0.5, r * 0.5, 0, 0, 6.2832); ctx.fill();
       } else {
         // Baya, imán y bomba: su icono pixel art.
-        const ICON = { heal: 'berry', magnet: 'magnet', bomb: 'bomb', ticket: 'ticket', ticket10: 'ticket10' };
+        const ICON = { heal: 'berry', magnet: 'magnet', bomb: 'bomb', ticket: 'ticket', ticket10: 'ticket10', ball: 'pball' };
         const sz = p.kind === 'ticket10' || p.kind === 'item' ? 24 : 18;
         if (p.kind === 'item') {
           // Objeto: brillo dorado latiendo, para que se vea desde lejos.

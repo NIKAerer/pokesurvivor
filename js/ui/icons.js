@@ -98,6 +98,10 @@ G.Icons = (() => {
     mute: { pal: { w: '#e8eef8', r: '#ff5f6d' }, rows: [
       '............', '.....kk.....', '....kwk.....', '...kwwk.....', 'kkkwwwk.r..r', 'kwwwwwk..rr.',
       'kwwwwwk..rr.', 'kkkwwwk.r..r', '...kwwk.....', '....kwk.....', '.....kk.....', '............'] },
+    // Version de Nika : Poké Ball (monnaie pour monter le rang des Pokémon).
+    pball: { pal: { r: '#ff4b4b', d: '#b81f2a', w: '#f4f4ff', g: '#b9c0d0' }, rows: [
+      '....kkkk....', '..kkrrrrkk..', '.krrwrrrrrk.', '.krwrrrrrdk.', 'krrrrkkrrrdk', 'kkkkkwwkkkkk',
+      'kwwwwkkwwwgk', '.kwwwwwwwgk.', '.kwwwwwwggk.', '..kkggggkk..', '....kkkk....', '............'] },
     ticket: { pal: { y: '#ffd23f', d: '#c08a10', w: '#fff3b0', r: '#ff5f6d' }, rows: [
       '............', '............', 'kkkkkkkkkkkk', 'kwyyydyyyyyk', 'kyyyyyyrryyk', '.kyyydyrryk.',
       '.kyyyyyrryk.', 'kyyyydyyyyyk', 'kddddddddddk', 'kkkkkkkkkkkk', '............', '............'] },

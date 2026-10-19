@@ -212,3 +212,25 @@
 .pick-sorthead { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .pick-sort { font-size: 12px; opacity: .9; display: inline-flex; align-items: center; gap: 6px; }
 .pick-sort select { background: rgba(10,16,32,.8); color: #eaf2ff; border: 1px solid rgba(140,170,210,.35); border-radius: 8px; padding: 3px 6px; font: inherit; }
+
+/* Rang des Pokémon (Poké Balls) */
+.pick-rank { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; text-align: center; }
+.rk-pips { display: flex; gap: 3px; }
+.rk-pips i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3); }
+.rk-pips i.on { background: #ff5f5f; border-color: #ffd0d0; box-shadow: 0 0 4px #ff5f5f; }
+.rk-max { color: #ffd23f; }
+.pick-card { position: relative; }
+.pick-rk { position: absolute; top: 3px; left: 4px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: #e8473f; color: #fff; font-size: 10px; line-height: 16px; font-weight: 800; }
+@media (max-height: 460px) {
+  #scr-pick .pick-hero { justify-content: flex-start; overflow-y: auto; }
+  #scr-pick .pick-stage canvas { width: 110px; }
+  .pick-rank { gap: 2px; font-size: 11px; }
+}
+
+/* Premier lancement : choix du starter */
+#starter-pick { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; overflow-y: auto;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  background: radial-gradient(circle at 50% 40%, #1b2d63, #03060fee 75%); }
+#starter-pick .sp-box { max-width: 760px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+#starter-pick .sp-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { #starter-pick .sp-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
