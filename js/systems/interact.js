@@ -26,10 +26,8 @@ G.Interact = (() => {
   const authority = () => !G.Coop.active || G.Coop.isHost;
   let healShown = 0, healAcc = 0;
 
-  let keeperLoaded = false;
   function update(dt, pl) {
     if (!pl) return;
-    if (!keeperLoaded) { keeperLoaded = true; G.Sprites.preload([352]); }
     for (const p of G.World.specialsNear(pl.x, pl.y, 720)) {
       const d2 = G.U.dist2(pl.x, pl.y, p.x, p.type === 'spring' || p.type === 'trap' ? p.y - 8 : p.y);
       switch (p.type) {
@@ -50,11 +48,7 @@ G.Interact = (() => {
           if (p.used) { p.charge += dt / 60; if (p.charge >= 1) { p.used = false; p.charge = 1; } }
           else if (!pl.dead && d2 < (p.r + pl.r + 14) ** 2) eatBerry(pl, p);
           break;
-        case 'shop':
-          keeper.update(dt);
-          if (d2 > (p.r + pl.r + 60) ** 2) p.away = true;
-          else if (p.away !== false && !pl.dead && d2 < (p.r + pl.r + 22) ** 2) { p.away = false; openShop(pl, p); }
-          break;
+        case 'rival': rival(dt, pl, p, d2); break;
         case 'trap':
           if (!pl.dead && d2 < 13 * 13) G.World.breakProp(p);
           else if (authority() && G.EnemyMgr.queryCircle(p.x, p.y - 8, 3).some(e => !e.flying && !e.remote)) G.World.breakProp(p);
@@ -81,7 +75,7 @@ G.Interact = (() => {
     if (p.charge <= 0.02) G.Spawner.say('El manantial se ha secado (se recarga solo)', 2.2, true);
   }
 
-  // ---------------- version de Nika : baies et marchand ----------------
+  // ---------------- version de Nika : baies ----------------
 
   const BERRY_TIME = 20;
   const BERRIES = [
@@ -102,66 +96,84 @@ G.Interact = (() => {
     G.Spawner.say(b.name + ' : ' + b.desc + (b.on ? ' pendant ' + BERRY_TIME + ' s' : ''), 2.6, true);
   }
 
-  // Kecleon, le marchand : un seul animateur pour tous les comptoirs.
-  const keeper = new G.Sprites.Animator(352, 1.6);
-  function drawKeeper(ctx, x, y) { keeper.dir = 0; keeper.draw(ctx, x, y); }
+  // ---------------- version de Nika : dresseurs rivaux ----------------
+  // Un dresseur attend sur son terrain. Approche-toi : il envoie ses Pokémon
+  // (des mini-boss, plus forts avec le temps). Bats-les tous : récompense.
+  const TRAINERS = ['Gamin', 'Fillette', 'Scout', 'Montagnard', 'Pêcheur', 'Ornithologue', 'Karatéka',
+    'Pokéfan', 'Canon', 'Topdresseur', 'Motard', 'Mentaliste', 'Dompteur', 'Kiné'];
+  const NAMES = ['Léo', 'Inès', 'Hugo', 'Jade', 'Noé', 'Lina', 'Tom', 'Rose', 'Max', 'Zoé', 'Sacha', 'Lou'];
 
-  const WARES = [
-    { id: 'potion', name: 'Potion', desc: 'soigne tous les PV', icon: 'berry', price: 15, buy: pl => { pl.hp = pl.maxHp; } },
-    { id: 'power', name: 'Élixir', desc: 'un pouvoir d\'autel au hasard (25 s)', icon: 'magnet', price: 20,
-      buy: pl => { const pw = G.U.pick(POWERS); pl.addPower(pw, POWER_TIME); G.Spawner.say('Pouvoir ' + pw.name + ' ! ' + pw.desc, 2.6, true); } },
-    { id: 'ticket', name: 'Ticket', desc: '+1 ticket pour le gacha', icon: 'ticket', price: 30, buy: pl => { pl.t1++; } },
-    { id: 'candy', name: 'Super Bonbon', desc: '+1 niveau', icon: 'ticket10', price: 40, buy: pl => { pl.gainXp(Math.max(1, pl.xpNext - pl.xp)); } },
-    { id: 'item', name: 'Objet tenu', desc: 'un objet au hasard', icon: 'bomb', price: 50, after: true, buy: () => G.Game.offerItem(G.Items.roll()) }
-  ];
-
-  let shop = null;               // { pl, p, after }
-
-  function openShop(pl, p) {
-    if (!p.offers) p.offers = WARES.map(w => w.id).sort(() => Math.random() - 0.5).slice(0, 3);
-    if (p.offers.every(id => (p.sold || []).includes(id))) return;
-    if (!G.Game.beginChoice()) return;
-    shop = { pl, p, after: null };
-    G.Audio.sfx('select');
-    renderShop();
-    document.getElementById('shop-close').onclick = closeShop;
-    G.UI.show('scr-shop');
+  /** L'équipe du dresseur : choisie en le voyant de loin (le temps de charger les sprites). */
+  function rivalTeam(p, t) {
+    const lo = 300 + Math.min(220, t / 4), hi = lo + 120;
+    const pool = G.DEX.filter(m => !m.leg && G.SPRITE_META[m.dex] && m.bst >= lo && m.bst <= hi);
+    const n = t < 300 ? 1 : t < 900 ? 2 : 3;
+    p.team = G.U.pickN(pool.length >= n ? pool : G.DEX.filter(m => !m.leg && G.SPRITE_META[m.dex]), n).map(m => m.dex);
+    p.who = G.U.pick(TRAINERS) + ' ' + G.U.pick(NAMES);
+    G.Sprites.preload(p.team);
+    p.anim = new G.Sprites.Animator(p.team[0], 1);
   }
 
-  function renderShop() {
-    const { pl, p } = shop;
-    p.sold = p.sold || [];
-    document.getElementById('shop-coins').textContent = pl.coins;
-    const box = document.getElementById('shop-cards');
-    box.innerHTML = '';
-    p.offers.forEach(id => {
-      const w = WARES.find(x => x.id === id);
-      const sold = p.sold.includes(id), poor = pl.coins < w.price;
-      const el = document.createElement('div');
-      el.className = 'card' + (sold || poor ? ' off' : '');
-      el.innerHTML = `<div class="ico">${G.Icons.html(w.icon, 36)}</div>
-        <div class="txt"><div class="nm">${w.name} · ${sold ? 'vendu' : w.price + ' pièces'}</div><div class="ds">${w.desc}</div></div>`;
-      if (!sold && !poor) el.onclick = () => {
-        pl.coins -= w.price;
-        p.sold.push(id);
-        G.Audio.sfx('coin');
-        G.Progress.event('shop');
-        if (w.after) { shop.after = w.buy; closeShop(); return; }
-        w.buy(pl);
-        renderShop();
+  function rival(dt, pl, p, d2) {
+    const t = G.Game.st ? G.Game.st.time : 0;
+    if (!p.team) rivalTeam(p, t);
+    if (p.anim) p.anim.update(dt);
+    if (p.used || !authority()) return;
+    if (p.foes) {
+      if (p.foes.every(e => e.dead)) winRival(pl, p, t);
+      return;
+    }
+    if (pl.dead || d2 > (p.r + pl.r + 60) ** 2) return;
+    // Le combat commence.
+    const sc = G.Enemies.bossScale(t);
+    const hp = Math.round((600 + t * 2.4) * G.League.diff() / Math.sqrt(p.team.length));
+    p.foes = p.team.map((dex, k) => {
+      const m = G.DEX_BY[dex];
+      const def = {
+        at: 0, dex, name: m.name, hp, spd: Math.round(G.U.clamp(50 + m.spd * 0.3, 50, 95)),
+        dmg: Math.round(26 + t / 30), xp: Math.round(160 + t / 2),
+        behavior: k % 2 ? 'ranged' : 'charger', shotDmg: Math.round((26 + t / 30) * 0.55), shotCd: 1.1, range: 260
       };
-      box.appendChild(el);
+      const a = Math.random() * 6.2832;
+      const e = new G.Enemy(def, p.x + Math.cos(a) * 70, p.y - 30 + Math.sin(a) * 40, sc, true);
+      e.dmg *= G.League.dmgK();
+      e.rival = true;
+      G.EnemyMgr.add(e);
+      return e;
     });
+    G.Spawner.say(p.who + ' veut se battre ! (' + p.team.map(d => G.DEX_BY[d].name).join(', ') + ')', 3.4, true);
+    G.Audio.sfx('boss');
+    G.Camera.kick(0.8);
+    G.FX.ring(p.x, p.y - 8, 10, 140, '#ff5f6d', 0.6, 5);
   }
 
-  function closeShop() {
-    if (!shop) return;
-    const after = shop.after, pl = shop.pl;
-    if (shop.p.offers.every(id => shop.p.sold.includes(id))) shop.p.used = true;
-    shop = null;
-    G.UI.hide('scr-shop');
-    G.Game.endChoice();
-    if (after) after(pl);
+  /** Récompenses : des pièces, puis un objet tenu, des tickets ou un pouvoir. */
+  function winRival(pl, p, t) {
+    p.used = true; p.foes = null;
+    const coins = Math.round(30 + t / 8);
+    pl.coins += coins;
+    const r = Math.random();
+    let gift;
+    if (r < 0.45) { gift = 'un objet tenu'; G.Game.offerItem(G.Items.roll()); }
+    else if (r < 0.75) { const n = t < 600 ? 1 : 2; pl.t1 += n; gift = '+' + n + ' ticket' + (n > 1 ? 's' : ''); }
+    else { const pw = G.U.pick(POWERS); pl.addPower(pw, POWER_TIME); gift = 'le pouvoir ' + pw.name + ' (' + pw.desc + ')'; }
+    G.Spawner.say(p.who + ' est battu ! +' + coins + ' pièces et ' + gift, 3.6, true);
+    G.Audio.sfx('legend');
+    G.FX.burst(p.x, p.y - 20, '#ffe14d', 40, 240);
+    G.Progress.event('rival');
+  }
+
+  function drawRival(ctx, p, t) {
+    if (!p.anim || p.used || p.foes) return;
+    p.anim.dir = 0;
+    p.anim.draw(ctx, p.x, p.y - 10);
+    // « ! » au-dessus : il attend un adversaire.
+    const bob = Math.sin(t * 4 + p.wiggle) * 3, y = p.y - 10 - Math.min(56, G.Sprites.bodyHeight(p.team[0])) - 14 + bob;
+    ctx.save();
+    ctx.font = '900 22px Pixelify, monospace'; ctx.textAlign = 'center';
+    ctx.lineWidth = 4; ctx.strokeStyle = '#1b1528'; ctx.strokeText('!', p.x, y);
+    ctx.fillStyle = '#ff5f6d'; ctx.fillText('!', p.x, y);
+    ctx.restore();
   }
 
   function usePower(pl, p) {
@@ -210,5 +222,5 @@ G.Interact = (() => {
     }
   }
 
-  return { update, trapEffect, POWERS, CHEST_TIME, drawKeeper, closeShop, BERRIES, get shopOpen() { return !!shop; } };
+  return { update, trapEffect, POWERS, CHEST_TIME, drawRival, BERRIES };
 })();

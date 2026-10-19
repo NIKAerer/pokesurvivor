@@ -607,21 +607,19 @@ G.Tiles = (() => {
       return P.canvas();
     },
 
-    /** Comptoir du marchand Kecleon (version de Nika). */
-    shop() {
+    /** Terrain de combat du dresseur rival (version de Nika) : un disque façon Poké Ball. */
+    rival() {
       const P = Pix(40, 16);
-      const wood = pack('#8e5329'), woodL = pack('#b5743a'), woodD = pack('#5a3216');
-      const cloth = pack('#5fd4ff'), clothD = pack('#2a8fd0');
-      for (let y = 3; y < 16; y++) for (let x = 1; x < 39; x++) {
-        let c = y < 6 ? woodL : (x % 6 === 0 ? woodD : wood);
-        if (y >= 7 && y <= 9) c = (x >> 2) % 2 ? cloth : clothD;
-        if (y === 15 || x === 1 || x === 38) c = woodD;
+      const red = pack('#e8473f'), redL = pack('#ff7a6b'), white = pack('#f4efe2'), whiteD = pack('#c9c1ad'), black = pack('#1b1528');
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 40; x++) {
+        const dx = (x - 19.5) / 19.5, dy = (y - 7.5) / 7.5;
+        if (dx * dx + dy * dy > 1) continue;
+        let c = y < 7 ? (y < 3 ? redL : red) : (y > 12 ? whiteD : white);
+        if (y === 7) c = black;
+        if (Math.abs(x - 19.5) < 3 && Math.abs(y - 7.5) < 2.5) c = Math.abs(x - 19.5) < 1.5 ? white : black;
         P.set(x, y, c);
       }
-      // Marchandises sur le comptoir.
-      const goods = [['#ff5f6d', 6], ['#ffd23f', 13], ['#7dffb0', 20], ['#c9a6ff', 27], ['#3d7bff', 33]];
-      for (const [h, x] of goods) { const c = pack(h); for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) P.set(x + a, b, c); }
-      outline(P, pack('#1e0f06'));
+      outline(P, black);
       return P.canvas();
     },
 
