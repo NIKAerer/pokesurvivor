@@ -34,7 +34,8 @@ G.LevelUp = (() => {
    */
   /** Version de Nika : rôle et catégorie de l'attaque, sur la pastille de la carte. */
   function moveTag(d) {
-    return ' · ' + (G.Roles.MOVE_ROLE[d.role] || '').split(' ')[0] + (d.kind !== 'buff' ? ' ' + (d.cat === 'P' ? 'Phy' : 'Spé') : '');
+    const ico = G.Roles.moveIco(d.role);
+    return ' · ' + (ico ? G.Icons.html(ico, 12, 'role-ico') : '') + (d.kind !== 'buff' ? ' ' + (d.cat === 'P' ? 'Phy' : 'Spé') : '');
   }
 
   function memberCards(pl, out, waiting, team) {

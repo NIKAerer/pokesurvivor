@@ -162,7 +162,7 @@ G.PickUI = (() => {
       if (G.DB.ownsShiny(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-sh">${G.Icons.html('shiny', 10)}</span>`);
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
       if (G.Rank.of(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-rk">${G.Rank.of(dex)}</span>`);
-      b.insertAdjacentHTML('beforeend', `<span class="pick-role" title="${G.Roles.info(dex).name}">${G.Roles.info(dex).icon}</span>`);
+      b.insertAdjacentHTML('beforeend', `<span class="pick-role" title="${G.Roles.info(dex).name}">${G.Icons.html(G.Roles.info(dex).ico, 12)}</span>`);
       b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; G.DB.commit(); G.Audio.sfx('select'); render(); };
       list.appendChild(b);
     }
