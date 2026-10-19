@@ -31,7 +31,7 @@ G.Gacha = (() => {
 
   // Version de Nika : un seul gacha avec tous les Pokémon (gen 1-4), pas de régions.
   const BANNERS = [
-    { gen: 1, name: 'Gacha', color: ['#3a1d6e', '#1b2f78', '#0f4d6e'] }
+    { gen: 1, name: 'Boutique', color: ['#3a1d6e', '#1b2f78', '#0f4d6e'] }
   ];
 
   // Version de Nika : seulement les formes de base (ils évoluent pendant la partie).

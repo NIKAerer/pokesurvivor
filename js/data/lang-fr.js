@@ -209,7 +209,7 @@ G.I18n.add({
   'Has caído…': 'Tu es K.O.…', 'Run terminada': 'Partie terminée', 'Volver al menú': 'Retour au menu', 'Salir de la partida': 'Quitter la partie',
   'Tiempo': 'Temps', 'Nivel': 'Niveau', 'Derrotados': 'Vaincus', 'Jefes': 'Boss', 'Pokémonedas ganadas': 'Poképièces gagnées',
   'Movimientos': 'Capacités', '¡Nuevo récord de tiempo!': 'Nouveau record de temps !', '· ¡nuevo!': '· nouveau !', '{x} Shinies conseguidos': '{x} shinies obtenus',
-  'Tickets del gacha': 'Tickets du gacha', 'Nivel máximo': 'Niveau maximum',
+  'Tickets del gacha': 'Tickets de la Boutique', 'Nivel máximo': 'Niveau maximum',
 
   // ---------------- connexion et test ----------------
   'Mundo Misterioso': 'Donjon Mystère', 'Entrar': 'Se connecter', 'Crear cuenta': 'Créer un compte', 'Nombre': 'Nom', 'Contraseña': 'Mot de passe',
@@ -292,7 +292,7 @@ G.I18n.add({
   '{x} es ahora tu compañero': '{x} est maintenant ton compagnon', '{x} shiny es ahora tu compañero': '{x} shiny est maintenant ton compagnon',
   '· {x} shiny': '· {x} shiny', '{x} · {x}: nivel {x}': '{x} · {x} : niveau {x}',
   // gacha
-  'Gacha': 'Gacha', 'Misterioso': 'Mystère', 'Los {x} Pokémon de la generación {x}. ¡Los legendarios esperan!': 'Les {x} Pokémon de la génération {x}. Les légendaires t’attendent !',
+  'Gacha': 'Boutique', 'Misterioso': 'Mystère', 'Los {x} Pokémon de la generación {x}. ¡Los legendarios esperan!': 'Les {x} Pokémon de la génération {x}. Les légendaires t’attendent !',
   'Tienes {x} de {x}': 'Tu en as {x} sur {x}', 'Tienes {x}': 'Tu as {x}', 'Gen {x}': 'Gén {x}', 'Probabilidades': 'Probabilités',
   'Tiradas sin legendaria en {x}: {x} / {x}': 'Tirages sans légendaire dans {x} : {x} / {x}',
   '· A las {x} tiradas sin Legendaria en un banner, la siguiente lo es.': "· Après {x} tirages sans Légendaire dans une bannière, le suivant l'est forcément.",
@@ -354,7 +354,7 @@ G.I18n.add({
   'Completa 50 misiones.': 'Termine 50 missions.', 'Completa 200 misiones.': 'Termine 200 missions.', 'En compañía': 'En bonne compagnie',
   'Cien amigos': 'Cent amis', 'Juega una partida en grupo.': 'Joue une partie en groupe.', 'Juega 10 partidas en grupo.': 'Joue 10 parties en groupe.',
   'Compañero fiel': 'Compagnon fidèle', 'Juega 50 runs.': 'Joue 50 parties.', 'Afortunado': 'Chanceux', 'Tragaperras': 'Machine à sous',
-  'Haz 100 tiradas en el gacha.': 'Fais 100 tirages au gacha.', 'Brillante': 'Brillant',
+  'Haz 100 tiradas en el gacha.': 'Ouvre 100 Poké Balls à la Boutique.', 'Brillante': 'Brillant',
 
   // ---------------- amis, salon et invitations ----------------
   'Elige tu apodo': 'Choisis ton pseudo', 'Guardar apodo': 'Enregistrer le pseudo', 'Ahora no': 'Pas maintenant',

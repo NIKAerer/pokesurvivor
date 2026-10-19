@@ -29,6 +29,9 @@ G.DB = (() => {
   const K_CLOUD = 'ps.cloud.', K_MIGRATED = 'ps.migrated.';
   const VERSION = 3;
   const START_COINS = 500;
+  // Version de Nika : augmenter ce nombre remet toutes les sauvegardes à zéro une fois
+  // (1 = 19-10-2026, demandé par Nika pour essayer le nouveau départ).
+  const RESET_EPOCH = 1;
   const SDK = 'https://www.gstatic.com/firebasejs/13.0.0/';
   const NAME_DOMAIN = 'jugadores.pokesurvivor.net';   // sólo para el email interno
 
@@ -69,6 +72,7 @@ G.DB = (() => {
   function newSave(name) {
     return {
       v: VERSION,
+      resetEpoch: RESET_EPOCH,
       name,
       created: Date.now(),
       updated: Date.now(),    // última modificación (para fusionar)
@@ -101,6 +105,7 @@ G.DB = (() => {
 
   /** Rellena campos que falten en partidas de versiones anteriores. */
   function migrate(s, name) {
+    if ((s.resetEpoch | 0) < RESET_EPOCH) return newSave(name || s.name);
     const base = newSave(name || s.name);
     for (const k in base) if (s[k] == null) s[k] = base[k];
     for (const k in base.stats) if (s.stats[k] == null) s.stats[k] = base.stats[k];
