@@ -7,11 +7,22 @@ adaptée pour Nika :
 - Partie enregistrée dans le navigateur, sans compte ni serveur.
 - Équipe de 6 : les cartes de niveau proposent parfois un nouveau Pokémon ; chacun suit
   le starter, a ses 4 attaques améliorables et évolue à son propre niveau (XP partagée).
-- Boutique d'améliorations globale, gacha de starters (formes de base, tickets achetables),
-  table des types dans le menu et résumé de l'équipe dans la pause.
+- Rôles d'équipe (Tank, Mêlée, Mage, DPS, Soutien), Ligue Pokémon de Kanto, dresseurs rivaux,
+  Boutique de Poké Balls et rang des Pokémon.
 
-Pour jouer en local : ouvrir `dev.html` avec un petit serveur (`python3 -m http.server`).
-Pour le lien Claude : `python3 tools/pack_sprites.py build` puis `node tools/build_artifact.js build`.
+## Jouer
+
+- **Sur téléphone ou PC : https://nikaerer.github.io/pokesurvivor/**
+  Sur iPhone, ouvrir le lien dans Safari puis Partager > « Sur l'écran d'accueil » : le jeu
+  s'ouvre en plein écran, marche hors ligne et propose « Forcer le mode horizontal ».
+- Chaque push sur `main` republie le site tout seul (`.github/workflows/pages.yml`).
+
+## Développer
+
+- En local : ouvrir `dev.html` avec un petit serveur (`python3 -m http.server`).
+- Lien Claude : `python3 tools/pack_sprites.py build` puis `node tools/build_artifact.js build`
+  (écrit `build/pokesurvivor-nika.html`).
+- Appli / GitHub Pages : en plus, `node tools/build_pwa.js` (écrit `build/pwa/`).
 
 ## Crédits
 

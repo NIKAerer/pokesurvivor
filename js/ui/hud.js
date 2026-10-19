@@ -457,7 +457,12 @@ G.HUD = (() => {
         ctx.font = F(700, 10);
         ctx.textAlign = 'center';
         ctx.fillStyle = fused ? BOND : col;
-        ctx.fillText(fused ? m.name + ' +' + (g.length - 1) : m.name, x + S / 2, y - 7);
+        // Version de Nika : le nom tient dans la largeur de sa case (sinon les noms se chevauchent).
+        let name = fused ? m.name + ' +' + (g.length - 1) : m.name;
+        const maxW = S + GAP - 2;
+        if (ctx.measureText(name).width > maxW) ctx.font = F(700, 8);
+        while (name.length > 3 && ctx.measureText(name).width > maxW) name = name.slice(0, -2) + '…';
+        ctx.fillText(name, x + S / 2, y - 7);
       }
     }
 
