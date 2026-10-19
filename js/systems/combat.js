@@ -678,7 +678,9 @@ G.Combat = (() => {
         e.hurt(p.dmg * k, p.color, p.vx || (e.x - pl.x), p.vy || (e.y - pl.y), p.knock,
                crit ? 'crit' : p.mtype ? G.Types.label(G.Types.mult(p.mtype, e.types)) : null);
         if (Math.random() < 0.5) G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
-        pl.dmgDealt += p.dmg * k;
+        // Version de Nika : les dégâts comptent pour celui qui a tiré (avant, tout allait au chef
+        // et les alliés à projectiles, comme Absol, restaient à 0 dans le HUD).
+        (p.owner || pl).dmgDealt += p.dmg * k;
         pl.onDealt(p.dmg * k);
         if (p.burn) e.applyBurn(p.burn);
         if (p.poison) e.applyPoison(p.poison);

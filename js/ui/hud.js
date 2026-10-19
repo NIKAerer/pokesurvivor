@@ -354,12 +354,13 @@ G.HUD = (() => {
     }
 
     // ---------- ranura de movimientos ----------
-    const S = 54, GAP = 9;
+    // Version de Nika : sur téléphone (écran bas), cases plus petites et collées au bas de l'écran.
+    const S = small ? 46 : 54, GAP = small ? 7 : 9;
     const n = Math.max(1, pl.slots.length);
     const totalW = n * S + (n - 1) * GAP;
     let sx = (w - totalW) / 2;
     // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
-    let sy = h - S - 18 - (touch ? Math.min(28, G.Touch.safeArea().bottom) : 0);
+    let sy = h - S - (small ? 8 : 18) - (touch ? Math.min(small ? 14 : 28, G.Touch.safeArea().bottom) : 0);
     // En móvil, donde la haya puesto el jugador: el bloque objeto + todos los
     // huecos (aunque aún no estén llenos), por su centro, como en el editor
     // (layout-ui.js); los ataques nuevos van saliendo hacia la derecha.
@@ -372,8 +373,9 @@ G.HUD = (() => {
     const BOND = '#ff8ad8';
     // Version de Nika : barre de PV juste au-dessus des attaques, fine pour ne pas cacher l'action.
     {
-      const hw = Math.min(w * 0.42, Math.max(260, Math.max(n, pl.maxMoves) * (S + GAP))), HH = 16;
-      const hx = sx + totalW / 2 - hw / 2, hy = sy - 44;   // au-dessus du nom de l'attaque
+      // Sur téléphone, pas de nom d'attaque : la barre se pose juste sur les cases.
+      const hw = Math.min(w * 0.42, Math.max(small ? 220 : 260, Math.max(n, pl.maxMoves) * (S + GAP))), HH = small ? 13 : 16;
+      const hx = sx + totalW / 2 - hw / 2, hy = small ? sy - 6 - HH - 7 : sy - 44;   // au-dessus du nom de l'attaque
       const fr = pl.hp / pl.maxHp, low = fr < 0.3;
       roundRect(ctx, hx - 3, hy - 3, hw + 6, HH + 6, (HH + 6) / 2);
       ctx.fillStyle = low && Math.sin(performance.now() / 120) > 0 ? '#ff3b4dcc' : '#0b1020dd'; ctx.fill();
@@ -384,14 +386,14 @@ G.HUD = (() => {
       // repères tous les 10 %
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       for (let q = 1; q < 10; q++) ctx.fillRect(Math.round(hx + hw * q / 10), hy + 4, 1, HH - 8);
-      G.Icons.draw(ctx, 'heart', hx + 3, hy + 2, 12);
-      ctx.font = F(800, 12);
+      G.Icons.draw(ctx, 'heart', hx + 3, hy + (HH - 12) / 2, 12);
+      ctx.font = F(800, small ? 11 : 12);
       ctx.textAlign = 'center';
       ctx.lineWidth = 3; ctx.strokeStyle = '#0b1020';
       const tx = Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp);
-      ctx.strokeText(tx, hx + hw / 2, hy + 12.5);
+      ctx.strokeText(tx, hx + hw / 2, hy + HH - 3.5);
       ctx.fillStyle = '#fff';
-      ctx.fillText(tx, hx + hw / 2, hy + 12.5);
+      ctx.fillText(tx, hx + hw / 2, hy + HH - 3.5);
     }
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
 
@@ -440,7 +442,8 @@ G.HUD = (() => {
         }
 
         // emblema del tipo + insignia de la familia
-        G.Icons.draw(ctx, 'move:' + m.id, x + (S - 32) / 2, y + (S - 32) / 2 - 2, 32);
+        const IC = small ? 28 : 32;
+        G.Icons.draw(ctx, 'move:' + m.id, x + (S - IC) / 2, y + (S - IC) / 2 - 2, IC);
 
         // nivel del movimiento (puntitos)
         const dots = m.def.maxLvl;
@@ -453,7 +456,7 @@ G.HUD = (() => {
       }
 
       // nombre encima del activo (con un vínculo: "Ascuas +2")
-      if (on) {
+      if (on && !small) {
         ctx.font = F(700, 10);
         ctx.textAlign = 'center';
         ctx.fillStyle = fused ? BOND : col;
@@ -468,7 +471,7 @@ G.HUD = (() => {
 
     // ---------- objeto equipado (a la izquierda de los movimientos) ----------
     {
-      const ix = sx - S - 18, iy = sy;
+      const ix = sx - S - (small ? 12 : 18), iy = sy;
       roundRect(ctx, ix, iy, S, S, 12);
       ctx.fillStyle = pl.item ? 'rgba(40,30,10,.9)' : 'rgba(10,16,28,.55)';
       ctx.fill();
@@ -476,11 +479,14 @@ G.HUD = (() => {
       ctx.strokeStyle = pl.item ? '#ffd23f' : 'rgba(140,170,210,.18)';
       ctx.stroke();
       if (pl.item) {
-        G.Icons.draw(ctx, pl.item, ix + (S - 36) / 2, iy + (S - 36) / 2, 36);
-        ctx.font = F(700, 9);
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffd23f';
-        ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
+        const IC = small ? 30 : 36;
+        G.Icons.draw(ctx, pl.item, ix + (S - IC) / 2, iy + (S - IC) / 2, IC);
+        if (!small) {   // sur téléphone, le nom débordait sur le terrain
+          ctx.font = F(700, 9);
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#ffd23f';
+          ctx.fillText(G.Items.BY[pl.item].name, ix + S / 2, iy - 6);
+        }
       }
     }
 
