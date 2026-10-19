@@ -103,6 +103,8 @@ G.SettingsUI = (() => {
            </div>`;
     } else if (tab === 'acc') {
       renderAccount(box);
+    } else if (tab === 'data') {
+      renderData(box);
     } else {
       box.innerHTML = `<div class="about-logo">PokéSurvivor</div><p class="sub center">Versión ${esc(VERSION)}</p>`
         + `<p class="sub">Juego de fans <b>gratuito y sin ánimo de lucro</b>: sin anuncios ni compras. Pokémon y sus personajes son propiedad de Nintendo, Creatures y GAME FREAK; este proyecto no está afiliado a ellos.</p>`
@@ -145,6 +147,11 @@ G.SettingsUI = (() => {
          </div><p class="note" id="set-msg"></p>`;
   }
 
+  function renderData(box) {
+    box.innerHTML = section('Recommencer à zéro', 'Efface toute ta progression (Pokémon, pièces, Poké Balls, rangs, Ligue) et repart avec le choix du starter.')
+      + `<button class="btn danger" id="set-reset">Tout recommencer</button>`;
+  }
+
   function wire(box) {
     box.querySelectorAll('.switch[data-k]').forEach(b => { b.onclick = () => { G.Settings.set(b.dataset.k, !G.Settings.get(b.dataset.k)); render(); }; });
     box.querySelectorAll('.chip[data-k]').forEach(b => {
@@ -155,6 +162,20 @@ G.SettingsUI = (() => {
     box.querySelectorAll('[data-lang]').forEach(b => { b.onclick = () => { if (b.dataset.lang !== G.I18n.lang) G.I18n.set(b.dataset.lang); }; });
     const lo = $('set-login'); if (lo) lo.onclick = () => { close(); leave(); };
     const out = $('set-logout'); if (out) out.onclick = () => { close(); leave(); };
+    // Deux appuis : le premier arme le bouton pendant 4 s, le second efface.
+    const rs = $('set-reset');
+    if (rs) rs.onclick = () => {
+      if (!rs.dataset.armed) {
+        rs.dataset.armed = '1'; rs.textContent = 'Sûr ? Appuie encore pour tout effacer';
+        setTimeout(() => { if (rs.isConnected) { delete rs.dataset.armed; rs.textContent = 'Tout recommencer'; } }, 4000);
+        return;
+      }
+      if (G.Game.state !== 'ui') G.Game.quit && G.Game.quit();
+      G.DB.resetSave();
+      close();
+      G.UI.toast('Progression effacée');
+      G.PickUI.open();
+    };
     const del = $('set-delete');
     if (del) del.onclick = async () => {
       const ok = await G.UI.confirmDelete();
