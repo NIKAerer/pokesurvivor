@@ -174,11 +174,10 @@ G.HUD = (() => {
     ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
     // Version de Nika : vague en cours et prochain boss
     {
-      const wv = G.Spawner.wave(), nb = G.Spawner.nextBossIn(st.time), ch = G.League.timeLeft(st.time);
+      // (le prochain défi de la Ligue est déjà dans le cadre des badges)
+      const wv = G.Spawner.wave(), nb = G.Spawner.nextBossIn(st.time);
       const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
-      const cur = G.League.current();
-      const txt = (wv ? 'VAGUE ' + wv : '') + (nb != null && !G.Rift.inArena ? '  ·  BOSS DANS ' + fmt(nb) : '')
-        + (ch != null ? '  ·  ' + cur.who.toUpperCase() + ' DANS ' + fmt(ch) : '');
+      const txt = (wv ? 'VAGUE ' + wv : '') + (nb != null && !G.Rift.inArena ? '  ·  BOSS DANS ' + fmt(nb) : '');
       if (txt && !G.EnemyMgr.bossAlive()) {
         ctx.font = F(800, 11);
         ctx.fillStyle = nb != null && nb < 15 ? '#ff6b6b' : '#ffcb3d';
@@ -359,10 +358,10 @@ G.HUD = (() => {
       sy = G.U.clamp(pb[1] * h - S / 2, 24, h - S - 6);
     }
     const BOND = '#ff8ad8';
-    // Version de Nika : grosse barre de PV juste au-dessus des attaques.
+    // Version de Nika : barre de PV juste au-dessus des attaques, fine pour ne pas cacher l'action.
     {
-      const hw = Math.min(w * 0.62, Math.max(400, Math.max(n, pl.maxMoves) * (S + GAP))), HH = 26;
-      const hx = sx + totalW / 2 - hw / 2, hy = sy - 56;
+      const hw = Math.min(w * 0.42, Math.max(260, Math.max(n, pl.maxMoves) * (S + GAP))), HH = 16;
+      const hx = sx + totalW / 2 - hw / 2, hy = sy - 44;   // au-dessus du nom de l'attaque
       const fr = pl.hp / pl.maxHp, low = fr < 0.3;
       roundRect(ctx, hx - 3, hy - 3, hw + 6, HH + 6, (HH + 6) / 2);
       ctx.fillStyle = low && Math.sin(performance.now() / 120) > 0 ? '#ff3b4dcc' : '#0b1020dd'; ctx.fill();
@@ -373,14 +372,14 @@ G.HUD = (() => {
       // repères tous les 10 %
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       for (let q = 1; q < 10; q++) ctx.fillRect(Math.round(hx + hw * q / 10), hy + 4, 1, HH - 8);
-      G.Icons.draw(ctx, 'heart', hx + 6, hy + 4, 18);
-      ctx.font = F(800, 16);
+      G.Icons.draw(ctx, 'heart', hx + 3, hy + 2, 12);
+      ctx.font = F(800, 12);
       ctx.textAlign = 'center';
-      ctx.lineWidth = 4; ctx.strokeStyle = '#0b1020';
-      const tx = 'PV ' + Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp);
-      ctx.strokeText(tx, hx + hw / 2, hy + 19);
+      ctx.lineWidth = 3; ctx.strokeStyle = '#0b1020';
+      const tx = Math.ceil(pl.hp) + ' / ' + Math.round(pl.maxHp);
+      ctx.strokeText(tx, hx + hw / 2, hy + 12.5);
       ctx.fillStyle = '#fff';
-      ctx.fillText(tx, hx + hw / 2, hy + 19);
+      ctx.fillText(tx, hx + hw / 2, hy + 12.5);
     }
     const cdOf = m => m.kind === 'orbit' ? 0 : G.U.clamp(m.t / (m.cd * pl.cdMul), 0, 1);
 

@@ -102,6 +102,26 @@
   #scr-levelup .card .ico { width: 76px; height: 76px; }
   #scr-levelup .card.forget { height: auto; min-height: 150px; }
 }
+/* Téléphone à l'horizontale : tout tient sans défiler (cartes, bouton « Changer les choix »). */
+@media (max-height: 420px) {
+  #scr-levelup .box { padding: 6px 10px; display: flex; flex-direction: column; align-items: center; }
+  #scr-levelup .box h2 { font-size: 20px; }
+  .lvl-head #lvl-who { flex-direction: row; gap: 4px; }
+  .lvl-head #lvl-who canvas { width: 34px; height: 30px; }
+  #scr-levelup .sub { margin: 0 0 4px; font-size: 12px; }
+  #scr-levelup .cards { gap: 8px; }
+  #scr-levelup .card { height: auto; min-height: 0; padding: 6px 6px 8px; gap: 3px; }
+  #scr-levelup .card .ico { width: 54px; height: 54px; border-radius: 12px; }
+  #scr-levelup .card .ico img { width: 44px; height: 44px; }
+  #scr-levelup .card.mon .ico { width: 90px; height: 70px; }
+  #scr-levelup .card .txt { gap: 3px; }
+  #scr-levelup .card .nm { font-size: 16px; gap: 3px; }
+  #scr-levelup .card .ds { font-size: 12px; line-height: 1.25; }
+  #scr-levelup .tag-chip { font-size: 11px; padding: 2px 7px; }
+  #scr-levelup .lv-types .type-chip { font-size: 11px; padding: 2px 7px; }
+  #scr-levelup .lv-evo { font-size: 12px; }
+  #lvl-reroll { margin-top: 6px !important; padding: 4px 12px; font-size: 13px; }
+}
 #scr-levelup .card.forget .nm { font-size: 18px; }
 #scr-levelup .card.forget .ico { width: 70px; height: 70px; }
 
@@ -221,6 +241,14 @@
 .rk-max { color: #ffd23f; }
 .pick-card { position: relative; }
 .pick-rk { position: absolute; top: 3px; left: 4px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: #e8473f; color: #fff; font-size: 10px; line-height: 16px; font-weight: 800; }
+@media (max-height: 420px) {
+  /* Téléphone à l'horizontale : la barre du bas (Améliorations, Boutique, Jouer...) reste visible. */
+  #scr-pick .pick-main { min-height: 0; height: calc(100vh - 158px); }
+  #scr-pick .pick-actions .btn { padding: 5px 4px; font-size: 13px; }
+  #scr-pick .pick-actions #pick-play { font-size: 16px; }
+  #scr-pick .pick-stage canvas { width: 84px !important; }
+  #scr-pick .pick-name { font-size: 16px; }
+}
 @media (max-height: 460px) {
   #scr-pick .pick-hero { justify-content: flex-start; overflow-y: auto; }
   #scr-pick .pick-stage canvas { width: 110px; }
