@@ -112,6 +112,8 @@ G.Game = (() => {
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    // Version de Nika : rang du Pokémon (Poké Balls) : +5 % PV et dégâts par rang.
+    { const rk = G.Rank.of(mon.dex); if (rk) { pl.maxHp = Math.round(pl.maxHp * (1 + rk * 0.05)); pl.hp = pl.maxHp; pl.atkMul *= 1 + rk * 0.05; } }
     G.Team.reset(pl);
     banked = { t1: 0, t10: 0 };
     caught = [];
@@ -173,6 +175,15 @@ G.Game = (() => {
    * antes sólo al acabar, y si la pestaña se cerraba de golpe se perdían.
    * `banked` = los de esta partida que ya están en la partida guardada.
    */
+  /** Version de Nika : Poké Balls gagnées (gardées tout de suite, sauvegarde groupée). */
+  let ballSave = 0;
+  function addBalls(n) {
+    const sv = G.DB.save;
+    if (!sv || !n) return;
+    sv.balls = (sv.balls || 0) + n;
+    clearTimeout(ballSave);
+    ballSave = setTimeout(() => G.DB.commit('run'), 1500);
+  }
   let banked = { t1: 0, t10: 0 };
   function bankTickets(save_ = true) {
     const sv = G.DB.save;
@@ -455,6 +466,15 @@ G.Game = (() => {
     }
     if (p.kind === 'item') {
       if (mine) offerItem(p.value);
+      return;
+    }
+    if (p.kind === 'ball') {
+      // Version de Nika : les Poké Balls vont tout de suite dans la sauvegarde.
+      const n = p.value || 1;
+      pl.balls = (pl.balls || 0) + n;
+      addBalls(n);
+      G.FX.dmgText(who.x, who.y - who.bodyH - 8, '+' + n + ' Poké Ball', '#ff6b6b', true);
+      G.Audio.sfx('coin');
       return;
     }
     if (p.kind === 'ticket' || p.kind === 'ticket10') {
@@ -868,7 +888,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash,
+    init, startRun, everyone, levelXp, flash, addBalls,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { tampered = true; time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */

@@ -74,7 +74,7 @@ G.DB = (() => {
       updated: Date.now(),    // última modificación (para fusionar)
       coins: START_COINS,
       owned: {},              // dex -> { at, from: 'starter'|'gacha'|'wild' }
-      box: [1, 4, 7],         // version de Nika : Pokémon jouables (les 3 starters + le gacha)
+      box: [],                // version de Nika : Pokémon jouables (le starter choisi + le gacha)
       shiny: {},              // dex -> { at, from } — variantes shiny conseguidas
       partner: null,          // dex del Pokémon con el que juegas
       partnerShiny: false,    // jugar con su versión shiny (si la tienes)
@@ -82,7 +82,10 @@ G.DB = (() => {
       personality: null,      // { trait, scores }
       upgrades: {},           // (antiguo) mejoras de la cuenta; ahora van por Pokémon
       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
-      tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
+      tickets: { t1: 5, t10: 0 },   // tickets del gacha (version de Nika : 5 pour commencer)
+      ticketsBought: 0,       // version de Nika : le prix du ticket monte à chaque achat
+      balls: 0,               // version de Nika : Poké Balls (rang des Pokémon, systems/rank.js)
+      rank: {},               // version de Nika : dex -> rang 0-10
       pity: {},               // generación del banner -> tiradas sin ★5
       legends: {},            // dex -> fecha: legendarios vencidos en grietas
       arenas: {},             // tipo -> fecha: arenas de grieta ganadas
@@ -127,6 +130,10 @@ G.DB = (() => {
     s.coins = n(s.coins);
     s.tickets.t1 = n(s.tickets.t1);
     s.tickets.t10 = n(s.tickets.t10);
+    s.balls = n(s.balls);
+    s.ticketsBought = n(s.ticketsBought);
+    if (!isObj(s.rank)) s.rank = {};
+    for (const k of Object.keys(s.rank)) s.rank[k] = Math.min(10, n(s.rank[k]));
     if (isObj(s.led)) {
       for (const dev of Object.keys(s.led)) {
         const e = s.led[dev];

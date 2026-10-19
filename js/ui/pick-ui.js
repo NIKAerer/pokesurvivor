@@ -6,12 +6,42 @@
  */
 G.PickUI = (() => {
   const $ = G.UI.$;
-  const START = [1, 4, 7];
+  // Version de Nika : au début on choisit UN starter parmi ceux des 4 régions.
+  const STARTERS = [1, 4, 7, 152, 155, 158, 252, 255, 258, 387, 390, 393];
 
   function box() {
     const s = G.DB.save;
-    if (!Array.isArray(s.box)) s.box = START.slice();
+    if (!Array.isArray(s.box)) s.box = [];
     return s.box.filter(d => G.DEX_BY[d] && G.SPRITE_META[d]);
+  }
+
+  /** Premier lancement : choisir son starter (puis le reste vient du gacha). */
+  function chooseStarter() {
+    let el = document.getElementById('starter-pick');
+    if (!el) { el = document.createElement('div'); el.id = 'starter-pick'; document.body.appendChild(el); }
+    el.innerHTML = `<div class="sp-box"><h2>Choisis ton starter</h2>
+      <p class="sub">Les autres Pokémon s'obtiennent avec le gacha (tu as 5 tickets pour commencer).</p>
+      <div class="sp-grid"></div></div>`;
+    const grid = el.querySelector('.sp-grid');
+    for (const d of STARTERS.filter(x => G.DEX_BY[x] && G.SPRITE_META[x])) {
+      const mon = G.DEX_BY[d];
+      const b = document.createElement('button');
+      b.className = 'pick-card';
+      b.style.setProperty('--c', G.U.TYPE_COLOR[mon.types[0]]);
+      b.appendChild(G.UI.spriteCanvas(d, 64, 54, { scale: 2, hero: true, lively: true }));
+      b.insertAdjacentHTML('beforeend', `<small>${mon.name}</small>`);
+      b.onclick = () => {
+        const s = G.DB.save;
+        s.box = [d]; s.partner = d; s.partnerShiny = false;
+        G.DB.grant(d, 'starter');
+        G.DB.commit(true);
+        G.Audio.sfx('confirm');
+        el.remove();
+        open();
+      };
+      grid.appendChild(b);
+    }
+    G.Sprites.preload(STARTERS);
   }
 
   function open() {
@@ -19,6 +49,7 @@ G.PickUI = (() => {
     G.Audio.music('village');
     G.UI.show('scr-pick');
     const s = G.DB.save;
+    if (!box().length) { chooseStarter(); return; }
     if (!box().includes(s.partner)) { s.partner = box()[0]; s.partnerShiny = false; }
     if (!G.DB.ownsShiny(s.partner)) s.partnerShiny = false;
     // Un seul type de ticket : les anciens tickets ×10 valent 10 tickets.
@@ -33,7 +64,8 @@ G.PickUI = (() => {
     const mon = G.DEX_BY[s.partner];
     const t = s.tickets || { t1: 0, t10: 0 };
     $('pick-wallet').innerHTML = `<span class="coin"></span> <b>${s.coins.toLocaleString('fr')}</b>
-      &nbsp; ${G.Icons.html('ticket', 16)} <b>${t.t1}</b>`;
+      &nbsp; ${G.Icons.html('ticket', 16)} <b>${t.t1}</b>
+      &nbsp; ${G.Icons.html('pball', 16)} <b>${G.Rank.balls()}</b>`;
 
     // Le Pokémon choisi : grand sprite sur une estrade de la couleur de son type.
     const hero = $('pick-hero');
@@ -49,6 +81,15 @@ G.PickUI = (() => {
     hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
       <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}
       ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
+    // Version de Nika : le rang du Pokémon (monte avec des Poké Balls).
+    {
+      const rk = G.Rank.of(mon.dex), max = rk >= G.Rank.MAX, c = G.Rank.cost(rk);
+      const stars = Array.from({ length: G.Rank.MAX }, (_, i) => `<i class="${i < rk ? 'on' : ''}"></i>`).join('');
+      hero.insertAdjacentHTML('beforeend', `<div class="pick-rank"><span title="+5 % PV et dégâts par rang">Rang ${rk}/${G.Rank.MAX} · +${Math.round(rk * G.Rank.BONUS * 100)} %</span>
+        <div class="rk-pips">${stars}</div>
+        ${max ? '<b class="rk-max">Rang max !</b>' : `<button id="pick-rankup" class="btn small ${G.Rank.balls() >= c ? 'gold' : 'ghost'}" ${G.Rank.balls() >= c ? '' : 'disabled'}>Monter · ${G.Icons.html('pball', 14)} ${c}</button>`}</div>`);
+      if (!max) $('pick-rankup').onclick = () => { if (G.Rank.up(mon.dex)) { G.Audio.sfx('buy'); render(); } };
+    }
     if (hasSh) $('pick-shiny').onclick = () => { s.partnerShiny = !s.partnerShiny; G.DB.commit(); G.Audio.sfx('select'); render(); };
 
     // Sa fiche : statistiques, évolutions et attaques.
@@ -99,7 +140,8 @@ G.PickUI = (() => {
       rare: (a, b) => D(b).rarity - D(a).rarity || a - b,
       type: (a, b) => D(a).types[0].localeCompare(D(b).types[0]) || a - b,
       name: (a, b) => D(a).name.localeCompare(D(b).name, 'fr'),
-      bst: (a, b) => (D(b).bst || 0) - (D(a).bst || 0) || a - b
+      bst: (a, b) => (D(b).bst || 0) - (D(a).bst || 0) || a - b,
+      rank: (a, b) => G.Rank.of(b) - G.Rank.of(a) || a - b
     };
     const mons0 = box(), mons = mons0.slice().sort(SORTS[by] || SORTS.new);
     $('pick-sort').value = by;
@@ -112,6 +154,7 @@ G.PickUI = (() => {
       b.appendChild(G.UI.spriteCanvas(dex, 64, 54, { scale: 2, hero: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
       if (G.DB.ownsShiny(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-sh">${G.Icons.html('shiny', 10)}</span>`);
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
+      if (G.Rank.of(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-rk">${G.Rank.of(dex)}</span>`);
       b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; G.DB.commit(); G.Audio.sfx('select'); render(); };
       list.appendChild(b);
     }

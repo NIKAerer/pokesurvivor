@@ -70,7 +70,8 @@ G.GachaUI = (() => {
     $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
     $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> tickets`;
     // Version de Nika : on peut aussi acheter des tickets avec les pièces.
-    const PRICE = { t1: 120, t10: 1000 };
+    // Version de Nika : 300 pièces, +50 à chaque ticket acheté (gacha plus rare).
+    const PRICE = { t1: 300 + 50 * (s.ticketsBought | 0), t10: 3000 };
     for (const k of ['t1']) {          // version de Nika : un seul ticket
       const b = $('buy-' + k);
       b.innerHTML = `Acheter ${G.Icons.html(k === 't1' ? 'ticket' : 'ticket10', 16)} · <span class="coin"></span> ${PRICE[k]}`;
@@ -81,6 +82,7 @@ G.GachaUI = (() => {
         sv.coins -= PRICE[k];
         sv.tickets = sv.tickets || { t1: 0, t10: 0 };
         sv.tickets[k] = (sv.tickets[k] || 0) + 1;
+        sv.ticketsBought = (sv.ticketsBought | 0) + 1;
         G.DB.commit(true);
         G.Audio.sfx('buy');
         refresh();
