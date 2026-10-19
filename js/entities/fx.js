@@ -73,13 +73,14 @@ G.FX = (() => {
     }
   }
 
-  function dmgText(x, y, value, color = '#ffffff', big = false) {
+  /** kind: 'super' (gros, gras, contour rouge, « ! ») | 'weak' (petit, fin, gris) | undefined. */
+  function dmgText(x, y, value, color = '#ffffff', big = false, kind) {
     // Con cientos de golpes por segundo no se leen igual: tope de 70 (los
     // grandes, como "¡Muy eficaz!" o los de jefe, siempre entran).
     // Ajustes → "Números de daño": los números se ocultan; los avisos de texto no.
     if ((typeof value === 'number' || /^-\d/.test(value)) && !G.Settings.get('dmgNumbers')) return;
     if (texts.length >= CAP_TEXTS[q()]) { if (!big) return; texts.shift(); }
-    texts.push({ x: x + G.U.rand(-6, 6), y, vy: -46, t: 0, life: big ? 0.95 : 0.62, s: value, color, big });
+    texts.push({ x: x + G.U.rand(-6, 6), y, vy: -46, t: 0, life: kind === 'super' ? 1.05 : big ? 0.95 : 0.62, s: kind === 'super' ? value + '!' : value, color, big, kind });
   }
 
   /** Anillo de onda (puntos de píxel). */
@@ -254,10 +255,14 @@ G.FX = (() => {
       const k = 1 - t.t / t.life;
       ctx.save();
       ctx.globalAlpha = Math.min(1, k * 2.2);
-      ctx.font = (t.big ? '700 20px' : '700 13px') + ' Pixelify,"Segoe UI",sans-serif';
+      const sup = t.kind === 'super', weak = t.kind === 'weak';
+      // Super efficace : pop d'entrée + police plus grosse et plus grasse.
+      const pop = sup ? 1 + Math.max(0, 0.6 - t.t * 4) : 1;
+      ctx.font = (sup ? '800 ' + Math.round(24 * pop) + 'px' : weak ? '400 12px' : t.big ? '700 20px' : '700 13px') + ' Pixelify,"Segoe UI",sans-serif';
       ctx.textAlign = 'center';
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(0,0,0,.75)';
+      if (weak) ctx.globalAlpha *= 0.85;
+      ctx.lineWidth = sup ? 5 : 3;
+      ctx.strokeStyle = sup ? 'rgba(150,10,20,.95)' : 'rgba(0,0,0,.75)';
       ctx.strokeText(t.s, t.x, t.y);
       ctx.fillStyle = t.color;
       ctx.fillText(t.s, t.x, t.y);

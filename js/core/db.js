@@ -862,6 +862,8 @@ G.DB = (() => {
   }
 
   return {
+    /** Repartir de zéro : sauvegarde neuve (même nom), écrite tout de suite. */
+    resetSave() { if (guest || !save) return false; save = newSave(save.name || user); return commit(true); },
     ready, register, login, loginWithGoogle, playAsGuest, logout, commit, deleteAccount, flush: pushNow,
     owns, grant, ownsShiny, grantShiny, merge, setName, upgradesOf,
     onSync(fn) { listeners.add(fn); },
