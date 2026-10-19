@@ -2,6 +2,7 @@
  * Se dibuja en coordenadas de PANTALLA (sin la transformación de cámara).
  */
 G.HUD = (() => {
+  let K = 1;                                  // échelle du HUD (plus grand sur un grand écran de PC)
   const F = (w, s) => `${w} ${s}px Pixelify,"Segoe UI",system-ui,sans-serif`;
 
   function roundRect(ctx, x, y, w, h, r) {
@@ -74,6 +75,9 @@ G.HUD = (() => {
     ctx.textBaseline = 'alphabetic';
     G.Touch.clearButtons();
     const touch = G.Touch.active;
+    // Version de Nika : sur PC, le HUD grandit avec l'écran (il était fait pour ~1280×760).
+    K = touch ? 1 : G.U.clamp(Math.min(w / 1280, h / 760), 1, 1.6);
+    if (K !== 1) { ctx.scale(K, K); w /= K; h /= K; }
     // Version de Nika : téléphone à l'horizontale (écran bas) = HUD compact,
     // et rien sous l'encoche de l'iPhone.
     const sa = touch ? G.Touch.safeArea() : { top: 0, right: 0, bottom: 0, left: 0 };
@@ -222,7 +226,7 @@ G.HUD = (() => {
     // ---------- shinies fuera de pantalla: destello en el borde ----------
     const cam = G.Camera, pulse = 0.6 + Math.sin(performance.now() / 160) * 0.4;
     for (const e of G.EnemyMgr.shinies()) {
-      const sx = (e.x - cam.left()) * cam.scale, sy = (e.y - cam.top()) * cam.scale;
+      const sx = (e.x - cam.left()) * cam.scale / K, sy = (e.y - cam.top()) * cam.scale / K;
       if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
       const M = 34;
       const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 60, h - M - 70);
@@ -260,7 +264,7 @@ G.HUD = (() => {
     // flecha que bota encima; en la arena, cuenta atrás.
     const rift = G.Rift.rift;
     if (rift) {
-      const sx = (rift.x - cam.left()) * cam.scale, sy = (rift.y - 40 - cam.top()) * cam.scale;
+      const sx = (rift.x - cam.left()) * cam.scale / K, sy = (rift.y - 40 - cam.top()) * cam.scale / K;
       const now = performance.now() / 1000, beat = 0.5 + Math.sin(now * 7) * 0.5;
       const label = 'GRIETA · ' + Math.round(G.U.dist(pl.x, pl.y, rift.x, rift.y) / 32) + ' m · ' + Math.ceil(rift.ttl) + ' s';
       const off = sx < 0 || sx > w || sy < 0 || sy > h;
@@ -398,8 +402,6 @@ G.HUD = (() => {
       const on = true;                     // version de Nika : toutes les attaques partent
       const x = sx + i * (S + GAP);
       const y = on ? sy - 6 : sy;
-      // Tocar (o hacer clic en) un icono activa ese movimiento.
-      if (m) G.Touch.addButton(x, y, S, S, () => { if (G.Game.state === 'playing' && pl.active !== i) { pl.setActive(i); G.Audio.sfx('click'); } }, GAP / 2 + 3);
       const col = m ? G.U.TYPE_COLOR[m.type] : '#4a5468';
 
       // fondo
@@ -449,12 +451,6 @@ G.HUD = (() => {
           ctx.fillRect(x + (S - tw) / 2 + d * (dw + dgap), y + S - 9, dw, 3);
         }
       }
-
-      // tecla
-      ctx.font = F(800, 9);
-      ctx.fillStyle = fused ? BOND : on ? col : 'rgba(180,200,230,.6)';
-      ctx.textAlign = 'left';
-      ctx.fillText(String(i + 1), x + 3, y + 10);
 
       // nombre encima del activo (con un vínculo: "Ascuas +2")
       if (on) {
@@ -541,7 +537,7 @@ G.HUD = (() => {
     for (const m of G.Coop.mates) {
       if (!m.connected) continue;
       const o = m.pl;
-      const sx = (o.x - cam.left()) * cam.scale, sy = (o.y - o.bodyH * 0.5 - cam.top()) * cam.scale;
+      const sx = (o.x - cam.left()) * cam.scale / K, sy = (o.y - o.bodyH * 0.5 - cam.top()) * cam.scale / K;
       if (sx > 0 && sx < w && sy > 0 && sy < h) continue;
       const M = 42;
       const ex = G.U.clamp(sx, M, w - M), ey = G.U.clamp(sy, M + 70, h - M - 80);
