@@ -113,14 +113,14 @@ G.Spawner = (() => {
     return e;
   }
 
-  /** Version de Nika (2026-10-19) : boss plus durs, ×1,5 PV, ×1,25 dégâts, un peu plus rapides. */
+  /** Version de Nika (2026-10-19) : boss plus durs, ×1,5 PV, ×1,25 dégâts, un peu plus rapides.
+   *  (Les tirs suivent tout seuls : shotDmg() est proportionnel à e.dmg.) */
   const BOSS_HP = 1.5, BOSS_DMG = 1.25, BOSS_SPD = 1.1;
 
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), BOSS_HP * G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1) * G.League.diff()), true);
     e.dmg *= G.League.dmgK() * BOSS_DMG;
-    if (e.shotDmg) e.shotDmg *= BOSS_DMG;
     e.spd *= BOSS_SPD;
     if (rollShiny(b.dex)) e.makeShiny();
     G.EnemyMgr.add(e);

@@ -899,9 +899,15 @@
         p._px = p.x; p._py = p.y;
       }
       rebuildGrid();
+      // Version de Nika : un ennemi qui plante ne doit pas faire planter toute la
+      // partie (avant, au bout de 3 s d'erreurs, la partie s'arrêtait).
       for (const e of list) {
-        if (e.remote) e.netUpdate(dt);
-        else e.update(dt, nearestPlayer(players, e.x, e.y) || pl);
+        try {
+          if (e.remote) e.netUpdate(dt);
+          else e.update(dt, nearestPlayer(players, e.x, e.y) || pl);
+        } catch (err) {
+          if (!e._err) { e._err = true; console.error('[Enemy] ' + e.name + ' :', err); }
+        }
       }
       if (!G.Coop.active || G.Coop.isHost) separate(dt);
       for (let i = list.length - 1; i >= 0; i--) {
