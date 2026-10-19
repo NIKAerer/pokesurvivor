@@ -43,8 +43,8 @@ G.MissionDefs = (() => {
       text: () => 'Complète une équipe de 6 Pokémon' },
     { id: 'berry', ev: 'berry', goals: [3, 5], reward: { t1: 2, coins: 150 },
       text: n => `Mange ${n} baies` },
-    { id: 'shop', ev: 'shop', goals: [1, 3], reward: { t1: 2, coins: 150 },
-      text: n => (n === 1 ? 'Achète un article au marchand Kecleon' : `Achète ${n} articles au marchand Kecleon`) },
+    { id: 'rival', ev: 'rival', goals: [1, 3], reward: { t1: 2, coins: 200 },
+      text: n => (n === 1 ? 'Bats un dresseur rival' : `Bats ${n} dresseurs rivaux`) },
     { id: 'forget', ev: 'forget', goals: [1], reward: { t1: 2, coins: 150 },
       text: () => 'Fais oublier une attaque pour en apprendre une autre' }
   ];

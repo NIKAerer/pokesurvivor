@@ -874,7 +874,7 @@ G.Game = (() => {
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
     debugSpeed(k) { if (k > 1) tampered = true; speedK = k; },
     togglePause, startEvolving,
-    /** Version de Nika : le marchand met la partie en pause le temps des achats. */
+    /** Version de Nika : met la partie en pause (crédits...). */
     beginChoice() { if (state !== 'playing' && state !== 'held') return false; state = 'choice'; return true; },
     endChoice() { if (state === 'choice') state = holdBy.length ? 'held' : 'playing'; afterLevelUp(); },
     offerItem: id => offerItem(id),
