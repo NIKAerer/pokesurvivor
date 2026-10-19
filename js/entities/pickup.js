@@ -22,13 +22,13 @@ G.Pickups = (() => {
     ticket:   { color: '#ffd23f', glow: '#c08a10', r: 7 },
     ticket10: { color: '#c47bff', glow: '#8a3fd0', r: 8 },
     item:     { color: '#ffd23f', glow: '#c08a10', r: 9 },      // value = id del objeto
-    ball:     { color: '#ff4b4b', glow: '#b81f2a', r: 7 }       // version de Nika : Poké Ball
+    ball:     { color: '#5f9bff', glow: '#2f5fd0', r: 7 }       // version de Nika : Super Bonbon (rang)
   };
   /** Probabilidad de que un Pokémon normal suelte un ticket del gacha. */
   const BOSS_T10 = 1 / 5;               // ticket ×10 de un jefe normal (version de Nika : 1/3 -> 1/5)
   const LEGEND_T10 = 1 / 2;             // ticket ×10 del legendario de la grieta
   const TICKET_RATE = 0;                // version de Nika : plus de tickets sur les ennemis normaux (gacha plus rare)
-  const BALL_RATE = 1 / 35;             // version de Nika : Poké Ball sur un ennemi normal
+  const BALL_RATE = 1 / 35;             // version de Nika : Super Bonbon sur un ennemi normal
 
   function clear() { list = []; }
   function all() { return list; }

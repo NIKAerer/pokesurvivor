@@ -210,12 +210,12 @@ G.Rift = (() => {
         if (G.Sprites.preload) G.Sprites.preload([arena.dex]);
       } else if (pl) {
         pl.t1 += 10;
-        msg = name + ' vaincu ! +10 tickets';
+        msg = name + ' vaincu ! +10 Poké Balls';
       }
     }
     G.Spawner.say(msg || (name + ' vaincu !'), 3.4, true);
     if (pl) {
-      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, msg && msg.includes('ticket') ? '+10 tickets' : 'Capturé !', '#ff8ad8', true);
+      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, msg && msg.includes('Poké Balls') ? '+10 Poké Balls' : 'Capturé !', '#ff8ad8', true);
       G.FX.ring(pl.x, pl.y, 8, 90, '#ff8ad8', 0.7, 5);
     }
   }

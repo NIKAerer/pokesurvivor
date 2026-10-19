@@ -20,7 +20,7 @@ G.PickUI = (() => {
     let el = document.getElementById('starter-pick');
     if (!el) { el = document.createElement('div'); el.id = 'starter-pick'; document.body.appendChild(el); }
     el.innerHTML = `<div class="sp-box"><h2>Choisis ton starter</h2>
-      <p class="sub">Les autres Pokémon s'obtiennent à la Boutique (tu as 5 tickets pour commencer).</p>
+      <p class="sub">Les autres Pokémon s'obtiennent à la Boutique (tu as 5 Poké Balls à ouvrir pour commencer).</p>
       <div class="sp-grid"></div></div>`;
     const grid = el.querySelector('.sp-grid');
     for (const d of STARTERS.filter(x => G.DEX_BY[x] && G.SPRITE_META[x])) {
@@ -81,7 +81,7 @@ G.PickUI = (() => {
     hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
       <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}
       ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
-    // Version de Nika : le rang du Pokémon (monte avec des Poké Balls).
+    // Version de Nika : le rang du Pokémon (monte avec des Super Bonbons).
     {
       const rk = G.Rank.of(mon.dex), max = rk >= G.Rank.MAX, c = G.Rank.cost(rk);
       const stars = Array.from({ length: G.Rank.MAX }, (_, i) => `<i class="${i < rk ? 'on' : ''}"></i>`).join('');

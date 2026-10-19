@@ -112,7 +112,7 @@ G.Game = (() => {
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
-    // Version de Nika : rang du Pokémon (Poké Balls) : +5 % PV et dégâts par rang.
+    // Version de Nika : rang du Pokémon (Super Bonbons) : +5 % PV et dégâts par rang.
     { const rk = G.Rank.of(mon.dex); if (rk) { pl.maxHp = Math.round(pl.maxHp * (1 + rk * 0.05)); pl.hp = pl.maxHp; pl.atkMul *= 1 + rk * 0.05; } }
     G.Team.reset(pl);
     banked = { t1: 0, t10: 0 };
@@ -175,7 +175,7 @@ G.Game = (() => {
    * antes sólo al acabar, y si la pestaña se cerraba de golpe se perdían.
    * `banked` = los de esta partida que ya están en la partida guardada.
    */
-  /** Version de Nika : Poké Balls gagnées (gardées tout de suite, sauvegarde groupée). */
+  /** Version de Nika : Super Bonbons gagnés (gardées tout de suite, sauvegarde groupée). */
   let ballSave = 0;
   function addBalls(n) {
     const sv = G.DB.save;
@@ -469,11 +469,11 @@ G.Game = (() => {
       return;
     }
     if (p.kind === 'ball') {
-      // Version de Nika : les Poké Balls vont tout de suite dans la sauvegarde.
+      // Version de Nika : les Super Bonbons vont tout de suite dans la sauvegarde.
       const n = p.value || 1;
       pl.balls = (pl.balls || 0) + n;
       addBalls(n);
-      G.FX.dmgText(who.x, who.y - who.bodyH - 8, '+' + n + ' Poké Ball', '#ff6b6b', true);
+      G.FX.dmgText(who.x, who.y - who.bodyH - 8, '+' + n + ' Super Bonbon' + (n > 1 ? 's' : ''), '#7fb0ff', true);
       G.Audio.sfx('coin');
       return;
     }
