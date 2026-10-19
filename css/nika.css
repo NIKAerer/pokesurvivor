@@ -316,3 +316,15 @@
 /* Version de Nika : sur un grand écran de PC, les menus grandissent (ils étaient faits pour ~1280×760). */
 @media (pointer: fine) and (min-width: 1400px) and (min-height: 860px) { .scr > * { zoom: 1.2; } }
 @media (pointer: fine) and (min-width: 1800px) and (min-height: 1000px) { .scr > * { zoom: 1.4; } }
+
+/* Version de Nika : fin de partie sur téléphone à l'horizontale, tout tient et « Rejouer » reste visible. */
+@media (max-height: 520px) {
+  #scr-over .box { width: min(760px, 100%) !important; padding: 10px 16px 0; }
+  #scr-over h2 { margin: 0 0 4px; }
+  #scr-over .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 4px 0 6px; }
+  #scr-over .stats > div { padding: 4px 8px; }
+  #scr-over .stats b { font-size: 18px; }
+  #btn-again { position: sticky; bottom: 0; margin: 0 auto 8px; }
+}
+/* Le choix au niveau supérieur occupe déjà tout l'écran : pas d'agrandissement en plus. */
+#scr-levelup > * { zoom: 1 !important; }
