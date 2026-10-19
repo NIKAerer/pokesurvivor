@@ -79,7 +79,7 @@ G.PickUI = (() => {
     stage.appendChild(G.UI.spriteCanvas(mon.dex, 170, 130, { lively: true, scale: 4, hero: true, shiny }));
     hero.appendChild(stage);
     hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
-      <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}
+      <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex)}
       ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
     // Version de Nika : le rang du Pokémon (monte avec des Super Bonbons).
     {
@@ -96,10 +96,13 @@ G.PickUI = (() => {
     const info = $('pick-info');
     const statBar = (lbl, v, max, txt, col) => `<div class="ps-row"><span>${lbl}</span>
       <i><b style="width:${Math.round(Math.min(1, v / max) * 100)}%;background:${col}"></b></i><em>${txt}</em></div>`;
-    let html = '<h4>Statistiques</h4>' +
+    let html = `<h4>Rôle</h4><p class="ps-role">${G.Roles.chip(mon.dex)} Bonus d'équipe : ${G.Roles.info(mon.dex).team} (compte double pour ton chef).</p><h4>Statistiques</h4>` +
       statBar('PV', mon.hp, 185, mon.hp, '#5fe08a') +
-      statBar('Attaque', mon.atk, 1.61, '×' + mon.atk.toFixed(2), '#ff8a5c') +
       statBar('Vitesse', mon.spd, 145, mon.spd, '#5fd4ff');
+    // Version de Nika : les vraies stats (physique / spécial).
+    const bs = G.Roles.stats(mon.dex);
+    if (bs) html += statBar('Attaque', bs[1], 160, bs[1], '#ff8a5c') + statBar('Défense', bs[2], 180, bs[2], '#e0b060')
+      + statBar('Att. Spé', bs[3], 160, bs[3], '#c99bff') + statBar('Déf. Spé', bs[4], 180, bs[4], '#7fc8ff');
     // Chaîne d'évolution (depuis la forme de base).
     let root = mon.dex;
     while (G.EVO_FROM[root]) root = G.EVO_FROM[root];
@@ -113,10 +116,12 @@ G.PickUI = (() => {
     html += '<h4>Évolutions</h4><div class="ps-evo" id="pick-evo"></div>';
     // Les attaques qu'il peut apprendre (la première est sa signature).
     const learn = G.Team.learnset(mon.dex);
+    const myRole = G.Roles.moveRole(mon.dex);
     html += `<h4>Attaques (garde 4 sur ${learn.length})</h4><div class="ps-moves">` + learn.map((id, k) => {
       const d = G.Moves.BY_ID[id];
-      return `<span class="ps-mv${k ? '' : ' sig'}" style="--m:${G.U.TYPE_COLOR[d.type]}">${G.Icons.html('move:' + id, 18)}<small>${d.name}${k ? '' : ' ★'}</small></span>`;
-    }).join('') + '</div>';
+      const tip = (G.Roles.MOVE_ROLE[d.role] || '') + (d.kind !== 'buff' ? ' · ' + G.Roles.CAT_NAME[d.cat] : '');
+      return `<span class="ps-mv${k ? '' : ' sig'}${d.role === myRole ? ' role' : ''}" title="${tip}" style="--m:${G.U.TYPE_COLOR[d.type]}">${G.Icons.html('move:' + id, 18)}<small>${d.name}${k ? '' : ' ★'}</small>${d.kind !== 'buff' ? `<i class="cat ${d.cat}">${d.cat === 'P' ? 'Phy' : 'Spé'}</i>` : ''}</span>`;
+    }).join('') + '</div><small class="note">Bordure colorée : attaque de son rôle.</small>';
     info.innerHTML = html;
     const evoBox = $('pick-evo');
     chain.forEach(([d, lv, more], k) => {
@@ -141,8 +146,10 @@ G.PickUI = (() => {
       type: (a, b) => D(a).types[0].localeCompare(D(b).types[0]) || a - b,
       name: (a, b) => D(a).name.localeCompare(D(b).name, 'fr'),
       bst: (a, b) => (D(b).bst || 0) - (D(a).bst || 0) || a - b,
-      rank: (a, b) => G.Rank.of(b) - G.Rank.of(a) || a - b
+      rank: (a, b) => G.Rank.of(b) - G.Rank.of(a) || a - b,
+      role: (a, b) => ROLE_ORDER.indexOf(G.Roles.of(a)) - ROLE_ORDER.indexOf(G.Roles.of(b)) || a - b
     };
+    const ROLE_ORDER = Object.keys(G.Roles.INFO);
     const mons0 = box(), mons = mons0.slice().sort(SORTS[by] || SORTS.new);
     $('pick-sort').value = by;
     $('pick-sort').onchange = e => { s.pickSort = e.target.value; G.DB.commit(); render(); };
@@ -155,6 +162,7 @@ G.PickUI = (() => {
       if (G.DB.ownsShiny(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-sh">${G.Icons.html('shiny', 10)}</span>`);
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
       if (G.Rank.of(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-rk">${G.Rank.of(dex)}</span>`);
+      b.insertAdjacentHTML('beforeend', `<span class="pick-role" title="${G.Roles.info(dex).name}">${G.Roles.info(dex).icon}</span>`);
       b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; G.DB.commit(); G.Audio.sfx('select'); render(); };
       list.appendChild(b);
     }

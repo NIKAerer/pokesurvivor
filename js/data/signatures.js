@@ -264,8 +264,10 @@ G.SIGNATURES = {
   const TYPE_FX = { fire: { burn: 1 }, poison: { poison: 1 }, ice: { slow: 0.35 }, ghost: { hex: 1.5 } };
 
   /** Attaque du jeu qui sert de modèle : même kind, même type si possible. */
+  // (les attaques de rôle ajoutées le 2026-10-19 ne servent pas de modèle)
+  const OLD = M.ALL.slice(0, M.ALL.findIndex(m => m.id === 'wish'));
   function template(kind, type) {
-    const same = M.ALL.filter(m => m.kind === kind && m.kind !== 'buff');
+    const same = OLD.filter(m => m.kind === kind && m.kind !== 'buff');
     return same.find(m => m.type === type) || same[0];
   }
 
@@ -279,6 +281,12 @@ G.SIGNATURES = {
     if (base.type !== type) for (const k of NO_FX) delete def[k];
     Object.assign(def, TYPE_FX[type] || {});
     def.dmg = Math.round(def.dmg * 1.2 * 10) / 10;
+    // Version de Nika : rôle selon sa forme, catégorie selon la meilleure attaque
+    // de la famille (une signature colle toujours à son Pokémon).
+    delete def.role; delete def.cat;
+    def.role = M.roleOfDef(def);
+    const st = G.BASE && G.BASE[root];
+    def.cat = st ? (st[1] >= st[3] ? 'P' : 'S') : M.catOfDef(def);
     def.ups = base.ups;
     def.maxLvl = base.maxLvl;
     M.ALL.push(def);

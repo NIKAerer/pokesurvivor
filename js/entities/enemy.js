@@ -543,7 +543,8 @@
 
     keepsDistance() { return ['ranged', 'fan', 'beamer', 'zoner', 'healer', 'summoner'].includes(this.behavior); }
 
-    shotDmg() { return (this.def.shotDmg || 10) * (this.dmg / this.def.dmg); }
+    // Version de Nika : les tirs sont spéciaux (Attaque Spé de l'espèce).
+    shotDmg() { return (this.def.shotDmg || 10) * (this.dmg / this.def.dmg) * G.Roles.foeK(this.dex, 'S'); }
 
     /** Disparo normal de enemigo (uno, o varios en abanico). */
     shoot(ax, ay, spread = 0, n = 1, k = 1) {
@@ -645,7 +646,7 @@
       const tx = pl.x, ty = pl.y;
       this.jump = { sx: this.x, sy: this.y, tx, ty, t: -0.45, dur: 0.6 };
       this.anim.play('Charge', { speed: 1.4 });
-      G.Hazards.add({ kind: 'zone', x: tx, y: ty, r: 50, delay: 1.05, dmg: this.dmg * 1.2, type: this.atkType,
+      G.Hazards.add({ kind: 'zone', x: tx, y: ty, r: 50, delay: 1.05, dmg: this.dmg * 1.2 * G.Roles.foeK(this.dex, 'P'), type: this.atkType, cat: 'P',
                       color: G.U.TYPE_COLOR[this.atkType] || '#ff7a9e' });
     }
 

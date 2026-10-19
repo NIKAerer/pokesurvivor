@@ -234,3 +234,17 @@
 #starter-pick .sp-box { max-width: 760px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
 #starter-pick .sp-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 @media (max-width: 520px) { #starter-pick .sp-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* ---- Version de Nika : rôles (2026-10-19) ---- */
+.role-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 800;
+  background: color-mix(in srgb, var(--r) 22%, transparent); color: var(--r); border: 1px solid color-mix(in srgb, var(--r) 55%, transparent); }
+.role-chip small { font-weight: 600; opacity: .85; color: #dfe8f7; }
+#scr-levelup .lv-role { display: flex; justify-content: center; margin-top: 4px; }
+.ps-mv.role { box-shadow: 0 0 0 1px var(--m) inset; }
+.ps-mv.sig.role { box-shadow: 0 0 0 1px #ffd23f inset; }
+.ps-mv .cat { font-style: normal; font-size: 9px; font-weight: 800; padding: 0 4px; border-radius: 5px; margin-left: auto; opacity: .85; }
+.ps-mv .cat.P { background: #ff8a5c33; color: #ffb38f; }
+.ps-mv .cat.S { background: #c99bff33; color: #d9bcff; }
+.pick-card { position: relative; }
+.pick-card .pick-role { position: absolute; left: 3px; bottom: 16px; font-size: 11px; line-height: 1; filter: drop-shadow(0 1px 1px #000); }
+.ps-role { font-size: 12px; margin: 2px 0 6px; line-height: 1.6; color: #cfe0f7; }

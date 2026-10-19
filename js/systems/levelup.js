@@ -32,6 +32,11 @@ G.LevelUp = (() => {
    * l'équipe (nouveau mouvement, amélioration, évolution de mouvement), et
    * certaines proposent un nouveau Pokémon tant que l'équipe n'est pas à 6.
    */
+  /** Version de Nika : rôle et catégorie de l'attaque, sur la pastille de la carte. */
+  function moveTag(d) {
+    return ' · ' + (G.Roles.MOVE_ROLE[d.role] || '').split(' ')[0] + (d.kind !== 'buff' ? ' ' + (d.cat === 'P' ? 'Phy' : 'Spé') : '');
+  }
+
   function memberCards(pl, out, waiting, team) {
     const who = team > 1 ? pl.mon.name + ' · ' : '';
     const wk = pl.ally ? 0.8 : 1;          // un peu moins pour chaque allié : le total reste équilibré
@@ -49,7 +54,7 @@ G.LevelUp = (() => {
         out.push({
           w: 10 * wk, type: 'new', key: 'new:' + pl.dex + ':' + id, who: team > 1 ? pl.dex : null,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: who + G.U.TYPE_NAME[d.type],
+          tag: who + G.U.TYPE_NAME[d.type] + moveTag(d),
           title: d.name, desc: d.desc + (d.kind === 'melee' || d.kind === 'dash' ? ' · Vol de vie 1 %' : ''),
           apply: () => pl.addMove(id)
         });
@@ -66,7 +71,7 @@ G.LevelUp = (() => {
         const card = {
           w: 14 * wk, type: 'new', forget: true, key: 'new:' + pl.dex + ':' + id, who: team > 1 ? pl.dex : null,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
-          tag: who + G.U.TYPE_NAME[d.type],
+          tag: who + G.U.TYPE_NAME[d.type] + moveTag(d),
           title: d.name, desc: d.desc + ' · Oublie une attaque pour l\'apprendre.',
           target: pl, moveId: id
         };
@@ -130,7 +135,7 @@ G.LevelUp = (() => {
           w: 9, type: 'mon', key: 'mon:' + mon.dex, dex: mon.dex,
           icon: 'heart', color: G.U.TYPE_COLOR[mon.types[0]],
           tag: 'Équipe ' + (members.length + 1) + '/6',
-          title: mon.name, desc: 'Rejoint ton équipe au niveau 1 et attaque avec toi.',
+          title: mon.name, desc: 'Rejoint ton équipe au niveau 1. Bonus d\'équipe : ' + G.Roles.info(mon.dex).team + '.',
           types: mon.types, evo: G.Team.evoLevel(mon.dex),
           apply: () => G.Team.recruit(mon.dex)
         });
