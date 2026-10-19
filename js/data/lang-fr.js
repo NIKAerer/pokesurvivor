@@ -194,7 +194,7 @@ G.I18n.add({
   'Guardas el vínculo: aprende otro movimiento para usarlo': 'Tu gardes le lien : apprends une autre capacité pour l’utiliser',
   '¡Se ha abierto una grieta misteriosa!': "Une faille mystérieuse s'est ouverte !", 'Has entrado en la grieta…': 'Tu es entré dans la faille…',
   'La grieta os ha expulsado…': 'La faille vous a rejetés…', '{x} ha dejado la partida': '{x} a quitté la partie',
-  '+1 ticket': '+1 ticket', '¡Ticket ×10!': 'Ticket ×10 !', '· ×{x} Fortuna': '· ×{x} Fortune',
+  '+1 ticket': '+1 Poké Ball', '¡Ticket ×10!': '+10 Poké Balls !', '· ×{x} Fortuna': '· ×{x} Fortune',
   'Has caído: un compañero puede levantarte': 'Tu es K.O. : un coéquipier peut te relever', 'Habéis caído todos…': 'Vous êtes tous K.O.…',
   '¡{x} necesita ayuda! · {x} m': "{x} a besoin d'aide ! · {x} m", 'CAÍDO': 'K.O.', 'Quédate a su lado': 'Reste à côté de lui',
   'Grieta · {x} m · {x} s': 'Faille · {x} m · {x} s', 'DERROTADOS ·': 'VAINCUS ·', 'MONEDAS': 'PIÈCES',
@@ -209,7 +209,7 @@ G.I18n.add({
   'Has caído…': 'Tu es K.O.…', 'Run terminada': 'Partie terminée', 'Volver al menú': 'Retour au menu', 'Salir de la partida': 'Quitter la partie',
   'Tiempo': 'Temps', 'Nivel': 'Niveau', 'Derrotados': 'Vaincus', 'Jefes': 'Boss', 'Pokémonedas ganadas': 'Poképièces gagnées',
   'Movimientos': 'Capacités', '¡Nuevo récord de tiempo!': 'Nouveau record de temps !', '· ¡nuevo!': '· nouveau !', '{x} Shinies conseguidos': '{x} shinies obtenus',
-  'Tickets del gacha': 'Tickets de la Boutique', 'Nivel máximo': 'Niveau maximum',
+  'Tickets del gacha': 'Poké Balls à ouvrir', 'Tickets': 'Poké Balls', 'Nivel máximo': 'Niveau maximum',
 
   // ---------------- connexion et test ----------------
   'Mundo Misterioso': 'Donjon Mystère', 'Entrar': 'Se connecter', 'Crear cuenta': 'Créer un compte', 'Nombre': 'Nom', 'Contraseña': 'Mot de passe',
@@ -298,9 +298,9 @@ G.I18n.add({
   '· A las {x} tiradas sin Legendaria en un banner, la siguiente lo es.': "· Après {x} tirages sans Légendaire dans une bannière, le suivant l'est forcément.",
   '· La tirada ×10 garantiza al menos una Épica.': '· Le tirage ×10 garantit au moins un Épique.',
   '· Los repetidos dan Pokémonedas. Los shiny no se repiten.': '· Les doublons donnent des Poképièces. Les shinies ne sortent jamais en double.',
-  '· Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y los jefes y los legendarios de las grietas, a veces, tickets ×10.': '· Les tickets se gagnent en jouant : certains Pokémon en lâchent quand ils sont vaincus, et les boss et les légendaires des failles donnent parfois des tickets ×10.',
-  'Tirar ×1 ·': 'Tirer ×1 ·', 'Tirar ×10 ·': 'Tirer ×10 ·', 'tickets ×10': 'tickets ×10', 'tickets y {x}': 'tickets et {x}',
-  'No tienes tickets suficientes: consíguelos jugando': "Tu n'as pas assez de tickets : gagne-les en jouant", '¡NUEVO!': 'NOUVEAU !', '¡SHINY NUEVO!': 'NOUVEAU SHINY !',
+  '· Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y los jefes y los legendarios de las grietas, a veces, tickets ×10.': '· Les Poké Balls se gagnent en jouant : les boss, la Ligue, les dresseurs rares et les missions en donnent.',
+  'Tirar ×1 ·': 'Ouvrir 1 ·', 'Tirar ×10 ·': 'Ouvrir 10 ·', 'tickets ×10': 'Poké Balls ×10', 'tickets y {x}': 'Poké Balls et {x}',
+  'No tienes tickets suficientes: consíguelos jugando': "Tu n'as pas assez de Poké Balls : gagne-les en jouant", '¡NUEVO!': 'NOUVEAU !', '¡SHINY NUEVO!': 'NOUVEAU SHINY !',
   'Repetido ·': 'Doublon ·', '· {x} {x} shiny': '· {x} {x} shiny', '{x} Shiny': '{x} Shiny', 'Clic para acelerar': 'Clique pour accélérer',
   'TIRADA': 'TIRAGE', 'TIRADA ×10': 'TIRAGE ×10', '¡SUERTE!': 'BONNE CHANCE !', '¡¿SHINY?!': 'SHINY ?!', '¡¿LEGENDARIO?!': 'LÉGENDAIRE ?!', '¡¿ÉPICO?!': 'ÉPIQUE ?!', 'SHINY ·': 'SHINY ·',
   // améliorations
@@ -468,7 +468,7 @@ G.I18n.add({
   'Cuanta más gente juega, más cuestan los servidores. Lo que sobre se guarda para los gastos de los meses siguientes.': "Plus il y a de joueurs, plus les serveurs coûtent cher. Ce qui reste est gardé pour les frais des mois suivants.",
   'Juego de fans {x}: sin anuncios ni compras. Pokémon y sus personajes son propiedad de Nintendo, Creatures y GAME FREAK; este proyecto no está afiliado a ellos.': "Jeu de fans {x} : sans pubs ni achats. Pokémon et ses personnages appartiennent à Nintendo, Creatures et GAME FREAK ; ce projet n'est pas affilié à eux.",
   ': sin anuncios ni compras. Pokémon y sus personajes son propiedad de Nintendo, Creatures y GAME FREAK; este proyecto no está afiliado a ellos.': " : sans pubs ni achats. Pokémon et ses personnages appartiennent à Nintendo, Creatures et GAME FREAK ; ce projet n'est pas affilié à eux.",
-  '. No tiene anuncios ni compras. Se puede apoyar con donaciones voluntarias, que se usan sólo para pagar los servidores y el dominio, y que no dan ninguna ventaja en el juego.': ". Il n'a ni pubs ni achats. On peut le soutenir avec des dons volontaires, qui servent seulement à payer les serveurs et le nom de domaine, et qui ne donnent aucun avantage dans le jeu.", 'Compañero': 'Compagnon', 'tickets y': 'tickets et', 'directamente': 'directement', 'Tienes': 'Tu as', 'Movimientos que puede aprender': "Capacités qu'il peut apprendre",
+  '. No tiene anuncios ni compras. Se puede apoyar con donaciones voluntarias, que se usan sólo para pagar los servidores y el dominio, y que no dan ninguna ventaja en el juego.': ". Il n'a ni pubs ni achats. On peut le soutenir avec des dons volontaires, qui servent seulement à payer les serveurs et le nom de domaine, et qui ne donnent aucun avantage dans le jeu.", 'Compañero': 'Compagnon', 'tickets y': 'Poké Balls et', 'directamente': 'directement', 'Tienes': 'Tu as', 'Movimientos que puede aprender': "Capacités qu'il peut apprendre",
   'Juego de fans {x} — sin anuncios ni pagos.': 'Jeu de fans {x} — sans pubs ni paiements.', 'Código Cero': 'Type:0', 'Pokédex: todos los Pokémon jugables': 'Pokédex : tous les Pokémon jouables',
 
   // ---------------- 2026-10-10 : failles, boss, écran d'accueil, nouvelles capacités ----------------
@@ -521,7 +521,7 @@ G.I18n.add({
   '¡{x} se ha asustado y ha huido…!': "{x} a eu peur et s'est enfui… !", '{x} se ha cansado de esperar y se ha ido…': "{x} en a eu marre d'attendre et est parti…",
   '¡Has llevado a {x} a casa! Te lo agradece': 'Tu as ramené {x} chez lui ! Il te remercie', '¡{x} se une a tu equipo!': '{x} rejoint ton équipe !',
   '¡{x} te da las gracias! (+150 monedas, ya lo tenías)': "{x} te remercie ! (+150 pièces, tu l'avais déjà)",
-  '¡Un {x} con un ticket ×10! ¡Atrápalo antes de que huya!': "Un {x} avec un ticket ×10 ! Attrape-le avant qu'il s'enfuie !",
+  '¡Un {x} con un ticket ×10! ¡Atrápalo antes de que huya!': "Un {x} avec 10 Poké Balls ! Attrape-le avant qu'il s'enfuie !",
   '¡Un {x} cargado de monedas! ¡Atrápalo antes de que huya!': "Un {x} plein de pièces ! Attrape-le avant qu'il s'enfuie !",
   '¡{x} se ha escapado!': "{x} s'est échappé !", 'HORA DORADA · {x} s': 'HEURE DORÉE · {x} s', 'HORDA {x} · {x} s': 'HORDE {x} · {x} s',
   'Marca · {x} m': 'Repère · {x} m',

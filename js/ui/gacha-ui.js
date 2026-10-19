@@ -53,7 +53,7 @@ G.GachaUI = (() => {
     }
 
     const pity = (s.pity && s.pity[gen]) || 0;
-    $('gacha-pity').textContent = `Tirages sans légendaire : ${pity} / ${G.Gacha.PITY_5}`;
+    $('gacha-pity').textContent = `Ouvertures sans légendaire : ${pity} / ${G.Gacha.PITY_5}`;
 
     $('gacha-rates').innerHTML = '<h3>Probabilidades</h3>' + G.Gacha.RATES.slice().reverse().map(([r, w]) => `
       <div><span style="color:${G.Gacha.RARITY_COLOR[r]}">${G.UI.stars(r, 10)} ${G.Gacha.RARITY_NAME[r]}</span>
@@ -62,13 +62,13 @@ G.GachaUI = (() => {
        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria, la siguiente lo es.<br>
        · Los repetidos dan Pokémonedas. Los shiny no se repiten.<br>
-       · Les tickets se gagnent en partie ou s'achètent avec des pièces.</p>`;
+       · Les Poké Balls se gagnent en partie ou s'achètent avec des pièces (le prix monte à chaque achat).</p>`;
 
     const t = s.tickets;
     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
     $('cost-10').innerHTML = `${G.Icons.html('ticket', 18)} 10`;
     $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
-    $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> tickets`;
+    $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> Poké Ball${t.t1 > 1 ? 's' : ''} à ouvrir`;
     // Version de Nika : on peut aussi acheter des tickets avec les pièces.
     // Version de Nika : 300 pièces, +50 à chaque ticket acheté (gacha plus rare).
     const PRICE = { t1: 300 + 50 * (s.ticketsBought | 0), t10: 3000 };
