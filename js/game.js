@@ -31,6 +31,7 @@ G.Game = (() => {
     ctx = cv.getContext('2d');
     resize();
     addEventListener('resize', resize);
+    addEventListener('orientationchange', () => setTimeout(resize, 300));
     G.Touch.init(cv);
     // En móvil: al cambiar de app o girarlo en vertical, la partida se pausa.
     document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
@@ -557,6 +558,10 @@ G.Game = (() => {
   let loopErrs = 0, errRun = 0;
   function loop(ts) {
     requestAnimationFrame(loop);
+    // iOS (surtout l'appli de l'écran d'accueil) envoie « resize » avant d'avoir
+    // fini de tourner l'écran : on vérifie la taille à chaque image, sinon le
+    // canvas garde l'ancienne taille et tout est étiré.
+    if (cv.clientWidth !== w || cv.clientHeight !== h) resize();
     try { frame(ts); errRun = 0; }
     catch (e) {
       if (loopErrs++ < 5) console.error('[Game] fallo en un fotograma:', e);

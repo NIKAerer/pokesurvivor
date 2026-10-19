@@ -112,9 +112,12 @@ G.Touch = (() => {
   }
 
   /** Márgenes del iPhone (barra de inicio abajo, muesca a los lados), en px. */
-  let safe = null;
+  let safe = null, safeKey = '';
   function safeArea() {
-    if (safe) return safe;
+    // Se recalcula si cambia la pantalla (iOS gira después del evento resize).
+    const key = innerWidth + 'x' + innerHeight;
+    if (safe && key === safeKey) return safe;
+    safeKey = key;
     const d = document.createElement('div');
     d.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;' +
       'padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
