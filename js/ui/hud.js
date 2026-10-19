@@ -145,10 +145,12 @@ G.HUD = (() => {
     ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
     // Version de Nika : vague en cours et prochain boss
     {
-      const wv = G.Spawner.wave(), nb = G.Spawner.nextBossIn(st.time);
+      const wv = G.Spawner.wave(), nb = G.Spawner.nextBossIn(st.time), ch = G.League.timeLeft(st.time);
       const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
-      const txt = (wv ? 'VAGUE ' + wv : '') + (nb != null && !G.Rift.inArena ? '  ·  BOSS DANS ' + fmt(nb) : '');
-      if (txt) {
+      const cur = G.League.current();
+      const txt = (wv ? 'VAGUE ' + wv : '') + (nb != null && !G.Rift.inArena ? '  ·  BOSS DANS ' + fmt(nb) : '')
+        + (ch != null ? '  ·  ' + cur.who.toUpperCase() + ' DANS ' + fmt(ch) : '');
+      if (txt && !G.EnemyMgr.bossAlive()) {
         ctx.font = F(800, 11);
         ctx.fillStyle = nb != null && nb < 15 ? '#ff6b6b' : '#ffcb3d';
         ctx.fillText(txt, w / 2, 72);
