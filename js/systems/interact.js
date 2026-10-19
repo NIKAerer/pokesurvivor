@@ -138,6 +138,7 @@ G.Interact = (() => {
       const e = new G.Enemy(def, p.x + Math.cos(a) * 70, p.y - 30 + Math.sin(a) * 40, sc, true);
       e.dmg *= G.League.dmgK();
       e.rival = true;
+      e.maxHp = e.hp = G.Power.bossHp(e.maxHp, 'rival'); G.Power.tag(e, 'rival');
       G.EnemyMgr.add(e);
       return e;
     });

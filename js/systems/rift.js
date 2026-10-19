@@ -150,6 +150,8 @@ G.Rift = (() => {
     };
     const e = new G.Enemy(def, arena.x, arena.y - ts * 3.5, { hp: 1, spd: 1, dmg: 1 }, true);
     e.legend = true;
+    // Version de Nika : le légendaire tient face à ton équipe (power.js).
+    e.maxHp = e.hp = G.Power.bossHp(e.maxHp, 'legend'); G.Power.tag(e, 'legend');
     // Choca con las paredes y columnas como tú: si volara por encima de las
     // rocas, tus disparos no podrían alcanzarle (bug de Celebi).
     e.flying = false;
@@ -223,6 +225,7 @@ G.Rift = (() => {
   function lost() {
     if (!arena || arena.phase !== 'fight') return;
     arena.phase = 'lost'; arena.endT = 1.2;
+    if (arena.t > ARENA_TIME) G.Power.lost();
     G.Spawner.say('La grieta os ha expulsado…', 2.6, true);
     G.Audio.sfx('back');
   }
