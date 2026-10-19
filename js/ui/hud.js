@@ -106,8 +106,7 @@ G.HUD = (() => {
       ctx.fillStyle = '#ffcb3d';
       ctx.fillText('N.' + m.level, tx + nw + 5, y + 12);
       // Version de Nika : l'icône de son rôle.
-      ctx.font = F(400, 10);
-      ctx.fillText(G.Roles.info(m.dex).icon, tx + nw + 7 + ctx.measureText('N.' + m.level).width + 6, y + 12);
+      G.Icons.draw(ctx, G.Roles.info(m.dex).ico, tx + nw + 7 + ctx.measureText('N.' + m.level).width + 4, y + 1, 12);
       for (let q = 0; q < 4; q++) {
         const mv = m.moves[q];
         const x = px + RW - 4 * 19 + q * 19, iy = y - 1;
@@ -149,15 +148,17 @@ G.HUD = (() => {
 
     // Version de Nika : les bonus de rôle de l'équipe, sous l'équipe.
     {
-      const all = G.Roles.lines(), lines = [];
-      for (let i = 0; i < all.length; i += 2) lines.push(all.slice(i, i + 2).join('   '));
-      let ly = byy + (bx > px ? 30 : 12);
+      const all = G.Roles.lines();
+      let ly = byy + (bx > px ? 30 : 12), lx = px;
       ctx.font = F(700, 9); ctx.textAlign = 'left';
-      for (const t of lines) {
-        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillText(t, px + 1, ly + 1);
-        ctx.fillStyle = '#cfe0f7'; ctx.fillText(t, px, ly);
-        ly += 12;
-      }
+      all.forEach((l, i) => {
+        if (i % 2 === 0) lx = px;
+        G.Icons.draw(ctx, l.ico, lx, ly - 9, 12);
+        ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillText(l.txt, lx + 15, ly + 1);
+        ctx.fillStyle = '#cfe0f7'; ctx.fillText(l.txt, lx + 14, ly);
+        lx += 14 + ctx.measureText(l.txt).width + 12;
+        if (i % 2 === 1) ly += 14;
+      });
     }
 
     // ---------- version de Nika : la Ligue (en haut à droite) ----------

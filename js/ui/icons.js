@@ -52,6 +52,25 @@ G.Icons = (() => {
     clock: { pal: { w: '#f4f4ff', y: '#ffd23f', o: '#c9c9e0' }, rows: [
       '....kkkk....', '..kkyyyykk..', '.kyywwwwyyk.', '.kywwwkwwyk.', 'kywwwwkwwwyk', 'kywwwwkwwwyk',
       'kywwwwkkkwyk', 'kywwwwwwwwyk', '.kywwwwwwyk.', '.kyyowwwyyk.', '..kkyyyykk..', '....kkkk....'] },
+    // Version de Nika : icônes des rôles (tank, mêlée, mage, DPS, soin, vitesse).
+    role_tank: { pal: { s: '#c9d3e0', d: '#7d8aa0', w: '#f4f8ff', r: '#8e9bb3' }, rows: [
+      '............', '.kkkkkkkkkk.', '.kwwsssssdk.', '.kwssrrssdk.', '.kwssrrssdk.', '.ksrrrrrrdk.',
+      '.ksrrrrrrdk.', '..kssrrsdk..', '..kssssddk..', '...ksssdk...', '....kddk....', '.....kk.....'] },
+    role_melee: { pal: { w: '#f4f8ff', s: '#9fb1c9', y: '#ffd23f', b: '#a0603a' }, rows: [
+      '.........kkk', '........kwwk', '.......kwwsk', '......kwwsk.', '.....kwwsk..', '.kk.kwwsk...',
+      '.kykwwsk....', '..kyysk.....', '..kbyyk.....', '.kbbkkyk....', 'kbbk..kk....', 'kkk.........'] },
+    role_mage: { pal: { p: '#c99bff', q: '#8a5ad8', w: '#f3e8ff', y: '#ffd23f', o: '#c08a10' }, rows: [
+      '...kkkkkk...', '..kwwppppk..', '.kwwppppppk.', '.kwppppppqk.', '.kppppppqqk.', '.kpppppqqqk.',
+      '..kppqqqqk..', '...kkkkkk...', '..kyyyyyyk..', '.kyoooooook.', '.kkkkkkkkkk.', '............'] },
+    role_dps: { pal: { r: '#ffd23f', w: '#fff6c8', y: '#ff5f6d' }, rows: [
+      '....kkkk....', '..kkrrrrkk..', '.krrwwwwrrk.', '.krwwrrwwrk.', 'krwwrkkrwwrk', 'krwrkyykrwrk',
+      'krwrkyykrwrk', 'krwwrkkrwwrk', '.krwwrrwwrk.', '.krrwwwwrrk.', '..kkrrrrkk..', '....kkkk....'] },
+    role_soin: { pal: { g: '#6fe39a', d: '#2f9a52', w: '#d8ffe4' }, rows: [
+      '............', '....kkkk....', '....kwgk....', '....kggk....', '.kkkkggkkkk.', '.kwgggggggk.',
+      '.kggggggggk.', '.kkkkggkkkk.', '....kgdk....', '....kgdk....', '....kkkk....', '............'] },
+    role_vit: { pal: { c: '#8fe8ff', d: '#3fa8d0', w: '#f0fcff' }, rows: [
+      '.........kk.', '.......kkwk.', '.....kkwcck.', '...kkwcccck.', '.kkwccccck..', 'kwcccccdck..',
+      '.kkccdddk...', '..kkcddk....', '...kkdk.....', '....kdk.....', '.....k......', '............'] },
     shield: { pal: { s: '#9fb1c9', d: '#5d6f8c', w: '#e6eef8', r: '#4fb4ff' }, rows: [
       '............', '.kkkkkkkkkk.', '.kwwsssssdk.', '.kwssrrssdk.', '.kwssrrssdk.', '.kssrrrrsdk.',
       '.kssrrrrsdk.', '..kssrrsdk..', '..kssssddk..', '...ksssdk...', '....kddk....', '.....kk.....'] },

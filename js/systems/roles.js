@@ -18,13 +18,13 @@
  */
 G.Roles = (() => {
   const INFO = {
-    tankA: { name: 'Tank armure', icon: '🛡️', color: '#b0bfd2', team: 'PV max + résiste aux coups physiques' },
-    tankM: { name: 'Tank magique', icon: '✨', color: '#9fd0ff', team: 'PV max + résiste aux attaques spéciales' },
-    melee: { name: 'Mêlée', icon: '⚔️', color: '#ff8a5c', team: 'Vol de vie sur tous les dégâts' },
-    mage:  { name: 'Mage', icon: '🔮', color: '#c99bff', team: 'Dégâts de toute l\'équipe' },
-    dps:   { name: 'DPS', icon: '🎯', color: '#ffd23f', team: 'Vitesse d\'attaque de toute l\'équipe' },
-    soin:  { name: 'Soigneur', icon: '💚', color: '#6fe39a', team: 'Soigne la barre de PV en continu' },
-    vit:   { name: 'Support vitesse', icon: '💨', color: '#8fe8ff', team: 'Vitesse de déplacement de l\'équipe' }
+    tankA: { name: 'Tank', ico: 'role_tank', color: '#b0bfd2', team: 'PV max + résiste aux coups physiques' },
+    tankM: { name: 'Tank', ico: 'role_tank', color: '#b0bfd2', team: 'PV max + résiste aux attaques spéciales' },
+    melee: { name: 'Mêlée', ico: 'role_melee', color: '#ff8a5c', team: 'Vol de vie sur tous les dégâts' },
+    mage:  { name: 'Mage', ico: 'role_mage', color: '#c99bff', team: 'Dégâts de toute l\'équipe' },
+    dps:   { name: 'DPS', ico: 'role_dps', color: '#ffd23f', team: 'Vitesse d\'attaque de toute l\'équipe' },
+    soin:  { name: 'Soigneur', ico: 'role_soin', color: '#6fe39a', team: 'Soigne la barre de PV en continu' },
+    vit:   { name: 'Support vitesse', ico: 'role_vit', color: '#8fe8ff', team: 'Vitesse de déplacement de l\'équipe' }
   };
   // Ce que donne UN Pokémon de ce rôle (le chef en vaut 2).
   const PER = { hp: 0.10, red: 0.06, vamp: 0.012, dmg: 0.08, cd: 0.07, regen: 0.004, spd: 0.06 };
@@ -125,29 +125,34 @@ G.Roles = (() => {
     }
   }
 
-  /** Lignes lisibles des bonus actuels (HUD, menu pause). */
+  /** Lignes lisibles des bonus actuels (HUD) : { ico, txt }. */
   function lines() {
     const out = [];
     const pct = v => Math.round(v * 100) + ' %';
-    if (b.hp) out.push('🛡️ PV max +' + pct(b.hp));
-    if (b.physRed) out.push('🛡️ Dégâts physiques -' + pct(b.physRed));
-    if (b.specRed) out.push('✨ Dégâts spéciaux -' + pct(b.specRed));
-    if (b.vamp) out.push('⚔️ Vol de vie ' + (Math.round(b.vamp * 1000) / 10) + ' %');
-    if (b.dmg) out.push('🔮 Dégâts +' + pct(b.dmg));
-    if (b.cd < 1) out.push('🎯 Vitesse d\'attaque +' + pct(1 / b.cd - 1));
-    if (b.regen) out.push('💚 Soin ' + (Math.round(b.regen * 1000) / 10) + ' % PV/s');
-    if (b.spd) out.push('💨 Vitesse +' + pct(b.spd));
+    const L = (r, txt) => out.push({ ico: 'role_' + r, txt });
+    if (b.hp) L('tank', 'PV max +' + pct(b.hp));
+    if (b.physRed) L('tank', 'Dégâts physiques -' + pct(b.physRed));
+    if (b.specRed) L('tank', 'Dégâts spéciaux -' + pct(b.specRed));
+    if (b.vamp) L('melee', 'Vol de vie ' + (Math.round(b.vamp * 1000) / 10) + ' %');
+    if (b.dmg) L('mage', 'Dégâts +' + pct(b.dmg));
+    if (b.cd < 1) L('dps', 'Vitesse d\'attaque +' + pct(1 / b.cd - 1));
+    if (b.regen) L('soin', 'Soin ' + (Math.round(b.regen * 1000) / 10) + ' % PV/s');
+    if (b.spd) L('vit', 'Vitesse +' + pct(b.spd));
     return out;
   }
 
   /** Pastille HTML du rôle (menus, cartes). */
   function chip(dex, long) {
     const r = INFO[of(dex)];
-    return `<span class="role-chip" style="--r:${r.color}" title="${r.team}">${r.icon} ${r.name}${long ? ' · <small>' + r.team + '</small>' : ''}</span>`;
+    return `<span class="role-chip" style="--r:${r.color}" title="${r.team}">${G.Icons.html(r.ico, 12, 'role-ico')}${r.name}${long ? ' · <small>' + r.team + '</small>' : ''}</span>`;
   }
   const CAT_NAME = { P: 'Physique', S: 'Spéciale' };
-  const MOVE_ROLE = { tank: '🛡️ Tank', melee: '⚔️ Mêlée', mage: '🔮 Mage', dps: '🎯 DPS', soin: '💚 Soin', vit: '💨 Vitesse' };
+  const MOVE_ROLE = { tank: 'Tank', melee: 'Mêlée', mage: 'Mage', dps: 'DPS', soin: 'Soin', vit: 'Vitesse' };
+  /** Icône du rôle d'une attaque (tank, melee, mage, dps, soin, vit). */
+  const moveIco = role => role ? 'role_' + role : null;
+  /** <img> pixel de l'icône d'un rôle ('tank', 'mage'...). */
+  const iconHtml = (role, size = 12) => G.Icons.html('role_' + role, size, 'role-ico');
 
-  return { INFO, CAT_NAME, MOVE_ROLE, chip, of, info, moveRole, stats, catMul, catK, guardK, foeK, recompute, reset, onDamage, update, lines,
+  return { INFO, CAT_NAME, MOVE_ROLE, moveIco, iconHtml, chip, of, info, moveRole, stats, catMul, catK, guardK, foeK, recompute, reset, onDamage, update, lines,
            get b() { return b; } };
 })();
