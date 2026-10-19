@@ -50,7 +50,7 @@ G.LevelUp = (() => {
           w: 10 * wk, type: 'new', key: 'new:' + pl.dex + ':' + id, who: team > 1 ? pl.dex : null,
           icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
           tag: who + G.U.TYPE_NAME[d.type],
-          title: d.name, desc: d.desc + (d.kind === 'melee' || d.kind === 'dash' ? ' · Vol de vie 10 %' : ''),
+          title: d.name, desc: d.desc + (d.kind === 'melee' || d.kind === 'dash' ? ' · Vol de vie 1 %' : ''),
           apply: () => pl.addMove(id)
         });
       }

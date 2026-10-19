@@ -65,6 +65,8 @@ G.MissionDefs = (() => {
     // Version de Nika
     { id: 'wpevolve', ev: 'pevolve', goals: [8, 12], reward: { t1: 10, coins: 900 },
       text: n => `Fais évoluer ${n} Pokémon` },
+    { id: 'wleague', ev: 'league', goals: [1, 2], reward: { t1: 10, coins: 1000 },
+      text: n => (n === 1 ? 'Gagne un défi de la Ligue' : `Gagne ${n} défis de la Ligue`) },
     { id: 'wcapture', ev: 'capture', goals: [1], reward: { t1: 10, coins: 1000 },
       text: () => 'Capture un Pokémon légendaire' }
   ];

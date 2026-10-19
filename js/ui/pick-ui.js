@@ -104,6 +104,11 @@ G.PickUI = (() => {
       list.appendChild(b);
     }
     $('pick-count').textContent = `Tes Pokémon (${mons.length})`;
+    // La Ligue : badges gagnés et prochain défi.
+    const L = G.League, cur = L.current(), stp = L.step();
+    $('pick-league').innerHTML = L.STEPS.map((st, i) =>
+      `<span class="lg-b ${st.kind}${i < stp ? ' on' : ''}${i === stp && !L.done() ? ' next' : ''}" style="--c:${G.U.TYPE_COLOR[st.type]}" title="${L.title(st)}"></span>`).join('')
+      + `<span class="lg-txt">${cur ? 'Prochain défi : <b>' + L.title(cur) + '</b> (' + G.I18n.t(G.U.TYPE_NAME[cur.type]) + ') vers ' + G.U.mmss(L.at(stp)) : '<b>Maître de la Ligue ★</b> · mode libre'}</span>`;
     // Missions terminées dont la récompense attend.
     const pend = G.Progress.pending();
     $('pick-goals-n').textContent = pend;
