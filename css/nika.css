@@ -312,3 +312,7 @@
   #scr-pause .box > .row:last-child { position: sticky; bottom: 0; margin: 0 -24px; padding: 8px 0 10px;
     background: linear-gradient(180deg, transparent, var(--box2) 40%); }
 }
+
+/* Version de Nika : sur un grand écran de PC, les menus grandissent (ils étaient faits pour ~1280×760). */
+@media (pointer: fine) and (min-width: 1400px) and (min-height: 860px) { .scr > * { zoom: 1.2; } }
+@media (pointer: fine) and (min-width: 1800px) and (min-height: 1000px) { .scr > * { zoom: 1.4; } }

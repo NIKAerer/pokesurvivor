@@ -535,12 +535,7 @@ G.Game = (() => {
       return;
     }
     if (G.Input.tap('escape') || G.Input.tap('keyp')) { togglePause(); return; }
-    if (state !== 'playing' || !pl) return;
-    for (let i = 0; i < 4; i++) {
-      if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pl.setActive(i);
-    }
-    if (G.Input.tap('keyq')) pl.cycle(-1);
-    if (G.Input.tap('keye') || G.Input.tap('tab')) pl.cycle(1);
+    // Version de Nika : toutes les attaques partent seules, pas de touches pour les choisir.
   }
 
   // ---------------- bucle ----------------
