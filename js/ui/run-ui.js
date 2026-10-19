@@ -59,7 +59,7 @@ G.RunUI = (() => {
       el.innerHTML =
         `<div class="ico" style="background:${c.color}33">${G.Icons.html(c.icon, 56)}</div>
          <div class="txt"><div class="nm">${c.title} ${tag}</div>${c.types ? `<div class="lv-types">${G.UI.typeChips(c.types)}</div>
-           <div class="lv-evo">${c.evo ? 'Évolue au N. ' + c.evo : 'N\'évolue pas'}</div>` : ''}<div class="ds">${c.desc}</div></div>
+           <div class="lv-evo">${c.evo ? 'Évolue au N. ' + c.evo : 'N\'évolue pas'}</div>` : ''}${c.dex ? `<div class="lv-role">${G.Roles.chip(c.dex, true)}</div>` : ''}<div class="ds">${c.desc}</div></div>
          <div class="key">${i + 1}</div>`;
       // Version de Nika : nouveau Pokémon -> son sprite ; carte pour un allié -> son petit portrait.
       if (c.dex || c.who) {

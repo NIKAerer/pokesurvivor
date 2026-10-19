@@ -100,7 +100,7 @@ G.Team = (() => {
   let allies = [];
   let leader = null;
 
-  function reset(pl) { leader = pl; allies = []; }
+  function reset(pl) { leader = pl; allies = []; G.Roles.reset(); G.Roles.recompute(); }
 
   /** Tous les membres, le chef en premier. */
   function members() { return leader ? [leader, ...allies] : []; }
@@ -118,6 +118,7 @@ G.Team = (() => {
     const a = new G.Ally(G.DEX_BY[dex], leader, allies.length);
     a.addMove(G.startMoveOf(dex));
     allies.push(a);
+    G.Roles.recompute();               // bonus de rôle de l'équipe
     G.Sprites.preload([dex], 4000);
     G.FX.ring(a.x, a.y, 6, 90, '#7fe0ff', 0.6, 5);
     G.FX.burst(a.x, a.y - a.bodyH * 0.5, '#bdf3ff', 24, 180);
@@ -130,11 +131,15 @@ G.Team = (() => {
 
   /**
    * Les 7 attaques qu'un Pokémon peut apprendre (version de Nika) : son attaque de
-   * départ + 6 autres (il n'en garde que 4 : il faut en oublier une pour en apprendre une autre), toujours les mêmes pour sa famille (elles restent après
-   * l'évolution). On prend surtout les types de la famille, au plus 1 bonus (buff).
+   * départ + 6 autres (il n'en garde que 4 : il faut en oublier une pour en
+   * apprendre une autre), toujours les mêmes pour sa famille (elles restent après
+   * l'évolution). Depuis les rôles (2026-10-19) : 4 attaques de son RÔLE et 3 de
+   * son TYPE (l'attaque de départ compte dans l'un des deux). On préfère les
+   * types de la famille au type Normal, et pour les attaques qui font des dégâts,
+   * la catégorie (physique / spéciale) de sa meilleure Attaque.
    */
   const sets = {};
-  const LEARN = 7;
+  const LEARN = 7, ROLE_N = 4;
   function learnset(dex) {
     const root = family(dex);
     if (sets[root]) return sets[root];
@@ -143,22 +148,35 @@ G.Team = (() => {
     for (const p of G.DEX) if (family(p.dex) === root) p.types.forEach(t => types.add(t));
     let seed = root * 9301 + 49297;
     const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-    const mix = a => a.map(x => [rnd(), x]).sort((p, q) => p[0] - q[0]).map(x => x[1]);
-    const pool = G.Moves.poolFor({ types: [...types] }).filter(id => id !== start);
-    const typed = mix(pool.filter(id => G.Moves.BY_ID[id].type !== 'normal'));
-    const normal = mix(pool.filter(id => G.Moves.BY_ID[id].type === 'normal'));
+    const B = G.Moves.BY_ID;
+    const role = G.Roles.moveRole(root);
+    const st = G.Roles.stats(root);
+    const best = st && st[3] > st[1] ? 'S' : 'P';
+    const support = role === 'soin' || role === 'vit';
+    const score = id => { const m = B[id]; return rnd() + (m.type !== 'normal' ? 1 : 0) + (m.kind !== 'buff' && m.cat === best ? 0.8 : 0); };
+    const pool = G.Moves.poolFor({ types: [...types] }).filter(id => id !== start)
+      .map(id => [score(id), id]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
     const out = [start];
-    let buffs = G.Moves.BY_ID[start].kind === 'buff' ? 1 : 0;
-    for (const id of [...typed, ...normal]) {
-      if (out.length >= LEARN) break;
-      const m = G.Moves.BY_ID[id];
-      if (m.kind === 'buff' && buffs >= 2) continue;
-      // varier : pas deux attaques de la même famille tant qu'il y a le choix
-      if (out.some(o => G.Moves.BY_ID[o].kind === m.kind) && typed.length + normal.length > 6 && out.length < 3) continue;
-      if (m.kind === 'buff') buffs++;
-      out.push(id);
+    let buffs = B[start].kind === 'buff' ? 1 : 0;
+    const maxBuffs = support ? 3 : 2;
+    let roleN = B[start].role === role ? 1 : 0;
+    let typeN = 1 - roleN;
+    const take = id => { out.push(id); if (B[id].kind === 'buff') buffs++; };
+    const okBuff = id => B[id].kind !== 'buff' || buffs < maxBuffs;
+    for (const id of pool) {                         // attaques de rôle
+      if (roleN >= ROLE_N) break;
+      if (B[id].role !== role || !okBuff(id)) continue;
+      take(id); roleN++;
     }
-    for (const id of [...typed, ...normal]) { if (out.length >= LEARN) break; if (!out.includes(id)) out.push(id); }
+    const typeMax = LEARN - ROLE_N;
+    for (const id of pool) {                         // attaques de type (pas de rôle), types de la famille d'abord
+      if (out.length >= LEARN || typeN >= typeMax + (ROLE_N - roleN)) break;
+      if (out.includes(id) || B[id].role === role || !okBuff(id)) continue;
+      // varier : pas deux attaques de la même forme tant qu'il y a le choix
+      if (out.some(o => B[o].kind === B[id].kind) && pool.length > 10 && typeN < 2) continue;
+      take(id); typeN++;
+    }
+    for (const id of pool) { if (out.length >= LEARN) break; if (!out.includes(id) && okBuff(id)) take(id); }
     return (sets[root] = out);
   }
 
@@ -209,6 +227,7 @@ G.Team = (() => {
     G.Audio.sfx('levelup');
     G.FX.ring(p.x, p.y, 4, 60, '#ffffff', 0.6, 3);
     G.Game.startEvolving();
+    G.Roles.recompute();
     G.Progress.event('pevolve', { dex: to });
     try { G.DB.grant(to, 'evo'); } catch (e) { /* pas grave */ }
     checkEvolve(p);                    // plusieurs niveaux d'un coup : peut ré-évoluer
@@ -285,7 +304,7 @@ G.Team = (() => {
     return out;
   }
 
-  function update(dt) { for (const a of allies) a.update(dt); }
+  function update(dt) { for (const a of allies) a.update(dt); G.Roles.update(dt); }
   function tick(dt, now) { if (!leader || leader.dead) return; for (const a of allies) G.Combat.tick(dt, a, now); }
 
   return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, update, tick, family, evoTick, drawEvo,

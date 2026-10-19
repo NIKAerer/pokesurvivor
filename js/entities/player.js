@@ -19,7 +19,7 @@ G.Player = class Player {
 
     this.atkMul = perks.atkMul || 1;
     this.spdMul = perks.spdMul || 1;
-    this.cdMul = perks.cdMul || 1;
+    this._cdMul = perks.cdMul || 1;
     this.dmgReduce = perks.dmgReduce || 0;
     this.regenFlat = perks.regen || 0;
     this.magnet = 78 * (perks.magnetMul || 1);
@@ -85,9 +85,17 @@ G.Player = class Player {
   cy() { return this.y; }
 
   // ---------------- stats efectivos ----------------
-  get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount); }
+  /** Version de Nika : ce Pokémon profite des bonus de rôle de l'équipe (chef ou allié). */
+  get inTeam() { return this.ally || (G.Team && G.Team.leader === this); }
+  // Recharge : les mejoras écrivent pl.cdMul *= x ; le bonus DPS de l'équipe s'y ajoute à la lecture.
+  get cdMul() { return this._cdMul * (this.inTeam ? G.Roles.b.cd : 1); }
+  set cdMul(v) { this._cdMul = v / (this.inTeam ? G.Roles.b.cd : 1); }
+  get atk() { return this.baseAtk * this.atkMul * (1 + this.buffs.atk.n * this.buffs.atk.amount) * (this.inTeam ? 1 + G.Roles.b.dmg : 1); }
+  /** Attaque pour un mouvement : Attaque (physique) ou Attaque Spé (spéciale). */
+  atkFor(m) { return this.atk * (m && m.cat ? G.Roles.catK(this.dex, m.cat) : 1); }
   get spd() {
-    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1);
+    const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1)
+      * (this.inTeam ? 1 + G.Roles.b.spd : 1);
     const w = G.Weather.speedFor(this.mon.types);
     const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return s * slow * w;
@@ -203,8 +211,14 @@ G.Player = class Player {
    * @param type  tipo del ataque (tabla de tipos y clima); sin tipo, daño tal cual
    * @param pure  daño que no baja con la defensa ni el cuerpo a cuerpo (Arceus)
    */
-  hurt(amount, type = null, pure = false) {
+  hurt(amount, type = null, pure = false, cat = null) {
     if (this.invuln > 0 || this.dead) return;
+    // Version de Nika : Défense contre le contact (P), Défense Spé contre les tirs (S),
+    // et les tanks de l'équipe (armure / magique).
+    if (cat && !pure) {
+      amount *= G.Roles.guardK(this.dex, cat);
+      if (this.inTeam) amount *= 1 - (cat === 'P' ? G.Roles.b.physRed : G.Roles.b.specRed);
+    }
     let eff = null;
     if (type) {
       const k = G.Types.mult(type, this.mon.types);
@@ -214,7 +228,18 @@ G.Player = class Player {
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
-    const d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
+    let d = pure ? Math.max(1, amount) : Math.max(1, amount * (1 - this.reduction) * close);
+    // Bouclier (Abri, Repli...) : absorbe d'abord.
+    if (this.shield > 0) {
+      const a = Math.min(this.shield, d);
+      this.shield -= a; d -= a;
+      if (d <= 0) {
+        this.invuln = 0.3;
+        G.FX.dmgText(this.x, this.y - this.bodyH - 4, 'Bouclier', '#9fd0ff');
+        if (this.shield <= 0) G.FX.ring(this.x, this.y - this.bodyH * 0.5, this.r * 2.6, this.r * 0.8, '#9fd0ff', 0.3, 3);
+        return;
+      }
+    }
     this.hp -= d;
     this.invuln = 0.45;
     this.flash = 0.14;
@@ -305,6 +330,7 @@ G.Player = class Player {
       if (b.n > 0) { b.t -= dt; if (b.t <= 0) b.n = 0; }
     }
     if (this.slowT > 0) this.slowT -= dt;
+    if (this.shield > 0 && (this.shieldT -= dt) <= 0) this.shield = 0;
     if (this.bellHeal > 0) { const h = Math.min(this.bellHeal, 4 * dt); this.hp = Math.min(this.maxHp, this.hp + h); this.bellHeal -= h; }
     if (this.power && (this.power.t -= dt) <= 0) { this.power.def.off(this); this.power = null; }
     if (this.regen > 0) this.hp = Math.min(this.maxHp, this.hp + this.regen * dt);
@@ -438,6 +464,17 @@ G.Player = class Player {
 
     const alpha = this.invuln > 0 && !this.dead ? (Math.floor(this.invuln * 18) % 2 ? 0.45 : 1) : 1;
     if (!G.Team.drawEvo(ctx, this)) this.anim.draw(ctx, this.x, this.y, { flash: this.flash > 0, softFlash: true, alpha, color: '#ffcb3d' });
+
+    // Bouclier : bulle bleutée.
+    if (this.shield > 0 && !this.dead) {
+      ctx.save();
+      const cy = this.y - this.bodyH * 0.5, R = Math.max(this.r * 1.6, this.bodyH * 0.75);
+      ctx.globalAlpha = 0.22 + Math.sin(performance.now() / 160) * 0.06;
+      ctx.fillStyle = '#9fd0ff';
+      ctx.beginPath(); ctx.arc(this.x, cy, R, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = 0.6; ctx.strokeStyle = '#d8ecff'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.restore();
+    }
 
     // Arcos de buff alrededor de los pies.
     const COL = { atk: '#ff6b4d', spd: '#7fe0ff', def: '#b0b8c8', regen: '#5fe08a' };

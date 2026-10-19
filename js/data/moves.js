@@ -54,10 +54,10 @@
       { t: '+1 orbe y +55% daño',           m: { count: 1, dmg: 1.55 } }
     ],
     nova: [
-      { t: '+4 proyectiles',                m: { count: 4 } },
+      { t: '+3 proyectiles',                m: { count: 3 } },
       { t: '+40% daño',                     m: { dmg: 1.40 } },
       { t: '-25% recarga',                  m: { cd: 0.75 } },
-      { t: '+4 proyectiles y +1 perforación', m: { count: 4, pierce: 1 } }
+      { t: '+3 proyectiles y +1 perforación', m: { count: 3, pierce: 1 } }
     ],
     aura: [
       { t: '+30% radio',                    m: { radius: 1.30 } },
@@ -113,6 +113,19 @@
       { t: '+30% alcance',                  m: { life: 1.30 } },
       { t: '+3 disparos y +1 perforación',  m: { count: 3, pierce: 1 } }
     ],
+    // Version de Nika : soins et boucliers (des « buff » avec stat heal / shield).
+    heal: [
+      { t: '+30% de soin',                  m: { amount: 1.30 } },
+      { t: '-20% de recharge',              m: { cd: 0.80 } },
+      { t: '+30% de soin',                  m: { amount: 1.30 } },
+      { t: '+40% de soin et -15% de recharge', m: { amount: 1.40, cd: 0.85 } }
+    ],
+    shield: [
+      { t: 'Bouclier +30% plus solide',     m: { amount: 1.30 } },
+      { t: '-20% de recharge',              m: { cd: 0.80 } },
+      { t: 'Bouclier +30% plus solide',     m: { amount: 1.30 } },
+      { t: '+40% de bouclier et -15% de recharge', m: { amount: 1.40, cd: 0.85 } }
+    ],
     buff: [
       { t: '+1 acumulación máxima',         m: { stacks: 1 } },
       { t: '+40% potencia',                 m: { amount: 1.40 } },
@@ -129,7 +142,7 @@
 
     { id: 'quick-attack', name: 'Ataque Rápido', type: 'normal', kind: 'dash',
       desc: 'Cruzas como un rayo hacia el enemigo y golpeas todo el camino.',
-      cd: 0.75, dmg: 20, radius: 110, width: 34, knock: 40 },
+      cd: 0.75, dmg: 26, radius: 110, width: 34, knock: 40 },
 
     { id: 'swords-dance', name: 'Danza Espada', type: 'normal', kind: 'buff',
       desc: 'No hace daño: acumula ATAQUE mientras esté activo.',
@@ -150,7 +163,7 @@
 
     { id: 'flamethrower', name: 'Lanzallamas', type: 'fire', kind: 'cone',
       desc: 'Chorro de llamas en abanico corto que quema.',
-      cd: 0.70, dmg: 7, count: 7, arc: 0.9, speed: 380, life: 0.42, size: 6, pierce: 1, burn: 1 },
+      cd: 0.70, dmg: 9, count: 7, arc: 0.9, speed: 380, life: 0.42, size: 6, pierce: 1, burn: 1 },
 
     { id: 'fire-spin', name: 'Giro Fuego', type: 'fire', kind: 'orbit',
       desc: 'Llamas que giran a tu alrededor. Defensa constante.',
@@ -158,7 +171,7 @@
 
     { id: 'heat-wave', name: 'Onda Ígnea', type: 'fire', kind: 'nova',
       desc: 'Explota en llamas en todas las direcciones.',
-      cd: 1.25, dmg: 13, speed: 250, count: 10, pierce: 1, life: 1.1, size: 7, burn: 1 },
+      cd: 1.25, dmg: 12, speed: 250, count: 10, pierce: 1, life: 1.1, size: 7, burn: 1 },
 
     // ---------------- AGUA ----------------
     { id: 'water-gun', name: 'Pistola Agua', type: 'water', kind: 'projectile',
@@ -171,7 +184,7 @@
 
     { id: 'hydro-pump', name: 'Hidrobomba', type: 'water', kind: 'beam',
       desc: 'Cañonazo de agua lento pero devastador.',
-      cd: 1.50, dmg: 29, radius: 250, width: 30 },
+      cd: 1.50, dmg: 37, radius: 250, width: 30 },
 
     { id: 'aqua-ring', name: 'Acua Aro', type: 'water', kind: 'buff',
       desc: 'No hace daño: acumula REGENERACIÓN de vida.',
@@ -180,7 +193,7 @@
     // ---------------- PLANTA ----------------
     { id: 'vine-whip', name: 'Látigo Cepa', type: 'grass', kind: 'melee',
       desc: 'Látigos de largo alcance en arco amplio.',
-      cd: 0.62, dmg: 16, radius: 68, arc: 1.3, knock: 60 },
+      cd: 0.62, dmg: 14, radius: 68, arc: 1.3, knock: 60 },
 
     { id: 'razor-leaf', name: 'Hoja Afilada', type: 'grass', kind: 'boomerang',
       desc: 'Dos hojas que van y vuelven cortando a la ida y a la vuelta.',
@@ -216,11 +229,11 @@
 
     { id: 'psybeam', name: 'Psicorrayo', type: 'psychic', kind: 'beam',
       desc: 'Rayo psíquico ancho y contundente.',
-      cd: 1.15, dmg: 17, radius: 215, width: 40 },
+      cd: 1.15, dmg: 23, radius: 215, width: 40 },
 
     { id: 'psychic', name: 'Psíquico', type: 'psychic', kind: 'nova',
       desc: 'Estallido mental radial que busca enemigos.',
-      cd: 1.35, dmg: 10, speed: 230, count: 12, pierce: 1, life: 1.6, size: 7, homing: 1.0 },
+      cd: 1.35, dmg: 9, speed: 230, count: 12, pierce: 1, life: 1.6, size: 7, homing: 1.0 },
 
     // ---------------- TIPOS SECUNDARIOS ----------------
     { id: 'sludge', name: 'Residuos', type: 'poison', kind: 'projectile',
@@ -255,7 +268,7 @@
 
     { id: 'toxic', name: 'Tóxico', type: 'poison', kind: 'trail',
       desc: 'Vas dejando charcos de veneno que intoxican a quien los pisa.',
-      cd: 0.3, dmg: 6, radius: 26, dur: 3, poison: 1 },
+      cd: 0.3, dmg: 8, radius: 26, dur: 3, poison: 1 },
 
     // ---------------- TIERRA (extra) ----------------
     { id: 'bulldoze', name: 'Terratemblor', type: 'ground', kind: 'aura',
@@ -287,7 +300,7 @@
     // ---------------- HIELO ----------------
     { id: 'ice-beam', name: 'Rayo Hielo', type: 'ice', kind: 'beam',
       desc: 'Rayo helado que congela casi del todo.',
-      cd: 1.1, dmg: 20, radius: 220, width: 30, slow: 0.7 },
+      cd: 1.1, dmg: 25, radius: 220, width: 30, slow: 0.7 },
 
     { id: 'powder-snow', name: 'Nieve Polvo', type: 'ice', kind: 'aura',
       desc: 'Ventisca a tu alrededor que ralentiza.',
@@ -314,7 +327,7 @@
     // ---------------- DRAGÓN ----------------
     { id: 'dragon-rage', name: 'Furia Dragón', type: 'dragon', kind: 'beam',
       desc: 'Llamarada dracónica en línea recta.',
-      cd: 1.0, dmg: 24, radius: 230, width: 34 },
+      cd: 1.0, dmg: 30, radius: 230, width: 34 },
 
     { id: 'dragon-dance', name: 'Danza Dragón', type: 'dragon', kind: 'buff',
       desc: 'No hace daño: acumula ATAQUE más rápido que Danza Espada.',
@@ -336,7 +349,7 @@
 
     { id: 'flash-cannon', name: 'Foco Resplandor', type: 'steel', kind: 'beam',
       desc: 'Rayo de luz metálica que perfora.',
-      cd: 1.05, dmg: 23, radius: 220, width: 30 },
+      cd: 1.05, dmg: 29, radius: 220, width: 30 },
 
     // ---------------- SINIESTRO ----------------
     { id: 'bite', name: 'Mordisco', type: 'dark', kind: 'melee',
@@ -345,9 +358,9 @@
 
     { id: 'dark-pulse', name: 'Pulso Umbrío', type: 'dark', kind: 'nova',
       desc: 'Onda de energía oscura en todas direcciones.',
-      cd: 1.15, dmg: 14, speed: 240, count: 10, pierce: 1, life: 1.1, size: 8 },
+      cd: 1.15, dmg: 12, speed: 240, count: 10, pierce: 1, life: 1.1, size: 8 },
 
-    { id: 'night-shade', name: 'Tinieblas', type: 'dark', kind: 'aura',
+    { id: 'night-shade', name: 'Tinieblas', type: 'ghost', kind: 'aura',
       desc: 'Una sombra te rodea y consume lo cercano.',
       cd: 0.5, dmg: 9, radius: 72 },
 
@@ -374,7 +387,7 @@
 
     { id: 'meteor-mash', name: 'Puño Meteoro', type: 'steel', kind: 'meteor',
       desc: 'Dos meteoros de acero que aplastan donde caen.',
-      cd: 1.4, dmg: 34, count: 2, radius: 54, knock: 80 },
+      cd: 1.4, dmg: 28, count: 2, radius: 54, knock: 80 },
 
     { id: 'will-o-wisp', name: 'Fuego Fatuo', type: 'fire', kind: 'turret',
       desc: 'Deja una llama flotante que dispara sola y quema.',
@@ -386,19 +399,143 @@
 
     { id: 'aerial-ace', name: 'Golpe Aéreo', type: 'flying', kind: 'dash',
       desc: 'Te lanzas en picado y cortas todo lo que cruzas.',
-      cd: 0.75, dmg: 18, radius: 120, width: 40, knock: 60 },
+      cd: 0.75, dmg: 23, radius: 120, width: 40, knock: 60 },
 
-    { id: 'flame-wheel', name: 'Rueda Fuego', type: 'fire', kind: 'trail',
-      desc: 'Corres envuelto en fuego y dejas un rastro de llamas.',
-      cd: 0.28, dmg: 10, radius: 28, dur: 2.6, burn: 1 },
+    // (Version de Nika : c'est une charge, plus un rastro.)
+    { id: 'flame-wheel', name: 'Rueda Fuego', type: 'fire', kind: 'dash',
+      desc: 'Tu fonces enveloppé de flammes et brûles tout sur ton passage.',
+      cd: 0.85, dmg: 24, radius: 115, width: 36, knock: 40, burn: 1 },
 
     { id: 'bubble-beam', name: 'Rayo Burbuja', type: 'water', kind: 'cone',
       desc: 'Chorro de burbujas en abanico corto que frena.',
-      cd: 0.65, dmg: 6, count: 7, arc: 1.0, speed: 340, life: 0.45, size: 6, slow: 0.3 },
+      cd: 0.65, dmg: 8, count: 7, arc: 1.0, speed: 340, life: 0.45, size: 6, slow: 0.3 },
 
     { id: 'hex', name: 'Infortunio', type: 'ghost', kind: 'chain',
       desc: 'Maldición que salta entre enemigos. Mucho más daño si están quemados, envenenados o frenados.',
-      cd: 0.9, dmg: 17, count: 4, radius: 150, hex: 1.7 }
+      cd: 0.9, dmg: 17, count: 4, radius: 150, hex: 1.7 },
+
+    // ---------------- Version de Nika : attaques de rôle (2026-10-19) ----------------
+    // Soigneurs : soignent la barre de PV de l'équipe (amount = part des PV max).
+    { id: 'wish', name: 'Vœu', type: 'normal', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : soigne l\'équipe régulièrement.',
+      cd: 7, amount: 0.07 },
+    { id: 'soft-boiled', name: 'E-Coque', type: 'normal', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : un gros soin de temps en temps.',
+      cd: 11, amount: 0.13 },
+    { id: 'heal-bell', name: 'Glas de Soin', type: 'normal', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : de petits soins très fréquents.',
+      cd: 3.5, amount: 0.035 },
+    { id: 'synthesis', name: 'Synthèse', type: 'grass', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : soigne l\'équipe grâce au soleil.',
+      cd: 7, amount: 0.075 },
+    { id: 'heal-pulse', name: 'Vibra Soin', type: 'psychic', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : une onde qui soigne l\'équipe.',
+      cd: 6, amount: 0.06 },
+    { id: 'heal-order', name: 'Appel Soins', type: 'bug', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : des abeilles viennent soigner l\'équipe.',
+      cd: 6.5, amount: 0.065 },
+    { id: 'roost', name: 'Atterrissage', type: 'flying', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : se pose et soigne l\'équipe.',
+      cd: 8, amount: 0.085 },
+    { id: 'floral-healing', name: 'Soin Floral', type: 'fairy', kind: 'buff', stat: 'heal', ladder: 'heal',
+      desc: 'Ne fait pas de dégâts : un parfum de fleurs qui soigne l\'équipe.',
+      cd: 7, amount: 0.075 },
+
+    // Tanks : boucliers (absorbent les coups), défense et contrôle.
+    { id: 'protect', name: 'Abri', type: 'normal', kind: 'buff', stat: 'shield', ladder: 'shield',
+      desc: 'Ne fait pas de dégâts : un bouclier qui absorbe les coups.',
+      cd: 9, amount: 0.15, dur: 6 },
+    { id: 'withdraw', name: 'Repli', type: 'water', kind: 'buff', stat: 'shield', ladder: 'shield',
+      desc: 'Ne fait pas de dégâts : rentre dans sa carapace, bouclier.',
+      cd: 8, amount: 0.14, dur: 6 },
+    { id: 'reflect', name: 'Protection', type: 'psychic', kind: 'buff', stat: 'shield', ladder: 'shield',
+      desc: 'Ne fait pas de dégâts : un mur de lumière qui absorbe les coups.',
+      cd: 9, amount: 0.16, dur: 6 },
+    { id: 'iron-defense', name: 'Mur de Fer', type: 'steel', kind: 'buff',
+      desc: 'Ne fait pas de dégâts : accumule beaucoup de DÉFENSE.',
+      cd: 0.9, stat: 'def', amount: 0.09, dur: 7, stacks: 5 },
+    { id: 'acid-armor', name: 'Acidarmure', type: 'poison', kind: 'buff',
+      desc: 'Ne fait pas de dégâts : accumule de la DÉFENSE.',
+      cd: 0.85, stat: 'def', amount: 0.08, dur: 7, stacks: 5 },
+    { id: 'roar', name: 'Hurlement', type: 'normal', kind: 'nova', role: 'tank',
+      desc: 'Un cri qui repousse loin tout ce qui t\'entoure.',
+      cd: 2.4, dmg: 6, speed: 300, count: 14, pierce: 3, life: 0.6, size: 9, knock: 240 },
+    { id: 'rock-tomb', name: 'Tomberoche', type: 'rock', kind: 'mine', cat: 'P',
+      desc: 'Des rochers piégés qui écrasent et bloquent presque l\'ennemi.',
+      cd: 1.2, dmg: 17, count: 2, radius: 58, dur: 7, slow: 0.55, knock: 40 },
+
+    // Mêlée
+    { id: 'bulk-up', name: 'Gonflette', type: 'fighting', kind: 'buff',
+      desc: 'Ne fait pas de dégâts : accumule ATTAQUE et un peu de défense.',
+      cd: 0.85, stat: 'atk', amount: 0.12, dur: 7, stacks: 5, alsoDef: 0.03 },
+
+    // Supports vitesse : accélèrent l'équipe ou ralentissent les ennemis.
+    { id: 'tailwind', name: 'Vent Arrière', type: 'flying', kind: 'buff',
+      desc: 'Ne fait pas de dégâts : accumule beaucoup de VITESSE.',
+      cd: 0.85, stat: 'spd', amount: 0.13, dur: 7, stacks: 4 },
+    { id: 'rock-polish', name: 'Poliroche', type: 'rock', kind: 'buff',
+      desc: 'Ne fait pas de dégâts : accumule de la VITESSE.',
+      cd: 0.85, stat: 'spd', amount: 0.11, dur: 7, stacks: 5 },
+    { id: 'electroweb', name: 'Toile Élek', type: 'electric', kind: 'nova', role: 'vit',
+      desc: 'Un filet électrique dans toutes les directions qui ralentit beaucoup.',
+      cd: 1.3, dmg: 8, speed: 230, count: 8, pierce: 1, life: 1.0, size: 8, slow: 0.55 },
+    { id: 'cotton-spore', name: 'Spore Coton', type: 'grass', kind: 'mine', role: 'vit',
+      desc: 'Du coton collant au sol qui ralentit énormément.',
+      cd: 1.2, dmg: 7, count: 3, radius: 62, dur: 8, slow: 0.7 },
+    { id: 'scary-face', name: 'Grimace', type: 'normal', kind: 'aura', role: 'vit',
+      desc: 'Une grimace qui fige de peur tout ce qui est proche.',
+      cd: 0.8, dmg: 3, radius: 115, slow: 0.5 },
+
+    // DPS : tirs rapides.
+    { id: 'swift', name: 'Étoile Filante', type: 'normal', kind: 'projectile',
+      desc: 'Deux étoiles rapides qui ne ratent jamais leur cible.',
+      cd: 0.5, dmg: 11, speed: 340, count: 2, spread: 0.2, pierce: 0, life: 1.4, size: 6, homing: 3 },
+    { id: 'bullet-seed', name: 'Balle Graine', type: 'grass', kind: 'projectile', cat: 'P',
+      desc: 'Une rafale de graines tirées à toute vitesse.',
+      cd: 0.36, dmg: 8, speed: 400, count: 3, spread: 0.16, pierce: 0, life: 0.9, size: 5 },
+    { id: 'icicle-spear', name: 'Stalagtite', type: 'ice', kind: 'projectile', cat: 'P',
+      desc: 'Pics de glace rapides qui ralentissent.',
+      cd: 0.42, dmg: 9, speed: 420, count: 2, spread: 0.14, pierce: 0, life: 1.0, size: 5, slow: 0.2 },
+    { id: 'dragon-breath', name: 'Draco-Souffle', type: 'dragon', kind: 'cone',
+      desc: 'Un souffle de dragon en éventail court.',
+      cd: 0.7, dmg: 9, count: 6, arc: 0.8, speed: 360, life: 0.45, size: 6, pierce: 1, slow: 0.2 },
+    { id: 'night-slash', name: 'Tranche-Nuit', type: 'dark', kind: 'boomerang',
+      desc: 'Deux lames d\'ombre qui vont et reviennent.',
+      cd: 0.85, dmg: 13, speed: 340, count: 2, spread: 0.5, radius: 210, size: 7 },
+
+    { id: 'struggle-bug', name: 'Survinsecte', type: 'bug', kind: 'cone',
+      desc: 'Une nuée d\'insectes en éventail court.',
+      cd: 0.62, dmg: 8, count: 7, arc: 1.0, speed: 340, life: 0.45, size: 6, pierce: 1 },
+    { id: 'disarming-voice', name: 'Voix Enjôleuse', type: 'fairy', kind: 'projectile',
+      desc: 'Des notes féeriques qui suivent leur cible.',
+      cd: 0.5, dmg: 12, speed: 300, count: 2, spread: 0.3, pierce: 0, life: 1.6, size: 7, homing: 2.5 },
+    { id: 'bullet-punch', name: 'Pisto-Poing', type: 'steel', kind: 'projectile', cat: 'P',
+      desc: 'Des coups de poing d\'acier projetés à toute vitesse.',
+      cd: 0.34, dmg: 10, speed: 460, count: 1, spread: 0.08, pierce: 1, life: 0.9, size: 6, knock: 30 },
+    { id: 'air-slash', name: 'Lame d\'Air', type: 'flying', kind: 'projectile',
+      desc: 'Des lames de vent qui traversent plusieurs ennemis.',
+      cd: 0.55, dmg: 14, speed: 380, count: 1, spread: 0.1, pierce: 2, life: 1.2, size: 7 },
+
+    { id: 'fury-swipes', name: 'Combo-Griffe', type: 'normal', kind: 'cone', cat: 'P',
+      desc: 'Une volée de coups de griffes en éventail.',
+      cd: 0.55, dmg: 9, count: 5, arc: 0.7, speed: 320, life: 0.35, size: 6, pierce: 1 },
+    { id: 'echoed-voice', name: 'Écho', type: 'normal', kind: 'projectile',
+      desc: 'Une onde sonore rapide qui traverse plusieurs ennemis.',
+      cd: 0.45, dmg: 10, speed: 380, count: 1, spread: 0.1, pierce: 2, life: 1.1, size: 7 },
+    { id: 'growl', name: 'Rugissement', type: 'normal', kind: 'nova', role: 'vit',
+      desc: 'Un rugissement tout autour qui ralentit beaucoup.',
+      cd: 1.4, dmg: 3, speed: 260, count: 12, pierce: 4, life: 0.7, size: 9, slow: 0.5 },
+
+    // Mage
+    { id: 'mega-drain', name: 'Méga-Sangsue', type: 'grass', kind: 'chain',
+      desc: 'Aspire l\'énergie de plusieurs ennemis et soigne un peu l\'équipe.',
+      cd: 1.0, dmg: 16, count: 3, radius: 140, leech: 0.03 },
+    { id: 'silver-wind', name: 'Vent Argenté', type: 'bug', kind: 'nova',
+      desc: 'Un vent d\'écailles argentées dans toutes les directions.',
+      cd: 1.2, dmg: 11, speed: 240, count: 9, pierce: 1, life: 1.0, size: 7 },
+    { id: 'hyper-beam', name: 'Ultralaser', type: 'normal', kind: 'beam',
+      desc: 'Un rayon énorme et lent, dévastateur.',
+      cd: 1.8, dmg: 44, radius: 260, width: 38 }
   ];
 
   // Cuerpo a cuerpo (12-10-2026): +20 % de daño y +25 % de alcance y de arco
@@ -411,13 +548,38 @@
     if (m.arc) m.arc = Math.min(3, +(m.arc * 1.25).toFixed(2));
   }
 
+  // Version de Nika : les auras sont des attaques de tank, lentes et lourdes,
+  // qui ralentissent (contrôle) : recharge ×1,4, dégâts ×1,35, ralentit un peu.
+  for (const m of RAW) {
+    if (m.kind !== 'aura' || m.role) continue;
+    m.cd = +(m.cd * 1.4).toFixed(2);
+    m.dmg = Math.round(m.dmg * 1.35);
+    if (!m.slow) m.slow = 0.25;
+  }
+
+  /*
+   * Version de Nika : rôle et catégorie de chaque attaque.
+   * Rôle (tank, melee, mage, dps, soin, vit) : d'après sa forme (kind), sauf
+   * exception (`role`). Sert à choisir les 4 attaques de rôle d'un Pokémon.
+   * Catégorie : P (physique, utilise l'Attaque) ou S (spéciale, l'Attaque Spé).
+   */
+  const KIND_ROLE = { melee: 'melee', dash: 'melee', projectile: 'dps', boomerang: 'dps', cone: 'dps',
+                      beam: 'mage', meteor: 'mage', chain: 'mage', nova: 'mage',
+                      aura: 'tank', orbit: 'tank', mine: 'tank', turret: 'soin', trail: 'tank' };
+  const BUFF_ROLE = { atk: 'melee', spd: 'vit', def: 'tank', regen: 'soin', heal: 'soin', shield: 'tank' };
+  const ROLE_FIX = { 'bubble': 'vit', 'string-shot': 'vit', 'mud-shot': 'vit', 'substitute': 'soin' };
+  const PHYS = ['rock-throw', 'poison-sting', 'rock-slide', 'meteor-mash', 'spikes', 'bonemerang'];
+  function roleOfDef(m) { return m.role || ROLE_FIX[m.id] || (m.kind === 'buff' ? BUFF_ROLE[m.stat] : KIND_ROLE[m.kind]); }
+  function catOfDef(m) { return m.cat || (PHYS.includes(m.id) || ['melee', 'dash', 'boomerang'].includes(m.kind) ? 'P' : 'S'); }
+  for (const m of RAW) { m.role = roleOfDef(m); m.cat = catOfDef(m); }
+
   // Pool de movimientos por tipo. El pool `normal` lo tienen todos.
   const POOL = {};
   for (const m of RAW) (POOL[m.type] = POOL[m.type] || []).push(m.id);
 
   const BY_ID = {};
   for (const m of RAW) {
-    m.ups = LADDERS[m.kind];
+    m.ups = LADDERS[m.ladder || m.kind];
     m.maxLvl = m.ups.length + 1;
     BY_ID[m.id] = m;
   }
@@ -558,5 +720,5 @@
   }
 
   G.Moves = { ALL: RAW, BY_ID, POOL, poolFor, instance, levelUp, nextUpText, startFor,
-              EVO, NEED_NAME, evoInfo, evolve };
+              EVO, NEED_NAME, evoInfo, evolve, LADDERS, roleOfDef, catOfDef };
 })();
