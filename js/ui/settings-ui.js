@@ -39,6 +39,8 @@ G.SettingsUI = (() => {
   // no salía la opción). Sí se puede abriéndola desde la pantalla de inicio.
   const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = () => !!navigator.standalone || (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches);
+  // La app de la pantalla de inicio (tools/build_pwa.js) mete el juego en un marco que sabe girarlo.
+  function shell() { try { return window.parent !== window && parent.PS_SHELL; } catch (e) { return null; } }
   function iosTip() { return IOS && !canFull() && !standalone(); }
   const IOS_TIP = 'En iPhone, Safari no deja poner las webs a pantalla completa. Pulsa Compartir y luego "Añadir a pantalla de inicio": abriendo el juego desde ese icono se juega a pantalla completa.';
   function toggleFull() {
@@ -83,6 +85,7 @@ G.SettingsUI = (() => {
         + toggle('dmgNumbers', 'Números de daño', 'Los números que salen al golpear y al recibir daño.')
         + toggle('calm', 'Menos sacudidas y destellos', 'La cámara tiembla menos y los fogonazos son suaves.')
         + toggle('fps', 'Mostrar FPS', 'Fotogramas por segundo, en la esquina de abajo.')
+        + (shell() ? toggle('forceLand', 'Forzar horizontal', 'El juego se queda en horizontal aunque el móvil tenga la rotación bloqueada: gíralo hacia la izquierda. Sólo en la app de la pantalla de inicio.') : '')
         + (canFull() ? `<div class="set-row"><div class="grow"><b>Pantalla completa</b><small>Sin barras del navegador.</small></div>
              <button class="btn small" id="set-full">${isFull() ? 'Salir' : 'Activar'}</button></div>`
            : iosTip() ? `<div class="set-row"><div class="grow"><b>Pantalla completa</b><small>${esc(IOS_TIP)}</small></div></div>` : '');
@@ -153,7 +156,7 @@ G.SettingsUI = (() => {
   }
 
   function wire(box) {
-    box.querySelectorAll('.switch[data-k]').forEach(b => { b.onclick = () => { G.Settings.set(b.dataset.k, !G.Settings.get(b.dataset.k)); render(); }; });
+    box.querySelectorAll('.switch[data-k]').forEach(b => { b.onclick = () => { G.Settings.set(b.dataset.k, !G.Settings.get(b.dataset.k)); if (b.dataset.k === 'forceLand' && shell()) shell().layout(); render(); }; });
     box.querySelectorAll('.chip[data-k]').forEach(b => {
       b.onclick = () => { const v = b.dataset.v; G.Settings.set(b.dataset.k, isNaN(+v) ? v : +v); render(); };
     });
