@@ -26,34 +26,46 @@ G.HUD = (() => {
   }
 
   // Dégâts par seconde de toute l'équipe, une valeur par seconde (60 dernières).
-  const dps = { t: 0, last: 0, list: [] };
-  function drawDps(ctx, w, st, team, touch) {
-    const total = team.reduce((a, m) => a + (m.dmgDealt || 0), 0);
-    if (st.time < dps.t) { dps.t = 0; dps.last = 0; dps.list = []; }   // nouvelle partie
-    if (st.time - dps.t >= 1) {
-      dps.list.push(Math.max(0, total - dps.last) / (st.time - dps.t));
-      if (dps.list.length > 60) dps.list.shift();
-      dps.last = total; dps.t = st.time;
-    }
-    const BW = 180, BH = 64;
+  /** Version de Nika : la Ligue en haut à droite (badges et prochain défi). */
+  function drawLeague(ctx, w, st, touch) {
+    const L = G.League, cur = L.current(), i = L.step(), S = L.STEPS;
+    const BW = 190, BH = 64;
     const x0 = w - BW - 14 - (touch ? 56 : 0), y0 = 12;
     roundRect(ctx, x0, y0, BW, BH, 9);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
-    const cur = dps.list.length ? dps.list[dps.list.length - 1] : 0;
-    ctx.font = F(800, 12); ctx.textAlign = 'left'; ctx.fillStyle = '#ffcb3d';
-    ctx.fillText('DÉGÂTS/S ' + Math.round(cur), x0 + 8, y0 + 13);
-    const L = dps.list;
-    if (L.length < 2) return;
-    const max = Math.max(1, ...L);
-    const gx = x0 + 8, gy = y0 + 22, gw = BW - 16, gh = BH - 28;
-    ctx.beginPath();
-    L.forEach((v, i) => {
-      const X = gx + (i / 59) * gw, Y = gy + gh - (v / max) * gh;
-      if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y);
+    ctx.textAlign = 'left';
+    // Titre : la phase de la Ligue.
+    const gyms = S.filter(x => x.kind === 'gym'), elite = S.filter(x => x.kind === 'elite');
+    const inElite = cur && cur.kind !== 'gym';
+    const row = inElite ? elite.concat(S.filter(x => x.kind === 'champ')) : gyms;
+    const off = inElite ? gyms.length : 0;
+    const got = Math.min(row.length, Math.max(0, i - off));
+    ctx.font = F(800, 11); ctx.fillStyle = '#ffcb3d';
+    ctx.fillText(!cur ? 'LIGUE TERMINÉE' : inElite ? 'CONSEIL 4 · ' + got + '/' + row.length : 'BADGES · ' + got + '/8', x0 + 8, y0 + 14);
+    // Les badges : pleins si gagnés, le suivant clignote.
+    const R = 7, gap = (BW - 16 - row.length * R * 2) / Math.max(1, row.length - 1);
+    row.forEach((x, k) => {
+      const cx = x0 + 8 + R + k * (R * 2 + gap), cy = y0 + 28;
+      const won = k < got || !cur, next = k === got && cur;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832);
+      ctx.fillStyle = won ? (G.U.TYPE_COLOR[x.type] || '#ffd23f') : 'rgba(255,255,255,.1)';
+      ctx.fill();
+      ctx.lineWidth = next ? 2 : 1;
+      ctx.strokeStyle = next ? 'rgba(255,214,90,' + (0.55 + 0.45 * Math.sin(st.time * 5)) + ')' : 'rgba(255,255,255,.25)';
+      ctx.stroke();
     });
-    ctx.strokeStyle = '#ff8a5c'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.lineTo(gx + ((L.length - 1) / 59) * gw, gy + gh); ctx.lineTo(gx, gy + gh); ctx.closePath();
-    ctx.fillStyle = 'rgba(255,138,92,.18)'; ctx.fill();
+    // Le prochain défi.
+    ctx.font = F(800, 11);
+    let txt, col = '#eaf2ff';
+    if (!cur) { txt = 'Mode libre'; col = '#8fa3c4'; }
+    else if (L.fighting()) { txt = 'Combat : ' + cur.who + ' !'; col = '#ff6b6b'; }
+    else {
+      const t = L.timeLeft(st.time);
+      txt = t == null ? cur.who + ' vaincu !' : cur.who + ' dans ' + Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+      if (t == null) col = '#5fe08a';
+    }
+    ctx.fillStyle = col;
+    ctx.fillText(txt, x0 + 8, y0 + 54);
   }
 
   function draw(ctx, w, h, pl, st) {
@@ -132,8 +144,8 @@ G.HUD = (() => {
       bx += tw + 5;
     }
 
-    // ---------- version de Nika : courbe des dégâts (en haut à droite) ----------
-    drawDps(ctx, w, st, team, touch);
+    // ---------- version de Nika : la Ligue (en haut à droite) ----------
+    drawLeague(ctx, w, st, touch);
 
     // ---------- reloj / bioma / kills ----------
     ctx.textAlign = 'center';
@@ -426,18 +438,6 @@ G.HUD = (() => {
         ctx.textAlign = 'center';
         ctx.fillStyle = fused ? BOND : col;
         ctx.fillText(fused ? m.name + ' +' + (g.length - 1) : m.name, x + S / 2, y - 7);
-      }
-    }
-
-    // ---------- vínculo guardado (aún no hay dos movimientos sueltos) ----------
-    if (pl.bonds > 0) {
-      const bx = sx + totalW + 12, by = sy + S / 2 - 12;
-      G.Icons.draw(ctx, 'bond', bx, by, 24);
-      if (pl.bonds > 1) {
-        ctx.font = F(800, 10);
-        ctx.textAlign = 'left';
-        ctx.fillStyle = BOND;
-        ctx.fillText('×' + pl.bonds, bx + 25, by + 20);
       }
     }
 

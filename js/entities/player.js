@@ -35,7 +35,6 @@ G.Player = class Player {
     this.slots = [];           // huecos: cada uno, una lista de movimientos que se lanzan a la vez
     this.active = 0;           // hueco activo
     this.maxMoves = 4;         // huecos
-    this.bonds = 0;            // vínculos por usar (premio de los legendarios)
 
     this.buffs = {
       atk: { n: 0, t: 0, amount: 0 },
@@ -167,39 +166,6 @@ G.Player = class Player {
   }
 
   // ---------------- vínculos (fusiones) ----------------
-  // Cada legendario vencido da un vínculo. Con él se juntan movimientos en un
-  // solo hueco y se lanzan a la vez. Sólo crece un grupo (hasta BOND_MAX); si
-  // no hay ninguno a medias, el vínculo une dos movimientos sueltos.
-  static get BOND_MAX() { return 4; }
-
-  /** Lo que se puede hacer ahora con un vínculo: añadir a un grupo o unir dos sueltos. */
-  bondOptions() {
-    const loose = this.slots.filter(s => s.length === 1).map(s => s[0]);
-    const grow = this.slots.find(s => s.length > 1 && s.length < Player.BOND_MAX);
-    if (grow) return loose.length ? { mode: 'add', group: grow, loose } : null;
-    return loose.length >= 2 ? { mode: 'pair', group: null, loose } : null;
-  }
-
-  /** Junta `moves` (sueltos) en el grupo `group` (o en uno nuevo) y gasta un vínculo. */
-  fuse(moves, group = null) {
-    const target = group || this.slots.find(s => s[0] === moves[0]);
-    const cur = this.slots[this.active];
-    for (const m of moves) {
-      if (target.includes(m)) continue;
-      const i = this.slots.findIndex(s => s.length === 1 && s[0] === m);
-      if (i < 0) continue;
-      this.slots.splice(i, 1);
-      target.push(m);
-    }
-    this.arrange();
-    // Se pasa al grupo, salvo con la Cinta Elección (sigues en el hueco que tenías, si queda).
-    const a = this.slots.indexOf(cur);
-    this.active = this.hasItem('choiceband') && a >= 0 ? a : this.slots.indexOf(target);
-    this.bonds = Math.max(0, this.bonds - 1);
-    G.Projectiles.clearOrbs(this);
-    return target;
-  }
-
   /** Movimientos que se lanzan ahora (el grupo del hueco activo). */
   // Version de Nika : plus de changement d'attaque, toutes les attaques partent seules.
   activeGroup() { return this.moves; }

@@ -47,6 +47,8 @@ G.Slots = (() => {
     raf = requestAnimationFrame(frame);
 
     const ten = results.length === 10;
+    // Version de Nika : « Passer » arrête tout (stopAll met st à null) ; on sort sans erreur.
+    try {
     for (let i = 0; i < results.length; i++) {
       const r = results[i];
       if (ten) st.led = 'TIRADA ' + (i + 1) + '/10';
@@ -83,6 +85,7 @@ G.Slots = (() => {
       await wait(ten ? (big ? 0.7 : 0.28) : 1.0);
     }
     await wait(0.4);
+    } catch (e) { if (st) throw e; }
     stopAll();
   }
 
@@ -92,6 +95,7 @@ G.Slots = (() => {
     return new Promise(res => {
       const t0 = performance.now(), d = dur * 1000 * (fast ? 0.25 : 1);
       (function step() {
+        if (!st) { res(); return; }        // « Passer »
         const k = Math.min(1, (performance.now() - t0) / d);
         set(a + (b - a) * k);
         if (k < 1 && st) requestAnimationFrame(step); else res();

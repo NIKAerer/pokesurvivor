@@ -91,7 +91,19 @@ G.PickUI = (() => {
     // Tes Pokémon.
     const list = $('pick-cards');
     list.innerHTML = '';
-    const mons = box();
+    // Version de Nika : trier ses Pokémon.
+    const D = d => G.DEX_BY[d], by = s.pickSort || 'new';
+    const SORTS = {
+      new: (a, b) => mons0.indexOf(b) - mons0.indexOf(a),
+      dex: (a, b) => a - b,
+      rare: (a, b) => D(b).rarity - D(a).rarity || a - b,
+      type: (a, b) => D(a).types[0].localeCompare(D(b).types[0]) || a - b,
+      name: (a, b) => D(a).name.localeCompare(D(b).name, 'fr'),
+      bst: (a, b) => (D(b).bst || 0) - (D(a).bst || 0) || a - b
+    };
+    const mons0 = box(), mons = mons0.slice().sort(SORTS[by] || SORTS.new);
+    $('pick-sort').value = by;
+    $('pick-sort').onchange = e => { s.pickSort = e.target.value; G.DB.commit(); render(); };
     for (const dex of mons) {
       const b = document.createElement('button');
       b.className = 'pick-card' + (dex === s.partner ? ' on' : '');
