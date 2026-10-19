@@ -101,6 +101,7 @@ G.Game = (() => {
     G.Pickups.clear();
     G.Spawner.reset();
     G.Rift.reset();
+    G.Power.reset();
     G.Judgment.reset();
     G.Events.reset();
     G.Weather.reset();

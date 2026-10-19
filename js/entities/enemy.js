@@ -115,6 +115,7 @@
         if (a >= d) { G.FX.dmgText(this.x, this.y - this.bodyH - 4, d, '#9fd8ff'); this.flash = 0.05; return; }
         amount = d - a;
       }
+      G.Power.hit(this);
       this.hp -= Math.max(1, Math.round(amount));
       G.Judgment.noteDmg(amount, this);
       this.showHurt(d, color, dirX, dirY, eff);
@@ -156,6 +157,7 @@
       if (this.dead) return;
       this.dead = true;
       this.fade = 0.9;
+      if (!this.remote) G.Power.down(this);
       this.anim.play('Faint', { hold: true });
       const col = this.boss ? '#ffd95e' : '#ffffff';
       const cy = this.y - this.bodyH * 0.5;
