@@ -113,10 +113,10 @@ G.GachaUI = (() => {
     let skipped = false;
     const sk = $('pull-skip');
     sk.classList.remove('hidden');
-    sk.onclick = () => { skipped = true; sk.classList.add('hidden'); G.Slots.stop(); };
+    sk.onclick = () => { skipped = true; sk.classList.add('hidden'); G.BallOpen.stop(); };
 
     // La tragaperras (ui/slots.js) y luego las cartas.
-    await G.Slots.play(slot, res);
+    await G.BallOpen.play(slot, res);        // version de Nika : ouverture de Poké Ball
     G.Audio.sfx('burst', { rarity: best });
     slot.style.display = 'none';
 
