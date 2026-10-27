@@ -74,7 +74,6 @@ G.SettingsUI = (() => {
     if (tab === 'sound') {
       box.innerHTML = section('Sonido') + '<div id="set-sound" class="sound-inline"></div>';
       G.UI.soundControls($('set-sound'));
-      renderRadio(box);
     } else if (tab === 'gfx') {
       const auto = ['baja', 'media', 'alta'][G.Settings.autoLevel];
       box.innerHTML = section('Idioma', 'El juego se recarga al cambiarlo.')
@@ -127,45 +126,6 @@ G.SettingsUI = (() => {
     }
     wire(box);
   }
-
-  // ---------------- radio YouTube (core/radio.js) ----------------
-  function renderRadio(box) {
-    const R = G.Radio, links = R.links;
-    const div = document.createElement('div');
-    div.id = 'set-ost';
-    div.innerHTML = section('Ma radio YouTube', 'Colle des liens YouTube (vidéos ou playlists) : ils remplacent les musiques du jeu et s’enchaînent en boucle. Il faut une connexion internet. Sur iPhone, si rien ne sonne, touche le petit lecteur en bas à gauche.')
-      + toggle2('on', 'Jouer ma radio', links.length ? `${links.length} lien${links.length > 1 ? 's' : ''}` : 'Aucun lien pour l’instant', R.on)
-      + toggle2('shuffle', 'Ordre aléatoire', 'Sinon, dans l’ordre où tu les as ajoutés.', R.shuffle)
-      + `<div class="radio-add"><input id="radio-in" class="field" placeholder="https://youtu.be/…" spellcheck="false" autocomplete="off">
-           <button class="btn small gold" id="radio-ok">Ajouter</button></div>`
-      + (R.active() ? `<div class="set-row"><div class="grow"><b>En cours</b><small translate="no">${esc(R.title || '…')}</small></div>
-           <button class="btn small" id="radio-next">Suivant</button></div>` : '')
-      + `<div class="ost-list">${links.map((l, i) => `<div class="set-row"><div class="grow"><b translate="no">${l.v ? 'Vidéo ' + esc(l.v) : 'Playlist ' + esc(l.list.slice(0, 14))}</b>
-           <small><a href="https://www.youtube.com/${l.v ? 'watch?v=' + esc(l.v) : 'playlist?list=' + esc(l.list)}" target="_blank" rel="noopener">ouvrir sur YouTube</a></small></div>
-           <button class="btn small ghost" data-radio-del="${i}">Retirer</button></div>`).join('')}</div>`;
-    box.appendChild(div);
-    div.querySelectorAll('[data-ost]').forEach(b => { b.onclick = () => { R[b.dataset.ost] = !R[b.dataset.ost]; refreshRadio(); }; });
-    const inp = div.querySelector('#radio-in');
-    const go = () => {
-      const n = R.add(inp.value);
-      G.UI.toast(n ? `${n} lien${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''}` : 'Lien YouTube non reconnu (ou déjà dans la liste)');
-      if (n) refreshRadio();
-    };
-    div.querySelector('#radio-ok').onclick = go;
-    inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') go(); };
-    const nx = div.querySelector('#radio-next'); if (nx) nx.onclick = () => { R.next(); refreshRadio(); };
-    div.querySelectorAll('[data-radio-del]').forEach(b => { b.onclick = () => { R.remove(+b.dataset.radioDel); refreshRadio(); }; });
-  }
-  function toggle2(k, label, desc, on) {
-    return `<div class="set-row"><div class="grow"><b>${esc(label)}</b><small>${esc(desc)}</small></div>
-      <button class="btn small switch ${on ? 'gold' : ''}" data-ost="${k}">${on ? 'Oui' : 'Non'}</button></div>`;
-  }
-  function refreshRadio() {
-    const old = $('set-ost');
-    if (!old || !isOpen() || tab !== 'sound') return;
-    const box = old.parentNode; old.remove(); renderRadio(box);
-  }
-  G.Radio.onChange(() => { if (isOpen() && tab === 'sound' && document.activeElement !== $('radio-in')) refreshRadio(); });
 
   function renderAccount(box) {
     const st = G.DB.guest ? 'guest' : G.DB.syncState;

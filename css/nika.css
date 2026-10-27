@@ -329,20 +329,20 @@
 /* Le choix au niveau supérieur occupe déjà tout l'écran : pas d'agrandissement en plus. */
 #scr-levelup > * { zoom: 1 !important; }
 
-/* Radio YouTube (core/radio.js) : petit lecteur en bas à gauche, réductible. */
-#radio-box { position: fixed; left: calc(8px + env(safe-area-inset-left)); bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 70;
-  width: 168px; background: rgba(8,12,28,.88); border: 2px solid rgba(255,255,255,.18); border-radius: 8px; overflow: hidden; }
-#radio-box.hidden { display: block; left: -9999px; }   /* en pause : caché mais toujours chargé */
-#radio-box .radio-bar { display: flex; align-items: center; gap: 4px; padding: 2px 4px 2px 6px; font-size: 10px; color: #cfd6ff; }
-#radio-box .radio-bar span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#radio-box .radio-mini { background: none; border: 0; color: #fff; font: inherit; font-size: 14px; width: 22px; height: 18px; padding: 0; cursor: pointer; }
-#radio-box .radio-frame iframe { display: block; width: 168px; height: 94px; border: 0; }
-#radio-box.mini { width: auto; }
-#radio-box.mini .radio-frame iframe { width: 64px; height: 36px; }
-.radio-add { display: flex; gap: 8px; margin: 10px 0; }
-.radio-add .field { flex: 1; min-width: 0; }
+/* Radio Pokémon (core/radio.js) : lecteur hors écran pendant le jeu, posé sur #radio-slot en pause. */
+#radio-box { position: fixed; left: -10000px; top: 0; width: 192px; height: 108px; z-index: 70; pointer-events: none; }
+#radio-box.on { pointer-events: auto; border-radius: 6px; overflow: hidden; }
+#radio-box iframe { display: block; width: 100%; height: 100%; border: 0; }
+.pause-radio { margin: 10px 0; text-align: left; }
+.pause-radio .radio-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.pause-radio .radio-now { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
+.pause-radio #radio-slot { flex: none; width: 160px; height: 90px; border-radius: 6px; background: #000; }
+.pause-radio .radio-now .grow { min-width: 0; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.pause-radio .radio-now small { color: var(--muted); font-size: 11px; }
+.pause-radio .radio-now b { font-size: 12px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pause-radio .radio-games { justify-content: flex-start; gap: 4px; }
+.pause-radio .radio-games .chip { font-size: 11px; padding: 3px 7px; }
+.pause-radio .note { margin: 4px 0 0; font-size: 11px; }
 @media (max-height: 500px) {
-  /* Téléphone : les attaques sont en bas, le lecteur se met au milieu à gauche. */
-  #radio-box { bottom: auto; top: 50%; transform: translateY(-50%); width: 128px; }
-  #radio-box .radio-frame iframe { width: 128px; height: 72px; }
+  .pause-radio #radio-slot { width: 128px; height: 72px; }
 }
