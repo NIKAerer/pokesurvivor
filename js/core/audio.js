@@ -61,13 +61,15 @@ G.Audio = (() => {
     if (!init()) return;
     // 'suspended' o 'interrupted' (iPhone al volver de otra app): se reanuda.
     if (ctx.state !== 'running') ctx.resume().catch(() => {});
-    if (wanted && !current) startSong(wanted);
+    if (G.Radio && G.Radio.active()) G.Radio.want(!!wanted);
+    else if (wanted && !current) startSong(wanted);
   }
   // En móvil, tocar la pantalla (pointerdown) no cuenta como gesto para el
   // sonido: sí levantar el dedo (pointerup / touchend). Se escuchan todos.
   for (const ev of ['pointerdown', 'pointerup', 'touchend', 'keydown']) addEventListener(ev, unlock, { capture: true });
 
   function applyVolumes() {
+    if (G.Radio) G.Radio.volume(settings.muted ? 0 : settings.music);
     if (!ctx) return;
     const t = ctx.currentTime;
     musicBus.gain.setTargetAtTime(settings.muted ? 0 : settings.music * 0.7, t, 0.05);
@@ -325,8 +327,18 @@ G.Audio = (() => {
     if (wanted === name) return;
     wanted = name;
     if (!ctx) return;                    // arrancará al primer clic
+    // Radio de Nika (core/radio.js): sus enlaces de YouTube suenan en lugar de los temas.
+    if (G.Radio && G.Radio.active()) { stopCurrent(); G.Radio.want(!!name); return; }
     stopCurrent();
     if (name) startSong(name);
+  }
+
+  /** La radio se ha activado o vaciado: vuelve a elegir qué suena. */
+  function refreshMusic() {
+    if (!ctx) return;
+    const playlist = G.Radio && G.Radio.active();
+    if (playlist) { stopCurrent(); G.Radio.want(!!wanted); }
+    else { if (G.Radio) G.Radio.want(false); if (wanted && !current) startSong(wanted); }
   }
 
   // Planificador: programa con 150 ms de antelación.
@@ -501,7 +513,9 @@ G.Audio = (() => {
   }
 
   return {
-    music, sfx, setVolume, toggleMute, unlock, debugMeter, debugStream,
+    music, sfx, setVolume, toggleMute, unlock, debugMeter, debugStream, refreshMusic,
+    get ctx() { return ctx; },
+    get musicBus() { return musicBus; },
     /** ¿Ya puede sonar? (el navegador sólo deja tras tocar algo, salvo excepciones) */
     canPlay() { return !!ctx && ctx.state === 'running'; },
     get settings() { return settings; },
