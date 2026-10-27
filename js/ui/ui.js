@@ -280,9 +280,13 @@ G.UI = (() => {
     // Version de Nika : opts.fit = le Pokémon remplit sa case, quelle que soit
     // sa taille, dessiné en haute définition pour garder des pixels nets.
     if (opts && opts.fit) {
-      const r = Math.min(3, Math.max(1, Math.round(window.devicePixelRatio || 1)));
+      // Dessiné au moins 4× plus grand que la case : l'échelle entière tombe juste pour
+      // chaque Pokémon. Avant, à 1× (écran d'ordi), certains passaient à 2× et
+      // d'autres restaient à 1× : les uns énormes, les autres minuscules.
+      const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1)), r = 4;
       w *= r; h *= r;
       cv.style.width = w / r + 'px';
+      if (r > dpr) cv.style.imageRendering = 'auto';   // réduction lissée, sans pixels perdus
       opts = Object.assign({}, opts, { scale: 99, hero: true });
     }
     cv.width = w; cv.height = h;
