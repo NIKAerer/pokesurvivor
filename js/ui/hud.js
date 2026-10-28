@@ -37,13 +37,15 @@ G.HUD = (() => {
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     ctx.textAlign = 'left';
     // Titre : la phase de la Ligue.
-    const gyms = S.filter(x => x.kind === 'gym'), elite = S.filter(x => x.kind === 'elite');
+    // Version de Nika : la région en cours (Kanto, puis Johto, puis Sinnoh).
+    const reg = cur ? cur.region : S[S.length - 1].region, RS = L.region(reg);
+    const gyms = RS.filter(x => x.kind === 'gym'), elite = RS.filter(x => x.kind !== 'gym');
     const inElite = cur && cur.kind !== 'gym';
-    const row = inElite ? elite.concat(S.filter(x => x.kind === 'champ')) : gyms;
-    const off = inElite ? gyms.length : 0;
+    const row = inElite ? elite : gyms;
+    const off = S.indexOf(RS[0]) + (inElite ? gyms.length : 0);
     const got = Math.min(row.length, Math.max(0, i - off));
     ctx.font = F(800, 11); ctx.fillStyle = '#ffcb3d';
-    ctx.fillText(!cur ? 'LIGUE TERMINÉE' : inElite ? 'CONSEIL 4 · ' + got + '/' + row.length : 'BADGES · ' + got + '/8', x0 + 8, y0 + 14);
+    ctx.fillText(!cur ? 'LIGUE TERMINÉE' : (inElite ? 'CONSEIL 4 ' : 'BADGES ') + reg.toUpperCase() + ' · ' + got + '/' + row.length, x0 + 8, y0 + 14);
     // Les badges : pleins si gagnés, le suivant clignote.
     const R = 7, gap = (BW - 16 - row.length * R * 2) / Math.max(1, row.length - 1);
     row.forEach((x, k) => {
