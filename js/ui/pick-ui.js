@@ -187,6 +187,9 @@ G.PickUI = (() => {
     const pend = G.Progress.pending();
     $('pick-goals-n').textContent = pend;
     $('pick-goals-n').classList.toggle('hidden', !pend);
+    const dp = G.MenuUI.dexPending();
+    $('pick-dex-n').textContent = dp;
+    $('pick-dex-n').classList.toggle('hidden', !dp);
   }
 
   function play() {
