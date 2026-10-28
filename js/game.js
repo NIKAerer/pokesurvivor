@@ -122,15 +122,19 @@ G.Game = (() => {
     // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
     // antes de aprender nada: addMove ya los coloca.
     (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
-    pl.addMove(G.startMoveOf(mon.dex));
     // Mejora "Veto": movimientos que no quieres que te salgan.
     pl.banned = new Set((save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque al azar.
-    if (perks.startMoves >= 2) {
+    const extraMove = () => {
+      if (perks.startMoves < 2) return;
       const pool = G.Team.learnset(mon.dex).filter(id => !pl.hasMove(id) && !pl.banned.has(id) && G.Moves.BY_ID[id].kind !== 'buff');
       if (pool.length) pl.addMove(G.U.pick(pool));
       pl.setActive(0);
-    }
+    };
+    // Version de Nika (2026-10-28) : en solo, la première attaque se choisit sur 3 cartes
+    // (la signature + 2 attaques de son répertoire). En groupe, la signature comme avant.
+    const firstMoves = coop ? [] : firstMoveCards(mon.dex, pl);
+    if (firstMoves.length < 2) { pl.addMove(G.startMoveOf(mon.dex)); extraMove(); }
 
     if (coop) {
       G.Coop.begin(coop, pl, coopApi);
@@ -145,6 +149,36 @@ G.Game = (() => {
     deathT = 0;
 
     state = 'playing';
+    if (firstMoves.length >= 2) {
+      state = 'levelup';
+      const sub = document.querySelector('#scr-levelup .sub'), was = sub && sub.innerHTML;
+      G.RunUI.showLevelUp(pl.level, firstMoves, card => {
+        if (sub) sub.innerHTML = was;
+        G.Audio.sfx('confirm');
+        card.apply(pl);
+        extraMove();
+        state = 'playing';
+        afterLevelUp();
+      });
+      if (sub) sub.textContent = 'Choisis ta première attaque';
+      document.getElementById('lvl-reroll').classList.add('hidden');   // pas de « changer » ici
+    }
+  }
+
+  /** Les cartes de la première attaque : la signature et 2 attaques (pas de soutien). */
+  function firstMoveCards(dex, p) {
+    const start = G.startMoveOf(dex), B = G.Moves.BY_ID;
+    const pool = G.Team.learnset(dex).filter(id => id !== start && B[id] && B[id].kind !== 'buff' && !p.banned.has(id));
+    const ids = [start, ...G.U.pickN(pool, 2)].filter(id => B[id]);
+    return ids.map(id => {
+      const d = B[id];
+      return {
+        type: 'new', key: 'first:' + id, icon: 'move:' + id, color: G.U.TYPE_COLOR[d.type],
+        tag: (id === start ? 'Signature · ' : '') + G.U.TYPE_NAME[d.type] + (d.kind !== 'buff' ? ' · ' + (d.cat === 'P' ? 'Phy' : 'Spé') : ''),
+        title: d.name, desc: d.desc + (d.kind === 'melee' || d.kind === 'dash' ? ' · Vol de vie 1 %' : ''),
+        apply: () => p.addMove(id)
+      };
+    });
   }
 
   function quitRun() {
