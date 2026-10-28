@@ -28,11 +28,12 @@ G.HUD = (() => {
 
   // Dégâts par seconde de toute l'équipe, une valeur par seconde (60 dernières).
   /** Version de Nika : la Ligue en haut à droite (badges et prochain défi). */
-  function drawLeague(ctx, w, st, touch, sa, small) {
+  function drawLeague(ctx, w, st, touch, sa, small, tall) {
     const L = G.League, cur = L.current(), i = L.step(), S = L.STEPS;
     const BW = small ? 168 : 190, BH = 64;
     // À gauche du bouton pause (lui-même décalé par l'encoche de l'iPhone).
-    const x0 = w - BW - 14 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = 12;
+    // Téléphone debout (version de Nika) : sous le bouton pause, pour ne pas couvrir l'équipe.
+    const x0 = tall ? w - BW - 10 : w - BW - 14 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = tall ? 64 + sa.top : 12;
     roundRect(ctx, x0, y0, BW, BH, 9);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     ctx.textAlign = 'left';
@@ -95,6 +96,7 @@ G.HUD = (() => {
     // et rien sous l'encoche de l'iPhone.
     const sa = touch ? G.Touch.safeArea() : { top: 0, right: 0, bottom: 0, left: 0 };
     const small = h < 500;
+    const tall = h > w && w < 600;      // version de Nika : téléphone debout
 
     // ---------- version de Nika : l'équipe en haut à gauche ----------
     // Chaque Pokémon : nom, niveau, ses attaques (icônes) et sa barre d'XP.
@@ -187,16 +189,18 @@ G.HUD = (() => {
     }
 
     // ---------- version de Nika : la Ligue (en haut à droite) ----------
-    drawLeague(ctx, w, st, touch, sa, small);
+    drawLeague(ctx, w, st, touch, sa, small, tall);
 
     // ---------- reloj / bioma / kills ----------
-    ctx.textAlign = 'center';
+    // (debout : à droite sous la Ligue)
+    const cx = tall ? w - 12 : w / 2, top = tall ? 108 + sa.top : 0;
+    ctx.textAlign = tall ? 'right' : 'center';
     ctx.font = F(800, 26);
     ctx.fillStyle = 'rgba(255,255,255,.95)';
-    ctx.fillText(G.U.mmss(st.time), w / 2, 42);
+    ctx.fillText(G.U.mmss(st.time), cx, 42 + top);
     ctx.font = F(600, 10);
     ctx.fillStyle = '#8fa3c4';
-    ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', w / 2, 58);
+    ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', cx, 58 + top);
     // Version de Nika : vague en cours et prochain boss
     {
       // (le prochain défi de la Ligue est déjà dans le cadre des badges)
@@ -206,7 +210,7 @@ G.HUD = (() => {
       if (txt && !G.EnemyMgr.bossAlive()) {
         ctx.font = F(800, 11);
         ctx.fillStyle = nb != null && nb < 15 ? '#ff6b6b' : '#ffcb3d';
-        ctx.fillText(txt, w / 2, 72);
+        ctx.fillText(txt, cx, 72 + top);
       }
     }
 
@@ -217,7 +221,7 @@ G.HUD = (() => {
       ctx.textAlign = 'left';
       const txt = wx.name.toUpperCase() + ' · ' + Math.ceil(wx.left) + 's';
       const tw = ctx.measureText(txt).width + 40;
-      const x0 = w - tw - 16 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = 84;
+      const x0 = tall ? w - tw - 10 : w - tw - 16 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = 84 + top;
       roundRect(ctx, x0, y0, tw, 26, 9);
       ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill();
       G.Icons.draw(ctx, wx.icon, x0 + 6, y0 + 3, 20);
