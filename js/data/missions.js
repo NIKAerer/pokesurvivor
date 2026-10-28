@@ -51,24 +51,24 @@ G.MissionDefs = (() => {
 
   // Version de Nika (2026-10-19) : Poké Balls des missions divisées par deux.
   const weekly = [
-    { id: 'wkill', ev: 'kill', goals: [4000, 6000], reward: { t1: 5, coins: 800 },
+    { id: 'wkill', ev: 'kill', goals: [4000, 6000], reward: { t1: 3, coins: 800 },
       text: n => `Derrota a ${n.toLocaleString('es')} Pokémon` },
-    { id: 'wrift', ev: 'rift', goals: [1, 2], reward: { t1: 5, coins: 1000 },
+    { id: 'wrift', ev: 'rift', goals: [1, 2], reward: { t1: 3, coins: 1000 },
       text: n => (n === 1 ? 'Gana una pelea en una grieta' : `Gana ${n} peleas en grietas`) },
-    { id: 'wboss', ev: 'kill', match: d => d.boss, goals: [4, 6], reward: { t1: 5, coins: 900 },
+    { id: 'wboss', ev: 'kill', match: d => d.boss, goals: [4, 6], reward: { t1: 3, coins: 900 },
       text: n => `Derrota a ${n} jefes` },
-    { id: 'wsurvive', ev: 'runEnd', mode: 'max', value: min, goals: [12, 15], reward: { t1: 5, coins: 1000 },
+    { id: 'wsurvive', ev: 'runEnd', mode: 'max', value: min, goals: [12, 15], reward: { t1: 3, coins: 1000 },
       text: n => `Aguanta ${n} minutos en una run` },
-    { id: 'wevolve', ev: 'evolve', goals: [3, 5], reward: { t1: 5, coins: 900 },
+    { id: 'wevolve', ev: 'evolve', goals: [3, 5], reward: { t1: 3, coins: 900 },
       text: n => `Evoluciona ${n} movimientos` },
-    { id: 'wdaily', ev: 'missionDone', match: d => d.daily, goals: [8, 12], reward: { t1: 5, coins: 800 },
+    { id: 'wdaily', ev: 'missionDone', match: d => d.daily, goals: [8, 12], reward: { t1: 3, coins: 800 },
       text: n => `Completa ${n} misiones diarias` },
     // Version de Nika
-    { id: 'wpevolve', ev: 'pevolve', goals: [8, 12], reward: { t1: 5, coins: 900 },
+    { id: 'wpevolve', ev: 'pevolve', goals: [8, 12], reward: { t1: 3, coins: 900 },
       text: n => `Fais évoluer ${n} Pokémon` },
-    { id: 'wleague', ev: 'league', goals: [1, 2], reward: { t1: 5, coins: 1000 },
+    { id: 'wleague', ev: 'league', goals: [1, 2], reward: { t1: 3, coins: 1000 },
       text: n => (n === 1 ? 'Gagne un défi de la Ligue' : `Gagne ${n} défis de la Ligue`) },
-    { id: 'wcapture', ev: 'capture', goals: [1], reward: { t1: 5, coins: 1000 },
+    { id: 'wcapture', ev: 'capture', goals: [1], reward: { t1: 3, coins: 1000 },
       text: () => 'Capture un Pokémon légendaire' }
   ];
 

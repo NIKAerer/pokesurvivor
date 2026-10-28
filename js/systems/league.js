@@ -163,7 +163,8 @@ G.League = (() => {
     nextAt = after(G.Game.st.time);
     const L = S(), i = L.step, st = STEPS[i];
     const pl = G.Game.player;
-    const coins = 300 + i * 120, tickets = 5 + i;
+    // Version de Nika (moins de tickets) : 1 par champion ou membre du Conseil, 3 pour le Maître.
+    const coins = 300 + i * 120, tickets = st.kind === 'gym' || st.kind === 'elite' ? 1 : 3;
     G.DB.save.coins += coins;
     G.DB.save.tickets = G.DB.save.tickets || { t1: 0, t10: 0 };
     G.DB.save.tickets.t1 += tickets;
