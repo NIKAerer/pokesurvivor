@@ -53,13 +53,13 @@ G.GachaUI = (() => {
     }
 
     const pity = (s.pity && s.pity[gen]) || 0;
-    $('gacha-pity').textContent = `Ouvertures sans légendaire : ${pity} / ${G.Gacha.PITY_5}`;
+    $('gacha-pity').textContent = `Légendaire garanti dans ${G.Gacha.PITY_5 - pity} · Épique garantie dans ${G.Gacha.PITY_4 - (s.pity4 || 0)}`;
 
     $('gacha-rates').innerHTML = '<h3>Probabilidades</h3>' + G.Gacha.RATES.slice().reverse().map(([r, w]) => `
       <div><span style="color:${G.Gacha.RARITY_COLOR[r]}">${G.UI.stars(r, 10)} ${G.Gacha.RARITY_NAME[r]}</span>
       <span>${w}% · ${G.Gacha.pool(r, gen).length}</span></div>`).join('') +
       `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
-       <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
+       <p class="note">· Une Épique ou mieux au plus tard toutes les ${G.Gacha.PITY_4} ouvertures (aussi une par une).<br>
        · Après ${G.Gacha.PITY_5} ouvertures sans Légendaire, la suivante en est une.<br>
        · Los repetidos dan Pokémonedas. Los shiny no se repiten.<br>
        · Les Poké Balls se gagnent en partie ou s'achètent avec des pièces (le prix monte à chaque achat).</p>`;

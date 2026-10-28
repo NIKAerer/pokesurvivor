@@ -102,6 +102,55 @@ G.MenuUI = (() => {
 
   // ---------------- colección ----------------
 
+  // Version de Nika : récompenses de complétion par génération (25, 50, 75, 100 %).
+  const DEX_GOALS = [
+    { p: 25, coins: 300, t1: 2, balls: 0 },
+    { p: 50, coins: 600, t1: 4, balls: 5 },
+    { p: 75, coins: 1000, t1: 6, balls: 10 },
+    { p: 100, coins: 2000, t1: 10, balls: 20 }
+  ];
+  function genProgress(g) {
+    const s = G.DB.save, all = G.DEX.filter(p => p.gen === g);
+    const have = all.filter(p => s.owned[p.dex]).length;
+    return { have, total: all.length, pct: all.length ? have / all.length * 100 : 0 };
+  }
+  /** Paliers atteints mais pas encore réclamés (toutes générations). */
+  function dexPending() {
+    const s = G.DB.save;
+    if (!s) return 0;
+    const got = s.dexRewards || {};
+    let n = 0;
+    for (const g of [...new Set(G.DEX.map(p => p.gen))]) {
+      const { pct } = genProgress(g);
+      for (const r of DEX_GOALS) if (pct >= r.p && !got[g + '-' + r.p]) n++;
+    }
+    return n;
+  }
+  function renderDexGoals() {
+    const s = G.DB.save;
+    s.dexRewards = s.dexRewards || {};
+    let box = $('dex-goals');
+    if (!box) { box = document.createElement('div'); box.id = 'dex-goals'; $('dex-gens').after(box); }
+    const { have, total, pct } = genProgress(dexGen);
+    box.innerHTML = `<div class="dg-bar"><i style="width:${pct}%"></i><span>${GEN_NAMES[dexGen - 1]} · ${have}/${total} (${Math.floor(pct)} %)</span></div>`
+      + '<div class="dg-row">' + DEX_GOALS.map(r => {
+        const key = dexGen + '-' + r.p, done = s.dexRewards[key], ok = pct >= r.p;
+        const what = r.coins + ' pièces · ' + r.t1 + ' Poké Balls' + (r.balls ? ' · ' + r.balls + ' Super Bonbons' : '');
+        return `<button class="dg-goal${done ? ' done' : ok ? ' ready' : ''}" data-k="${key}" ${ok && !done ? '' : 'disabled'} title="${what}">
+          <b>${r.p} %</b><small>${done ? 'Reçu' : ok ? 'Réclamer !' : what}</small></button>`;
+      }).join('') + '</div>';
+    box.querySelectorAll('.dg-goal.ready').forEach(b => b.onclick = () => {
+      const r = DEX_GOALS.find(x => dexGen + '-' + x.p === b.dataset.k);
+      s.dexRewards[b.dataset.k] = Date.now();
+      G.Progress.grant({ coins: r.coins, t1: r.t1 });
+      if (r.balls) s.balls = (s.balls || 0) + r.balls;
+      G.DB.commit(true);
+      G.Audio.sfx('legend');
+      G.UI.toast('Pokédex ' + GEN_NAMES[dexGen - 1] + ' ' + r.p + ' % : +' + r.coins + ' pièces, +' + r.t1 + ' Poké Balls' + (r.balls ? ', +' + r.balls + ' Super Bonbons' : ''));
+      renderDexGoals();
+    });
+  }
+
   function openDex() {
     G.UI.show('scr-dex', true);
     const s = G.DB.save;
@@ -136,6 +185,7 @@ G.MenuUI = (() => {
       c.onclick = () => { dexFilter = k; openDex(); };
       fb.appendChild(c);
     }
+    renderDexGoals();
     renderGrid();
     showDetail(dexSel);
   }
@@ -145,6 +195,7 @@ G.MenuUI = (() => {
     const grid = $('dex-grid');
     grid.innerHTML = '';
     for (const p of G.DEX) {
+      if (p.gen !== dexGen) continue;                // version de Nika : l'onglet choisit la génération
       const own = !!s.owned[p.dex], sh = !!(s.shiny && s.shiny[p.dex]);
       if (dexFilter === 'own' && !own) continue;
       if (dexFilter === 'miss' && own) continue;
@@ -363,5 +414,5 @@ G.MenuUI = (() => {
     return el;
   }
 
-  return { init, open, GEN_NAMES, openUpgrades, openDex };
+  return { init, open, GEN_NAMES, openUpgrades, openDex, dexPending };
 })();
