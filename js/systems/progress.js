@@ -175,7 +175,7 @@ G.Progress = (() => {
     // Los legendarios de la Sentencia de Arceus no cuentan como jefes (ni para
     // misiones ni para logros de jefes): tienen su propio contador.
     if (G.Judgment.active && e.boss) { G.Judgment.bossDown(); event('kill', { types: e.types || [], boss: false, legend: 0 }); return; }
-    const legend = e.legend || (G.Rift.inArena && e.boss) ? e.dex : 0;
+    const legend = e.legend || (G.Rift.inArena && e.boss && !e.champion) ? e.dex : 0;
     event('kill', { types: e.types || [], boss: !!e.boss, legend });
   }
 

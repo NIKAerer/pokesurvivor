@@ -24,6 +24,7 @@ G.Rift = (() => {
   // Desde 2 min antes de la Sentencia de Arceus (minuto 30) ya no se abren.
   const CHECK = 30, CHANCE = 0.2, TTL = 45;
   const ARENA_R = 11, ARENA_TIME = 120, FROM = 75;
+  const GYM_TIME = 180;                               // version de Nika : arène de la Ligue (league.js)
   let rift = null;          // { x, y, ttl, t }
   let arena = null;         // { tx, ty, r, dex, shiny, x, y, back, biome, t, phase, endT, bossId }
   let checkT = CHECK, asked = false, downT = 0, misses = 0;
@@ -108,13 +109,28 @@ G.Rift = (() => {
     spawnLegend();
   }
 
+  /** Version de Nika : téléportation dans l'arène du champion (défi n° i de la Ligue). */
+  function gym(i) {
+    if (arena) return;
+    const st = G.League.STEPS[i];
+    if (!st) return;
+    const cfg = {
+      tx: 5000 + Math.floor(Math.random() * 3000), ty: 5000 + Math.floor(Math.random() * 3000), r: ARENA_R,
+      dex: st.team[0], shiny: false, type: st.type, gym: i
+    };
+    if (G.Coop.isHost) G.Coop.broadcast(['arena', cfg]);
+    begin(cfg);
+    arena.ids = G.League.spawnTeam(arena.x, arena.y - TS() * 3.5);
+  }
+
   /** En cada ordenador: viaje a la arena. */
   function begin(cfg) {
     const pl = G.Game.player;
     const ts = TS();
     arena = Object.assign({}, cfg, {
       x: cfg.tx * ts + ts / 2, y: cfg.ty * ts + ts / 2,
-      back: { x: pl.x, y: pl.y }, biome: G.World.biome, t: 0, phase: 'fight', endT: 0, bossId: 0
+      back: { x: pl.x, y: pl.y }, biome: G.World.biome, t: 0, phase: 'fight', endT: 0, bossId: 0,
+      limit: cfg.gym != null ? GYM_TIME : ARENA_TIME, ids: []
     });
     rift = null; asked = false; downT = 0;
     if (authority()) G.EnemyMgr.stash(); else G.EnemyMgr.clearRemote();
@@ -125,14 +141,17 @@ G.Rift = (() => {
     G.World.setBiome(G.Tiles.arenaBiome(cfg.type), true);
     // Cada arena trae su clima (el volcán, sol; el glaciar, nieve...).
     const th = G.Tiles.ARENA_THEMES[cfg.type];
-    if (th && th.weather) G.Weather.force(th.weather, ARENA_TIME + 15);
+    if (th && th.weather) G.Weather.force(th.weather, arena.limit + 15);
     // Todos al sur de la arena, en fila; el legendario aparece al norte.
     const ps = G.Game.everyone();
     ps.forEach((p, i) => { p.x = arena.x + (i - (ps.length - 1) / 2) * 34; p.y = arena.y + ts * 3; });
     G.Camera.x = pl.x; G.Camera.y = pl.y;
     G.Game.flash('#c9a6ff', 0.9);
     G.Audio.sfx('rift');
-    G.Spawner.say('Has entrado en la grieta…', 2.4, true);
+    if (cfg.gym != null) {
+      const st = G.League.STEPS[cfg.gym];
+      G.Spawner.say('Téléportation : ' + G.League.title(st) + ' !', 2.6, true);
+    } else G.Spawner.say('Has entrado en la grieta…', 2.4, true);
   }
 
   function spawnLegend() {
@@ -178,11 +197,11 @@ G.Rift = (() => {
     if (arena.phase === 'fight') {
       if (!authority()) return;
       keepInside();
-      const boss = G.EnemyMgr.get(arena.bossId);
-      if (!boss || boss.dead) { G.Coop.isHost && G.Coop.broadcast(['aw']); won(); return; }
+      const gone = id => { const e = G.EnemyMgr.get(id); return !e || e.dead; };
+      if (arena.gym != null ? arena.ids.every(gone) : gone(arena.bossId)) { G.Coop.isHost && G.Coop.broadcast(['aw']); won(); return; }
       const allDown = G.Game.everyone().every(p => p.dead);
       downT = allDown ? downT + dt : 0;
-      if (downT > 1.4 || arena.t > ARENA_TIME) { G.Coop.isHost && G.Coop.broadcast(['al']); lost(); }
+      if (downT > 1.4 || arena.t > arena.limit) { G.Coop.isHost && G.Coop.broadcast(['al']); lost(); }
       return;
     }
     arena.endT -= dt;
@@ -192,6 +211,7 @@ G.Rift = (() => {
   function won() {
     if (!arena || arena.phase !== 'fight') return;
     arena.phase = 'won'; arena.endT = 5;
+    if (arena.gym != null) { G.Pickups.pullAll(); G.League.win(); return; }
     G.Progress.event('rift', { type: arena.type });
     G.Pickups.pullAll();
     G.Audio.sfx('legend');
@@ -225,6 +245,11 @@ G.Rift = (() => {
   function lost() {
     if (!arena || arena.phase !== 'fight') return;
     arena.phase = 'lost'; arena.endT = 1.2;
+    if (arena.gym != null) {
+      // Les champions restés debout s'en vont avec l'arène.
+      for (const id of arena.ids) { const e = G.EnemyMgr.get(id); if (e) e.champion = false; }
+      G.League.lost(); G.Audio.sfx('back'); return;
+    }
     if (arena.t > ARENA_TIME) G.Power.lost();
     G.Spawner.say('La grieta os ha expulsado…', 2.6, true);
     G.Audio.sfx('back');
@@ -292,7 +317,9 @@ G.Rift = (() => {
     reset, update, drawable, onEvent, enterRequest() { if (!arena) start(); },
     get rift() { return rift; }, get arena() { return arena; },
     get inArena() { return !!arena; },
-    get timeLeft() { return arena ? Math.max(0, ARENA_TIME - arena.t) : 0; },
+    get timeLeft() { return arena ? Math.max(0, arena.limit - arena.t) : 0; },
+    get inGym() { return !!arena && arena.gym != null; },
+    gym,
     debugOpen() { open(); },
     /** Para pruebas: arena de un tipo ya. */
     debugArena(type) { start(type); },

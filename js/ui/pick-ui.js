@@ -153,9 +153,16 @@ G.PickUI = (() => {
     const mons0 = box(), mons = mons0.slice().sort(SORTS[by] || SORTS.new);
     $('pick-sort').value = by;
     $('pick-sort').onchange = e => { s.pickSort = e.target.value; G.DB.commit(); render(); };
+    // Version de Nika : un Pokémon de départ au hasard (tiré à chaque partie).
+    const rnd = document.createElement('button');
+    rnd.className = 'pick-card pick-rnd' + (s.partnerRandom ? ' on' : '');
+    rnd.title = 'Aléatoire : un de tes Pokémon au hasard à chaque partie';
+    rnd.innerHTML = '<b class="pick-q">?</b><small>Aléatoire</small>';
+    rnd.onclick = () => { s.partnerRandom = !s.partnerRandom; G.DB.commit(); G.Audio.sfx('select'); render(); };
+    list.appendChild(rnd);
     for (const dex of mons) {
       const b = document.createElement('button');
-      b.className = 'pick-card' + (dex === s.partner ? ' on' : '');
+      b.className = 'pick-card' + (dex === s.partner && !s.partnerRandom ? ' on' : '');
       b.style.setProperty('--c', G.U.TYPE_COLOR[G.DEX_BY[dex].types[0]]);
       b.title = G.DEX_BY[dex].name;
       b.appendChild(G.UI.spriteCanvas(dex, 64, 54, { fit: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
@@ -163,7 +170,7 @@ G.PickUI = (() => {
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
       if (G.Rank.of(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-rk">${G.Rank.of(dex)}</span>`);
       b.insertAdjacentHTML('beforeend', `<span class="pick-role" title="${G.Roles.info(dex).name}">${G.Icons.html(G.Roles.info(dex).ico, 12)}</span>`);
-      b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; G.DB.commit(); G.Audio.sfx('select'); render(); };
+      b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select'); render(); };
       list.appendChild(b);
     }
     $('pick-count').textContent = `Tes Pokémon (${mons.length})`;
@@ -171,7 +178,7 @@ G.PickUI = (() => {
     const L = G.League, cur = L.current(), stp = L.step();
     $('pick-league').innerHTML = L.STEPS.map((st, i) =>
       `<span class="lg-b ${st.kind}${i < stp ? ' on' : ''}${i === stp && !L.done() ? ' next' : ''}" style="--c:${G.U.TYPE_COLOR[st.type]}" title="${L.title(st)}"></span>`).join('')
-      + `<span class="lg-txt">${cur ? 'Prochain défi : <b>' + L.title(cur) + '</b> (' + G.I18n.t(G.U.TYPE_NAME[cur.type]) + ') vers ' + G.U.mmss(L.at(stp)) : '<b>Maître de la Ligue ★</b> · mode libre'}</span>`;
+      + `<span class="lg-txt">${cur ? 'Prochain défi : <b>' + L.title(cur) + '</b> (' + G.I18n.t(G.U.TYPE_NAME[cur.type]) + ') dès ' + G.U.mmss(L.EVERY) + ', puis toutes les 5 min' : '<b>Maître de la Ligue ★</b> · mode libre'}</span>`;
     // Missions terminées dont la récompense attend.
     const pend = G.Progress.pending();
     $('pick-goals-n').textContent = pend;
@@ -180,6 +187,10 @@ G.PickUI = (() => {
 
   function play() {
     const save = G.DB.save;
+    if (save.partnerRandom) {
+      const mons = box();
+      if (mons.length) { save.partner = G.U.pick(mons); save.partnerShiny = false; }
+    }
     G.DB.grant(save.partner, 'starter');
     G.DB.commit();
     G.Game.startRun();

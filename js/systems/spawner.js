@@ -123,6 +123,10 @@ G.Spawner = (() => {
 
   function spawnBoss(pl, t, b) {
     const [x, y] = ringPoint(pl, Math.random() * 6.2832);
+    return bossAt(x, y, t, b);
+  }
+
+  function bossAt(x, y, t, b) {
     const e = new G.Enemy(b, x, y, scaled(G.Enemies.bossScale(t), BOSS_HP * G.Coop.scaleHp(players.length) * (players.length > 1 ? 1.4 : 1) * G.League.diff()), true);
     e.dmg *= G.League.dmgK() * BOSS_DMG;
     e.spd *= BOSS_SPD;
@@ -151,10 +155,11 @@ G.Spawner = (() => {
     if (preloadT <= 0) { preloadT = 10; G.Sprites.preload(G.Enemies.upcomingDex(t, 60), 8000, false, MOVE_ANIMS); }
 
     checkWave(t);
-    G.League.update(t, def => spawnBoss(anchor(), t, def));
+    G.League.update(t);
+    if (G.Rift.inArena) return;                       // le champion vient de t'emmener dans son arène
     // --- jefes ---
     const b = G.Enemies.BOSSES[bossIdx];
-    if (b && t >= b.at && !G.League.fighting()) { spawnBoss(anchor(), t, b); bossIdx++; }
+    if (b && t >= b.at) { spawnBoss(anchor(), t, b); bossIdx++; }
 
     // Combate de jefe: las oleadas bajan al 25% y no hay mareas, para que el
     // jefe sea un momento propio y se le pueda apuntar entre la multitud.
@@ -214,6 +219,6 @@ G.Spawner = (() => {
   /** Invitado en cooperativo: sólo corre el reloj del aviso. */
   function tickBanner(dt) { if (announceT > 0) announceT -= dt; }
 
-  return { reset, update, ahead, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP, wave, nextBossIn,
+  return { reset, update, ahead, bossAt, burst, tickBanner, banner, say, rate, SHINY_RATE, CAP, wave, nextBossIn,
            debugForceShiny(n = 1) { forceShiny = n; } };
 })();
