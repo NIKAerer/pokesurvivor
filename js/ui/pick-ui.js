@@ -57,6 +57,7 @@ G.PickUI = (() => {
     for (const d of box()) if (!G.DB.owns(d)) G.DB.grant(d, 'starter');   // le Pokédex les compte
     G.Sprites.preload(box());          // charger les sprites avant de jouer
     render();
+    G.DailyUI.maybeShow(render);       // version de Nika : cadeau du jour
   }
 
   function render() {
