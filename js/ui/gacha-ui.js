@@ -12,15 +12,6 @@ G.GachaUI = (() => {
     $('pull-10b').onclick = () => pull(10, 't10');
     $('pull-close').onclick = close;
 
-    const tabs = $('gacha-gens');
-    G.Gacha.BANNERS.forEach(b => {
-      const t = document.createElement('button');
-      t.className = 'gen-tab';
-      t.dataset.gen = b.gen;
-      t.innerHTML = `<b>${b.name}</b><small>Gen ${b.gen}</small>`;
-      t.onclick = () => { gen = b.gen; refresh(); };
-      tabs.appendChild(t);
-    });
   }
 
   function open() {
@@ -30,64 +21,69 @@ G.GachaUI = (() => {
 
   function refresh() {
     const s = G.DB.save;
-    const banner = G.Gacha.BANNERS[gen - 1];
-    document.querySelectorAll('#gacha-gens .gen-tab').forEach(t => t.classList.toggle('on', +t.dataset.gen === gen));
-
+    // Version de Nika (2026-10-28) : Boutique refaite au style « Couleur du type ».
+    G.PickUI.theme($('scr-gacha'));
     const all = G.DEX.filter(p => G.SPRITE_META[p.dex] && !G.EVO_FROM[p.dex]);   // version de Nika : tout le monde
     const owned = all.filter(p => s.owned[p.dex]).length;
     const shinies = all.filter(p => s.shiny && s.shiny[p.dex]).length;
-    const [c1, c2, c3] = banner.color;
-    $('banner').style.background =
-      `radial-gradient(circle at 80% 30%, rgba(255,210,63,.3), transparent 45%),
-       radial-gradient(circle at 15% 80%, rgba(196,123,255,.3), transparent 50%),
-       linear-gradient(135deg, ${c1}, ${c2} 55%, ${c3})`;
-    $('banner-title').textContent = 'Gacha';
     $('banner-desc').textContent = 'Tous les Pokémon de base, de Bulbizarre à Arceus. Chaque nouveau devient jouable !';
-    $('gacha-owned').innerHTML = `Tienes ${owned} de ${all.length}` +
-      (shinies ? ` · ${G.Icons.html('shiny', 12)} ${shinies} shiny` : '');
+    $('gacha-owned').innerHTML = `<span class="sh-chip">Pokédex ${owned} / ${all.length}</span>` +
+      (shinies ? ` <span class="sh-chip">${G.Icons.html('shiny', 12)} ${shinies} shiny</span>` : '');
 
     const feat = $('gacha-feat');
-    feat.innerHTML = '';
-    for (const dex of G.Gacha.featured(gen)) {
-      feat.appendChild(G.UI.spriteCanvas(dex, 170, 190, { lively: true, scale: 2, dir: 1 }));
+    if (feat.dataset.gen !== String(gen)) {
+      feat.dataset.gen = gen;
+      feat.innerHTML = '';
+      for (const dex of G.Gacha.featured(gen)) feat.appendChild(G.UI.spriteCanvas(dex, 170, 190, { lively: true, scale: 2, dir: 1 }));
     }
 
-    const pity = (s.pity && s.pity[gen]) || 0;
-    $('gacha-pity').textContent = `Légendaire garanti dans ${G.Gacha.PITY_5 - pity} · Épique garantie dans ${G.Gacha.PITY_4 - (s.pity4 || 0)}`;
+    const p5 = (s.pity && s.pity[gen]) || 0, p4 = s.pity4 || 0;
+    const bar = (label, left, max, c) => `<div class="sh-pb"><span>${label} garanti${label === 'Épique' ? 'e' : ''} dans <b>${left}</b></span>
+      <div class="ts-bar"><i style="width:${Math.round(100 * (max - left) / max)}%;background:${c}"></i></div></div>`;
+    $('gacha-pity').innerHTML = bar('Épique', G.Gacha.PITY_4 - p4, G.Gacha.PITY_4, G.Gacha.RARITY_COLOR[4])
+      + bar('Légendaire', G.Gacha.PITY_5 - p5, G.Gacha.PITY_5, G.Gacha.RARITY_COLOR[5]);
 
-    $('gacha-rates').innerHTML = '<h3>Probabilidades</h3>' + G.Gacha.RATES.slice().reverse().map(([r, w]) => `
-      <div><span style="color:${G.Gacha.RARITY_COLOR[r]}">${G.UI.stars(r, 10)} ${G.Gacha.RARITY_NAME[r]}</span>
-      <span>${w}% · ${G.Gacha.pool(r, gen).length}</span></div>`).join('') +
-      `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
-       <p class="note">· Une Épique ou mieux au plus tard toutes les ${G.Gacha.PITY_4} ouvertures (aussi une par une).<br>
+    $('gacha-rates').innerHTML = '<h3>Probabilités</h3>' + G.Gacha.RATES.slice().reverse().map(([r, w]) => `
+      <div class="sh-rate" style="--rc:${G.Gacha.RARITY_COLOR[r]}"><span>${G.UI.stars(r, 10)} ${G.Gacha.RARITY_NAME[r]}</span>
+      <i><b style="width:${Math.max(3, w)}%"></b></i><span>${w} %</span></div>`).join('') +
+      `<div class="sh-rate" style="--rc:#9ae6ff"><span>${G.Icons.html('shiny', 12)} Shiny</span><i><b style="width:3%"></b></i><span>1 %</span></div>
+       <details class="sh-rules"><summary>Règles</summary><p>
+       · Une Épique ou mieux au plus tard toutes les ${G.Gacha.PITY_4} ouvertures.<br>
        · Après ${G.Gacha.PITY_5} ouvertures sans Légendaire, la suivante en est une.<br>
        · Un doublon donne des Bonbons de son espèce (pour monter son rang). Les shiny ne se répètent pas.<br>
-       · Il faut une place libre dans la boîte par Poké Ball ouverte (×10 : 10 places). Agrandis-la ou relâche un Pokémon au menu.<br>
-       · Les Poké Balls se gagnent en partie (ennemis, boss, Ligue, Tour) ou s'achètent : ${G.Shop.BASE} pièces, +${G.Shop.STEP} par achat dans la journée, ${G.Shop.DAY} par jour.</p>`;
+       · Il faut une place libre dans la boîte par Poké Ball ouverte (×10 : 10 places).<br>
+       · Les Poké Balls se gagnent en partie (ennemis, boss, Ligue, Tour) ou s'achètent ici.</p></details>`;
 
     const t = s.tickets;
     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
     $('cost-10').innerHTML = `${G.Icons.html('ticket', 18)} 10`;
     $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
-    $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> Poké Ball${t.t1 > 1 ? 's' : ''} à ouvrir`
-      + ` · Boîte ${s.box.length}/${G.Box.cap()}` + (G.Box.full() ? ' <b class="warn">pleine</b>' : '');
-    // Version de Nika : prix du jour (shop.js), il remonte à zéro chaque jour.
-    const b = $('buy-t1'), price = G.Shop.price(), left = G.Shop.left();
-    b.innerHTML = left > 0
-      ? `Acheter ${G.Icons.html('ticket', 16)} · <span class="coin"></span> ${price} <small>(${left}/${G.Shop.DAY} aujourd'hui)</small>`
-      : `Plus de Poké Balls à acheter aujourd'hui`;
-    b.disabled = !G.Shop.canBuy();
-    b.onclick = () => { if (G.Shop.buy()) { G.Audio.sfx('buy'); refresh(); } };
+    $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 16)} <b>${t.t1}</b> Poké Ball${t.t1 > 1 ? 's' : ''} à ouvrir`;
     $('pull-1').disabled = !G.Gacha.costOf(s, 1) || !G.Gacha.roomFor(1);
     $('pull-10').disabled = !G.Gacha.costOf(s, 10, 't1') || !G.Gacha.roomFor(10);
+
+    // Acheter des Poké Balls (shop.js) : le prix remonte à zéro chaque jour.
+    $('sh-buy-ic').innerHTML = G.Icons.html('ticket', 30);
+    const b = $('buy-t1'), price = G.Shop.price(), left = G.Shop.left();
+    $('sh-buy-sub').textContent = left > 0 ? `Encore ${left} / ${G.Shop.DAY} aujourd'hui · +${G.Shop.STEP} par achat` : 'Reviens demain : 0 / ' + G.Shop.DAY + ' aujourd\'hui';
+    b.innerHTML = left > 0 ? `<span class="coin"></span>${price.toLocaleString('fr')}` : 'Demain';
+    b.disabled = !G.Shop.canBuy();
+    b.onclick = () => { if (G.Shop.buy()) { G.Audio.sfx('buy'); refresh(); } };
+
+    // Agrandir la boîte, ici aussi : c'est souvent elle qui bloque les ouvertures.
+    $('sh-box-ic').innerHTML = G.Icons.html('ball3', 30);
+    const cap = G.Box.cap(), atMax = cap >= G.Box.MAX, f = G.Box.free();
+    $('sh-box-sub').innerHTML = `Boîte ${cap - f} / ${cap}` + (atMax ? ' · maximum' : ` · +${G.Box.STEP} places`);
+    const bx = $('sh-box-buy');
+    bx.innerHTML = atMax ? 'MAX' : `<span class="coin"></span>${G.Box.price().toLocaleString('fr')}`;
+    bx.disabled = !G.Box.canExpand();
+    bx.onclick = () => { if (G.Box.expand()) { G.Audio.sfx('buy'); refresh(); } };
+
     const room = $('gacha-room');
-    if (room) {
-      const f = G.Box.free();
-      room.innerHTML = f >= 10 ? '' : f > 0
-        ? `Il reste ${f} place${f > 1 ? 's' : ''} dans ta boîte : ×10 bloqué.`
-        : `Ta boîte est pleine : agrandis-la ou relâche un Pokémon pour ouvrir des Poké Balls.`;
-      room.classList.toggle('hidden', f >= 10);
-    }
+    room.innerHTML = f >= 10 ? '' : f > 0
+      ? `Il reste ${f} place${f > 1 ? 's' : ''} dans ta boîte : ×10 bloqué.`
+      : `Ta boîte est pleine : agrandis-la ou relâche un Pokémon pour ouvrir des Poké Balls.`;
+    room.classList.toggle('hidden', f >= 10);
     G.UI.refreshCoins();
   }
 

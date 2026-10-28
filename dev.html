@@ -81,6 +81,7 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/nika.css">
 <link rel="stylesheet" href="css/hub.css">
+<link rel="stylesheet" href="css/shop.css">
 </head>
 <body>
 
@@ -442,48 +443,62 @@
   </div>
 </section>
 
-<!-- ====== Mejoras ====== -->
-<section id="scr-upgrades" class="scr dim hidden">
-  <div class="box wide">
-    <div class="row between"><h2>Mejoras</h2><button class="btn small ghost" data-back>Volver</button></div>
-    <div class="upg-head">
-      <canvas id="upg-stage" class="stage" width="120" height="96"></canvas>
-      <div class="grow">
-        <p class="sub" style="margin:0">Les améliorations comptent pour toute ton équipe, quel que soit le Pokémon.</p>
-        <div class="row" style="margin-top:8px">
-          <label for="upg-mon" style="margin:0">Pokémon</label>
-          <select id="upg-mon" class="field" style="width:auto;min-width:220px"></select>
-        </div>
-      </div>
+<!-- ====== Améliorations (version de Nika : style « Couleur du type ») ====== -->
+<section id="scr-upgrades" class="scr hidden ts">
+  <div class="ts-top">
+    <button class="ts-back" data-back aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button>
+    <h2>Améliorations</h2>
+    <div class="ts-wallet"></div>
+  </div>
+  <div class="ts-body">
+    <div class="ts-grid ts-upg">
+      <aside class="ts-card ts-sum" id="upg-sum"></aside>
+      <div class="ts-main" id="upg-list"></div>
     </div>
-    <div class="upg" id="upg-list"></div>
   </div>
 </section>
 
-<!-- ====== Gacha ====== -->
-<section id="scr-gacha" class="scr dim hidden">
-  <div class="box wide">
-    <div class="row between"><h2>Boutique</h2><button class="btn small ghost" data-back>Volver</button></div>
-    <div class="gen-tabs" id="gacha-gens"></div>
-    <div class="split" style="margin-top:8px">
-      <div>
-        <div class="banner" id="banner">
-          <h3 id="banner-title"></h3>
-          <p id="banner-desc" style="margin:4px 0 6px"></p>
-          <p class="sub" id="gacha-owned" style="margin:0"></p>
-          <div class="feat" id="gacha-feat"></div>
+<!-- ====== Boutique (version de Nika : style « Couleur du type ») ====== -->
+<section id="scr-gacha" class="scr hidden ts">
+  <div class="ts-top">
+    <button class="ts-back" data-back aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button>
+    <h2>Boutique</h2>
+    <div class="ts-wallet"></div>
+  </div>
+  <div class="ts-body">
+    <div class="ts-grid ts-shop">
+      <div class="ts-main">
+        <div class="ts-card sh-hero" id="banner">
+          <div class="sh-hero-txt">
+            <h3 id="banner-title">Poké Balls</h3>
+            <p id="banner-desc"></p>
+            <p id="gacha-owned"></p>
+          </div>
+          <div class="sh-feat" id="gacha-feat"></div>
+          <div class="sh-pity" id="gacha-pity"></div>
         </div>
-        <div class="row" style="margin-top:14px">
-          <button id="pull-1" class="btn grow" data-sfx="none">Tirar ×1 · <span id="cost-1"></span></button>
-          <button id="pull-10" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10"></span></button>
-          <button id="pull-10b" class="btn gold grow" data-sfx="none">Tirar ×10 · <span id="cost-10b"></span></button>
+        <div class="sh-pulls">
+          <button id="pull-1" class="sh-pull" data-sfx="none"><b>Ouvrir 1</b><span id="cost-1"></span></button>
+          <button id="pull-10" class="sh-pull big" data-sfx="none"><b>Ouvrir 10</b><span id="cost-10"></span></button>
+          <button id="pull-10b" class="hidden" data-sfx="none"><span id="cost-10b"></span></button>
         </div>
-        <p class="note tickets-line" id="gacha-tickets"></p>
-        <p class="note warn-line hidden" id="gacha-room"></p>
-        <p class="note row" style="gap:8px;flex-wrap:wrap"><button id="buy-t1" class="btn small gold"></button><button id="buy-t10" class="btn small gold"></button></p>
-        <p class="note" id="gacha-pity"></p>
+        <p class="sh-line" id="gacha-tickets"></p>
+        <p class="sh-warn hidden" id="gacha-room"></p>
       </div>
-      <div class="panel rates" id="gacha-rates"></div>
+      <aside class="ts-side">
+        <div class="ts-card sh-buy">
+          <div class="sh-ic" id="sh-buy-ic"></div>
+          <div class="grow"><b>Acheter des Poké Balls</b><small id="sh-buy-sub"></small></div>
+          <button id="buy-t1" class="ts-btn"></button>
+          <button id="buy-t10" class="hidden"></button>
+        </div>
+        <div class="ts-card sh-buy">
+          <div class="sh-ic" id="sh-box-ic"></div>
+          <div class="grow"><b>Agrandir la boîte</b><small id="sh-box-sub"></small></div>
+          <button id="sh-box-buy" class="ts-btn"></button>
+        </div>
+        <div class="ts-card sh-rates" id="gacha-rates"></div>
+      </aside>
     </div>
   </div>
 </section>
