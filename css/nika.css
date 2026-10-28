@@ -204,6 +204,7 @@
 
 /* Ligue Pokémon */
 .pick-league { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 4px 0 0; font-size: 12px; }
+.lg-reg { font-size: 11px; font-weight: 800; color: #ffcb3d; text-transform: uppercase; margin-right: 2px; }
 .lg-b { width: 14px; height: 14px; border-radius: 50%; background: #ffffff1a; border: 2px solid color-mix(in srgb, var(--c) 55%, #0b1020); }
 .lg-b.elite { border-radius: 3px; }
 .lg-b.champ { border-radius: 2px; transform: rotate(45deg); }
@@ -218,7 +219,7 @@
 .credits-roll h1 { margin: 0 0 6px; color: #ffcb3d; }
 .credits-roll .cr-big { font-size: 18px; font-weight: 800; color: #fff6c2; }
 .cr-team { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
-.cr-badges { display: flex; justify-content: center; gap: 6px; margin: 6px 0 10px; }
+.cr-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 6px 0 10px; }
 .cr-badge { width: 22px; height: 22px; border-radius: 50%; background: var(--c); border: 2px solid #fff; box-shadow: 0 0 8px var(--c); }
 
 /* En-tête des cartes : le Pokémon du joueur sous sa forme actuelle */

@@ -1,5 +1,6 @@
 /* ============ league.js — la Ligue Pokémon (version de Nika) ============
- * Le but du jeu : 8 arènes, puis le Conseil 4, puis le Maître.
+ * Le but du jeu : 8 arènes, puis le Conseil 4, puis le Maître, à Kanto, puis
+ * à Johto, puis à Sinnoh (version de Nika, 2026-10-28).
  * Toutes les 5 minutes (5:00, 10:00...), tu es téléporté dans l'arène du
  * champion suivant (rift.js, arène du type du champion) contre son équipe.
  * Si tu bats toute son équipe, tu gagnes le badge et une récompense, puis tu
@@ -12,21 +13,54 @@
  * Sauvegarde : save.league = { step, done }
  */
 G.League = (() => {
+  const K = 'Kanto', J = 'Johto', N = 'Sinnoh';
   const STEPS = [
-    { kind: 'gym', who: 'Pierre', place: 'Argenta', badge: 'Roche', type: 'rock', team: [95] },
-    { kind: 'gym', who: 'Ondine', place: 'Azuria', badge: 'Cascade', type: 'water', team: [121] },
-    { kind: 'gym', who: 'Major Bob', place: 'Carmin sur Mer', badge: 'Foudre', type: 'electric', team: [26] },
-    { kind: 'gym', who: 'Erika', place: 'Céladopole', badge: 'Prisme', type: 'grass', team: [45] },
-    { kind: 'gym', who: 'Koga', place: 'Parmanie', badge: 'Âme', type: 'poison', team: [110] },
-    { kind: 'gym', who: 'Morgane', place: 'Safrania', badge: 'Marais', type: 'psychic', team: [65] },
-    { kind: 'gym', who: 'Auguste', place: 'Cramois\'Île', badge: 'Volcan', type: 'fire', team: [59] },
-    { kind: 'gym', who: 'Giovanni', place: 'Jadielle', badge: 'Terre', type: 'ground', team: [112] },
-    { kind: 'elite', who: 'Olga', type: 'ice', team: [131, 80] },
-    { kind: 'elite', who: 'Aldo', type: 'fighting', team: [68, 95] },
-    { kind: 'elite', who: 'Agatha', type: 'ghost', team: [94, 169] },
-    { kind: 'elite', who: 'Peter', type: 'dragon', team: [149, 142] },
-    { kind: 'champ', who: 'Blue', type: 'normal', team: [6, 9, 3] }
+    { region: K, kind: 'gym', who: 'Pierre', place: 'Argenta', badge: 'Roche', type: 'rock', team: [95] },
+    { region: K, kind: 'gym', who: 'Ondine', place: 'Azuria', badge: 'Cascade', type: 'water', team: [121] },
+    { region: K, kind: 'gym', who: 'Major Bob', place: 'Carmin sur Mer', badge: 'Foudre', type: 'electric', team: [26] },
+    { region: K, kind: 'gym', who: 'Erika', place: 'Céladopole', badge: 'Prisme', type: 'grass', team: [45] },
+    { region: K, kind: 'gym', who: 'Koga', place: 'Parmanie', badge: 'Âme', type: 'poison', team: [110] },
+    { region: K, kind: 'gym', who: 'Morgane', place: 'Safrania', badge: 'Marais', type: 'psychic', team: [65] },
+    { region: K, kind: 'gym', who: 'Auguste', place: 'Cramois\'Île', badge: 'Volcan', type: 'fire', team: [59] },
+    { region: K, kind: 'gym', who: 'Giovanni', place: 'Jadielle', badge: 'Terre', type: 'ground', team: [112] },
+    { region: K, kind: 'elite', who: 'Olga', type: 'ice', team: [131, 80] },
+    { region: K, kind: 'elite', who: 'Aldo', type: 'fighting', team: [68, 95] },
+    { region: K, kind: 'elite', who: 'Agatha', type: 'ghost', team: [94, 169] },
+    { region: K, kind: 'elite', who: 'Peter', type: 'dragon', team: [149, 142] },
+    { region: K, kind: 'champ', who: 'Régis', type: 'normal', team: [6, 9, 3] },
+    // Johto (Or / Argent, HeartGold / SoulSilver)
+    { region: J, kind: 'gym', who: 'Albert', place: 'Mauville', badge: 'Zéphyr', type: 'flying', team: [18] },
+    { region: J, kind: 'gym', who: 'Hector', place: 'Écorcia', badge: 'Essaim', type: 'bug', team: [123] },
+    { region: J, kind: 'gym', who: 'Blanche', place: 'Doublonville', badge: 'Plaine', type: 'normal', team: [241] },
+    { region: J, kind: 'gym', who: 'Mortimer', place: 'Rosalia', badge: 'Brume', type: 'ghost', team: [94] },
+    { region: J, kind: 'gym', who: 'Chuck', place: 'Irisia', badge: 'Choc', type: 'fighting', team: [62] },
+    { region: J, kind: 'gym', who: 'Jasmine', place: 'Oliville', badge: 'Minéral', type: 'steel', team: [208] },
+    { region: J, kind: 'gym', who: 'Frédo', place: 'Acajou', badge: 'Glacier', type: 'ice', team: [221] },
+    { region: J, kind: 'gym', who: 'Sandra', place: 'Ébènelle', badge: 'Lever', type: 'dragon', team: [230] },
+    { region: J, kind: 'elite', who: 'Clément', type: 'psychic', team: [178, 124] },
+    { region: J, kind: 'elite', who: 'Koga', type: 'poison', team: [169, 89] },
+    { region: J, kind: 'elite', who: 'Aldo', type: 'fighting', team: [68, 237] },
+    { region: J, kind: 'elite', who: 'Marion', type: 'dark', team: [197, 229] },
+    { region: J, kind: 'champ', who: 'Peter', type: 'dragon', team: [149, 130, 142] },
+    // Sinnoh (Diamant / Perle / Platine)
+    { region: N, kind: 'gym', who: 'Pierrick', place: 'Charbourg', badge: 'Charbon', type: 'rock', team: [409] },
+    { region: N, kind: 'gym', who: 'Flo', place: 'Vestigion', badge: 'Forêt', type: 'grass', team: [407] },
+    { region: N, kind: 'gym', who: 'Mélina', place: 'Voilaroc', badge: 'Pavé', type: 'fighting', team: [448] },
+    { region: N, kind: 'gym', who: 'Lovis', place: 'Verchamps', badge: 'Palustre', type: 'water', team: [419] },
+    { region: N, kind: 'gym', who: 'Kiméra', place: 'Unionpolis', badge: 'Relique', type: 'ghost', team: [429] },
+    { region: N, kind: 'gym', who: 'Charles', place: 'Joliberges', badge: 'Mine', type: 'steel', team: [411] },
+    { region: N, kind: 'gym', who: 'Gladys', place: 'Frimapic', badge: 'Glaçon', type: 'ice', team: [460] },
+    { region: N, kind: 'gym', who: 'Tanguy', place: 'Rivamar', badge: 'Phare', type: 'electric', team: [466] },
+    { region: N, kind: 'elite', who: 'Aaron', type: 'bug', team: [452, 214] },
+    { region: N, kind: 'elite', who: 'Terry', type: 'ground', team: [450, 464] },
+    { region: N, kind: 'elite', who: 'Adrien', type: 'fire', team: [392, 467] },
+    { region: N, kind: 'elite', who: 'Lucio', type: 'psychic', team: [475, 65] },
+    { region: N, kind: 'champ', who: 'Cynthia', type: 'dragon', team: [445, 448, 350] }
   ];
+  /** Les défis d'une région, dans l'ordre. */
+  const region = r => STEPS.filter(x => x.region === r);
+  const REGIONS = [K, J, N];
+
 
   const EVERY = 300;
   let nextAt = EVERY;
@@ -35,6 +69,8 @@ G.League = (() => {
     const s = G.DB.save;
     if (!s) return { step: 0, done: false };
     s.league = s.league || { step: 0, done: false };
+    // Les sauvegardes qui avaient fini Kanto continuent à Johto.
+    if (s.league.done && s.league.step < STEPS.length) s.league.done = false;
     return s.league;
   };
   const step = () => S().step;
@@ -45,15 +81,17 @@ G.League = (() => {
   const after = t => Math.max(Math.ceil((t + 1) / EVERY) * EVERY, t + 60);
   /** Plus de défi juste avant la Sentencia d'Arceus (minute 30). */
   const tooLate = t => t >= G.Judgment.AT - 60;
-  /** Difficulté des parties : +12 % de PV et +6 % de dégâts par défi gagné. */
-  function diff() { return 1 + Math.min(step(), STEPS.length) * 0.12; }
-  function dmgK() { return 1 + Math.min(step(), STEPS.length) * 0.06; }
+  /** Difficulté des parties : +12 % de PV et +6 % de dégâts par défi gagné à Kanto,
+   *  puis moitié moins à Johto et Sinnoh (power.js suit déjà la force de l'équipe). */
+  const lvl = () => { const k = Math.min(step(), STEPS.length); return Math.min(k, 13) + Math.max(0, k - 13) * 0.5; };
+  function diff() { return 1 + lvl() * 0.12; }
+  function dmgK() { return 1 + lvl() * 0.06; }
 
   function title(st) {
     if (!st) return 'Mode libre';
     return st.kind === 'gym' ? 'Arène de ' + st.place + ' · ' + st.who
-      : st.kind === 'elite' ? 'Conseil 4 · ' + st.who
-      : 'Maître de la Ligue · ' + st.who;
+      : st.kind === 'elite' ? 'Conseil 4 de ' + st.region + ' · ' + st.who
+      : 'Maître de la Ligue de ' + st.region + ' · ' + st.who;
   }
 
   function reset() { nextAt = EVERY; }
@@ -66,14 +104,15 @@ G.League = (() => {
     return Math.max(0, nextAt - t);
   }
 
-  function bossDef(dex, i, k) {
+  function bossDef(dex, i0, k) {
     const p = G.DEX_BY[dex];
-    const n = STEPS[i].team.length;
+    const i = i0 < 13 ? i0 : 13 + (i0 - 13) * 0.5;     // Johto et Sinnoh montent moins vite
+    const n = STEPS[i0].team.length;
     // Les équipes à plusieurs Pokémon : chacun un peu moins solide.
     const hp = Math.round((5200 + i * 2600) * (n > 1 ? 0.75 : 1) * (k === 0 ? 1 : 0.8));
     return {
       at: 0, dex, name: p.name, hp, spd: Math.round(G.U.clamp(50 + p.spd * 0.25, 50, 95)),
-      dmg: Math.round(48 + i * 5), xp: 1500 + i * 150,
+      dmg: Math.round(48 + i * 5), xp: Math.round(1500 + i * 150),
       behavior: k % 2 ? 'ranged' : 'charger',
       shotDmg: Math.round((48 + i * 5) * 0.55), shotCd: 1.0, range: 270
     };
@@ -135,8 +174,8 @@ G.League = (() => {
     G.DB.commit(true);
     G.Progress.event('league', { step: L.step });
     const msg = st.kind === 'gym' ? 'Badge ' + st.badge + ' obtenu !'
-      : st.kind === 'elite' ? st.who + ' est battu' + (st.who === 'Olga' || st.who === 'Agatha' ? 'e' : '') + ' !'
-      : 'Tu es le Maître de la Ligue !';
+      : st.kind === 'elite' ? st.who + ' est battu' + (['Olga', 'Agatha', 'Marion'].includes(st.who) ? 'e' : '') + ' !'
+      : 'Tu es le Maître de la Ligue de ' + st.region + ' !' + (STEPS[i + 1] ? ' Direction ' + STEPS[i + 1].region + ' !' : '');
     G.Spawner.say(msg + ' +' + coins + ' pièces, +' + tickets + ' Poké Balls, +' + balls + ' Super Bonbons', 4.5, true);
     G.Audio.sfx('legend');
     if (pl) {
@@ -157,7 +196,7 @@ G.League = (() => {
     const team = G.Team.members().map(m => m.dex);
     box.innerHTML = `
       <h1>Félicitations !</h1>
-      <p>Tu as battu les 8 champions d'arène, le Conseil 4 et le Maître Blue.</p>
+      <p>Tu as battu les 24 champions d'arène, les Conseils 4 et les Maîtres de Kanto, Johto et Sinnoh.</p>
       <p class="cr-big">Tu es le nouveau Maître de la Ligue Pokémon !</p>
       <div class="cr-team" id="cr-team"></div>
       <div class="cr-badges">${STEPS.filter(s => s.kind === 'gym').map(s => `<span class="cr-badge" style="--c:${G.U.TYPE_COLOR[s.type]}" title="${s.badge}"></span>`).join('')}</div>
@@ -175,7 +214,7 @@ G.League = (() => {
     G.Audio.sfx('legend');
   }
 
-  return { STEPS, fighting, step, done, current, title, diff, dmgK, reset, update, onKill, lost, spawnTeam, timeLeft, EVERY, showCredits, win,
+  return { STEPS, REGIONS, region, fighting, step, done, current, title, diff, dmgK, reset, update, onKill, lost, spawnTeam, timeLeft, EVERY, showCredits, win,
     /** Pour les tests : le prochain défi tout de suite. */
     debugNow() { nextAt = G.Game.st.time; } };
 })();

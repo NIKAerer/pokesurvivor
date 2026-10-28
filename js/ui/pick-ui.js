@@ -176,9 +176,11 @@ G.PickUI = (() => {
     $('pick-count').textContent = `Tes Pokémon (${mons.length})`;
     // La Ligue : badges gagnés et prochain défi.
     const L = G.League, cur = L.current(), stp = L.step();
-    $('pick-league').innerHTML = L.STEPS.map((st, i) =>
+    // Version de Nika : seulement la région en cours (13 défis chacune).
+    const reg = cur ? cur.region : L.REGIONS[L.REGIONS.length - 1], off = L.STEPS.findIndex(x => x.region === reg);
+    $('pick-league').innerHTML = `<span class="lg-reg">${reg}</span>` + L.region(reg).map((st, k) => [st, off + k]).map(([st, i]) =>
       `<span class="lg-b ${st.kind}${i < stp ? ' on' : ''}${i === stp && !L.done() ? ' next' : ''}" style="--c:${G.U.TYPE_COLOR[st.type]}" title="${L.title(st)}"></span>`).join('')
-      + `<span class="lg-txt">${cur ? 'Prochain défi : <b>' + L.title(cur) + '</b> (' + G.I18n.t(G.U.TYPE_NAME[cur.type]) + ') dès ' + G.U.mmss(L.EVERY) + ', puis toutes les 5 min' : '<b>Maître de la Ligue ★</b> · mode libre'}</span>`;
+      + `<span class="lg-txt">${cur ? 'Prochain défi : <b>' + L.title(cur) + '</b> (' + G.I18n.t(G.U.TYPE_NAME[cur.type]) + ') dès ' + G.U.mmss(L.EVERY) + ', puis toutes les 5 min' : '<b>Maître de Kanto, Johto et Sinnoh ★</b> · mode libre'}</span>`;
     // Missions terminées dont la récompense attend.
     const pend = G.Progress.pending();
     $('pick-goals-n').textContent = pend;
