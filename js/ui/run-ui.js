@@ -41,7 +41,7 @@ G.RunUI = (() => {
   }
 
   function renderCards(list) {
-    offers = list; forgetting = null;
+    offers = list; forgetting = null; shownAt = performance.now();
     const left = rerollsLeft();
     $('lvl-rr-n').textContent = left;
     $('lvl-reroll').classList.toggle('hidden', left <= 0);
@@ -82,6 +82,7 @@ G.RunUI = (() => {
     const pl = c.target, list = offers;
     const moves = pl.moves.slice();
     forgetting = { card: c, moves };
+    shownAt = performance.now();
     $('lvl-reroll').classList.add('hidden');
     const box = $('cards');
     box.innerHTML = `<p class="forget-head">${pl.mon.name} veut apprendre <b>${c.title}</b>, mais connaît déjà 4 attaques. Laquelle oublier ?</p>`;
@@ -105,14 +106,20 @@ G.RunUI = (() => {
     G.Audio.sfx('select');
   }
   function pickForget(k) {
+    if (tooSoon()) return;
     const f = forgetting, m = f && f.moves[k];
     if (!m || (m.def && m.def.sig)) return;
     forgetting = null;
     f.card.forgetId = m.id;
-    pick(offers.indexOf(f.card));
+    pick(offers.indexOf(f.card), true);
   }
 
-  function pick(i) {
+  // Version de Nika : un double appui ne choisit pas aussi la carte suivante qui vient de s'ouvrir.
+  let shownAt = 0;
+  const tooSoon = () => performance.now() - shownAt < 350;
+
+  function pick(i, now = false) {
+    if (!now && tooSoon()) return;
     if (forgetting) { pickForget(i); return; }
     if (!offers || !offers[i]) return;
     if (offers[i].forget && !offers[i].forgetId) { askForget(offers[i]); return; }
@@ -196,6 +203,8 @@ G.RunUI = (() => {
   function showItemChoice(cur, next, cb) {
     const box = $('item-cards');
     box.innerHTML = '';
+    shownAt = performance.now();
+    let done = false;                  // un seul choix (avant : double appui = 2 fois)
     [[cur, 'Quedarme con'], [next, 'Cambiar a']].forEach(([id, verb], i) => {
       const it = G.Items.BY[id];
       const el = document.createElement('div');
@@ -203,7 +212,7 @@ G.RunUI = (() => {
       el.innerHTML = `<div class="ico">${G.Icons.html(id, 36)}</div>
         <div class="txt"><div class="nm">${verb} ${it.name}</div><div class="ds">${it.desc}</div></div>
         <div class="key">${i + 1}</div>`;
-      el.onclick = () => { G.UI.hide('scr-item'); cb(id); };
+      el.onclick = () => { if (tooSoon() || done) return; done = true; G.UI.hide('scr-item'); cb(id); };
       box.appendChild(el);
     });
     G.UI.show('scr-item');
