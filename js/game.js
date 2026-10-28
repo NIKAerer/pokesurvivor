@@ -761,7 +761,6 @@ G.Game = (() => {
     G.Events.update(dt, all, time);
     G.Rocket.update(dt, pl, time);
     G.Weather.update(dt, time, pl);
-    G.Tuto.update(time, !!pl.uid);
     G.DayNight.update(time);
     G.FX.update(dt);
 
