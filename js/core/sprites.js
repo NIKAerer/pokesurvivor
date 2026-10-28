@@ -206,6 +206,35 @@ G.Sprites = (() => {
     });
   }
 
+  /**
+   * Version de Nika : écran de chargement. Télécharge toutes les planches de
+   * sprites une fois (elles restent dans le cache du navigateur) sans les garder
+   * décodées en mémoire, pour que l'iPhone ne plante pas. `tick(fait, total)`.
+   */
+  function warmAll(tick = () => {}, timeout = 60000) {
+    let urls;
+    if (G.SPRITE_ATLAS) urls = [...new Set(Object.values(G.SPRITE_ATLAS).map(e => 'sprites/' + e[0] + '.png'))];
+    else urls = (G.DB && G.DB.save && G.DB.save.box || []).map(d => `assets/pokemon/${d}/Idle.png`);
+    const total = urls.length;
+    let done = 0, next = 0;
+    tick(0, total);
+    return new Promise(res => {
+      if (!total) return res();
+      const t = setTimeout(res, timeout);      // réseau très lent : on n'attend pas plus
+      const one = () => {
+        if (next >= total) return;
+        const im = new Image();
+        im.onload = im.onerror = () => {
+          im.onload = im.onerror = null; im.src = '';
+          tick(++done, total);
+          if (done >= total) { clearTimeout(t); res(); } else one();
+        };
+        im.src = urls[next++];
+      };
+      for (let k = 0; k < 6; k++) one();
+    });
+  }
+
   /** Ángulo de pantalla (atan2(dy,dx)) -> fila de dirección 0..7. */
   function dirFromAngle(a) {
     return ((Math.round((Math.PI / 2 - a) / (Math.PI / 4)) % 8) + 8) % 8;
@@ -347,7 +376,7 @@ G.Sprites = (() => {
     }
   }
 
-  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
+  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, warmAll, dirFromAngle, bodyRadius, bodyHeight,
            drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; }, get usedMB() { return Math.round(used / 1e6); },
            /** Pour les tests : [clé, octets, âge en ms] de chaque feuille. */
            debugSheets() { const n = Date.now(); return [...sheets].map(([k, s]) => [k, bytesOf(s), n - s.at]); } };
