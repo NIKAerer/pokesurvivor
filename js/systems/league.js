@@ -64,6 +64,11 @@ G.League = (() => {
 
   const EVERY = 300;
   let nextAt = EVERY;
+  // Version de Nika : en Tour de Combat (tower.js), les défis viennent de la Tour.
+  const T = () => !!(G.Tower && G.Tower.active);
+  const every = () => (T() ? G.Tower.EVERY : EVERY);
+  /** Le défi n° i (-1 = l'étage de la Tour en cours). */
+  const stepAt = i => (i === -1 ? G.Tower.step() : STEPS[i]);
 
   const S = () => {
     const s = G.DB.save;
@@ -75,10 +80,10 @@ G.League = (() => {
   };
   const step = () => S().step;
   const done = () => !!S().done;
-  const current = () => (done() ? null : STEPS[step()]);
+  const current = () => (T() ? G.Tower.step() : done() ? null : STEPS[step()]);
 
   /** Prochain palier de 5 minutes après t (au moins 60 s plus tard). */
-  const after = t => Math.max(Math.ceil((t + 1) / EVERY) * EVERY, t + 60);
+  const after = t => Math.max(Math.ceil((t + 1) / every()) * every(), t + 60);
   /** Plus de défi juste avant la Sentencia d'Arceus (minute 30). */
   const tooLate = t => t >= G.Judgment.AT - 60;
   /** Difficulté des parties : +12 % de PV et +6 % de dégâts par défi gagné à Kanto,
@@ -89,12 +94,13 @@ G.League = (() => {
 
   function title(st) {
     if (!st) return 'Mode libre';
+    if (st.kind === 'tower') return 'Tour de Combat · Étage ' + st.floor + ' · ' + st.who;
     return st.kind === 'gym' ? 'Arène de ' + st.place + ' · ' + st.who
       : st.kind === 'elite' ? 'Conseil 4 de ' + st.region + ' · ' + st.who
       : 'Maître de la Ligue de ' + st.region + ' · ' + st.who;
   }
 
-  function reset() { nextAt = EVERY; }
+  function reset() { nextAt = T() ? G.Tower.FIRST : EVERY; }
   /** Combat dans l'arène du champion en cours. */
   function fighting() { const a = G.Rift.arena; return !!(a && a.gym != null && a.phase === 'fight'); }
 
@@ -106,8 +112,8 @@ G.League = (() => {
 
   function bossDef(dex, i0, k) {
     const p = G.DEX_BY[dex];
-    const i = i0 < 13 ? i0 : 13 + (i0 - 13) * 0.5;     // Johto et Sinnoh montent moins vite
-    const n = STEPS[i0].team.length;
+    const i = i0 === -1 ? G.Tower.strength() : i0 < 13 ? i0 : 13 + (i0 - 13) * 0.5;     // Johto et Sinnoh montent moins vite
+    const n = stepAt(i0).team.length;
     // Les équipes à plusieurs Pokémon : chacun un peu moins solide.
     const hp = Math.round((5200 + i * 2600) * (n > 1 ? 0.75 : 1) * (k === 0 ? 1 : 0.8));
     return {
@@ -124,12 +130,12 @@ G.League = (() => {
     if (!st || t < nextAt || tooLate(t) || G.Rift.inArena || G.Judgment.active) return;
     if (G.Coop.active && !G.Coop.isHost) return;
     nextAt = after(t);                               // au cas où l'arène ne s'ouvrirait pas
-    G.Rift.gym(step());
+    G.Rift.gym(T() ? -1 : step());
   }
 
   /** L'équipe du champion qui arrive dans l'arène (rift.js). */
   function spawnTeam(x, y) {
-    const i = step(), st = STEPS[i], ids = [];
+    const i = T() ? -1 : step(), st = stepAt(i), ids = [];
     if (!st) return ids;
     st.team.forEach((dex, k) => {
       if (!G.DEX_BY[dex] || !G.SPRITE_META[dex]) return;
@@ -137,7 +143,7 @@ G.League = (() => {
       const e = G.Spawner.bossAt(x + off, y, G.Game.st.time, bossDef(dex, i, k));
       if (e) { e.champion = true; ids.push(e.id); }
     });
-    const verb = st.kind === 'gym' ? 'Le champion ' : st.kind === 'elite' ? 'Le Conseil 4 : ' : 'Le Maître ';
+    const verb = st.kind === 'tower' ? 'Étage ' + st.floor + ' : ' : st.kind === 'gym' ? 'Le champion ' : st.kind === 'elite' ? 'Le Conseil 4 : ' : 'Le Maître ';
     G.Spawner.say(verb + st.who + ' te défie ! (' + st.team.map(d => G.DEX_BY[d].name).join(', ') + ')', 4.2, true);
     G.Audio.sfx('boss');
     G.Camera.kick(1.2);
@@ -156,11 +162,13 @@ G.League = (() => {
   function lost() {
     const st = current();
     nextAt = after(G.Game.st.time);
+    if (T()) { G.Tower.lost(); return; }
     if (st) G.Spawner.say(st.who + ' t\'a battu… Nouvel essai ' + (tooLate(nextAt) ? 'à la prochaine partie' : 'dans 5 min') + '.', 3.4, true);
   }
 
   function win() {
     nextAt = after(G.Game.st.time);
+    if (T()) { G.Tower.win(); return; }
     const L = S(), i = L.step, st = STEPS[i];
     const pl = G.Game.player;
     // Version de Nika (moins de tickets) : 1 par champion ou membre du Conseil, 3 pour le Maître.
@@ -216,7 +224,7 @@ G.League = (() => {
     G.Audio.sfx('legend');
   }
 
-  return { STEPS, REGIONS, region, fighting, step, done, current, title, diff, dmgK, reset, update, onKill, lost, spawnTeam, timeLeft, EVERY, showCredits, win,
+  return { STEPS, REGIONS, region, fighting, step, stepAt, done, current, title, diff, dmgK, reset, update, onKill, lost, spawnTeam, timeLeft, EVERY, showCredits, win,
     /** Pour les tests : le prochain défi tout de suite. */
     debugNow() { nextAt = G.Game.st.time; } };
 })();

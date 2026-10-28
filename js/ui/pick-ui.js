@@ -288,6 +288,7 @@ G.PickUI = (() => {
     if (s.partnerRandom) pb.insertAdjacentHTML('beforeend', '<b class="pick-q pp-q">?</b>');
     else pb.appendChild(G.UI.spriteCanvas(mon.dex, 40, 34, { fit: true, shiny }));
     pb.insertAdjacentHTML('beforeend', '<span>Jouer</span>');
+    $('pick-tower').title = 'Tour de Combat · meilleur étage : ' + G.Tower.best();
     const dp = G.MenuUI.dexPending();
     $('pick-dex-n').textContent = dp;
     $('pick-dex-n').classList.toggle('hidden', !dp);
@@ -306,13 +307,15 @@ G.PickUI = (() => {
 
   function init() {
     $('pick-play').onclick = play;
+    // Version de Nika : la Tour de Combat (tower.js) est une partie à part.
+    $('pick-tower').onclick = () => { G.Tower.start(); play(); };
     $('pick-upg').onclick = () => G.MenuUI.openUpgrades();
     $('pick-gacha').onclick = () => G.GachaUI.open();
     $('pick-dex').onclick = () => G.MenuUI.openDex();
     $('pick-goals').onclick = () => G.GoalsUI.open('missions');
     $('pick-set').innerHTML = G.Icons.html('gear', 18);
     // Icônes des boutons du bas (refonte du menu).
-    for (const [id, ico] of [['pick-upg', 'up'], ['pick-gacha', 'ticket'], ['pick-dex', 'book'], ['pick-goals', 'trophy']]) {
+    for (const [id, ico] of [['pick-upg', 'up'], ['pick-gacha', 'ticket'], ['pick-dex', 'book'], ['pick-goals', 'trophy'], ['pick-tower', 'crown']]) {
       const b = $(id);
       if (!b.querySelector('.pa-ico')) b.insertAdjacentHTML('afterbegin', `<span class="pa-ico">${G.Icons.html(ico, 18)}</span>`);
     }

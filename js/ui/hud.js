@@ -36,6 +36,17 @@ G.HUD = (() => {
     roundRect(ctx, x0, y0, BW, BH, 9);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     ctx.textAlign = 'left';
+    // Version de Nika : en Tour de Combat, l'étage et le record à la place des badges.
+    if (G.Tower.active) {
+      ctx.font = F(800, 11); ctx.fillStyle = '#ffcb3d';
+      ctx.fillText('TOUR DE COMBAT · ÉTAGE ' + cur.floor, x0 + 8, y0 + 14);
+      ctx.fillStyle = '#8fa3c4';
+      ctx.fillText('Réussis : ' + G.Tower.floor + ' · record ' + G.Tower.best(), x0 + 8, y0 + 32);
+      const t = L.timeLeft(st.time);
+      ctx.fillStyle = L.fighting() ? '#ff6b6b' : '#eaf2ff';
+      ctx.fillText(L.fighting() ? 'Combat : ' + cur.who + ' !' : t == null ? 'Plus de défi' : cur.who + ' dans ' + Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0'), x0 + 8, y0 + 54);
+      return;
+    }
     // Titre : la phase de la Ligue.
     // Version de Nika : la région en cours (Kanto, puis Johto, puis Sinnoh).
     const reg = cur ? cur.region : S[S.length - 1].region, RS = L.region(reg);

@@ -385,6 +385,7 @@ G.Game = (() => {
 
     save.coins += coins;
     bankTickets(false);
+    G.Tower.end();                           // version de Nika : record de la Tour de Combat
     // Version de Nika : carnet de chaque Pokémon de l'équipe (fiche du menu).
     save.carnet = save.carnet || {};
     for (const m of G.Team.members()) {

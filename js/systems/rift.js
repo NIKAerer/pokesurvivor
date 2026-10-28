@@ -112,7 +112,7 @@ G.Rift = (() => {
   /** Version de Nika : téléportation dans l'arène du champion (défi n° i de la Ligue). */
   function gym(i) {
     if (arena) return;
-    const st = G.League.STEPS[i];
+    const st = G.League.stepAt(i);
     if (!st) return;
     const cfg = {
       tx: 5000 + Math.floor(Math.random() * 3000), ty: 5000 + Math.floor(Math.random() * 3000), r: ARENA_R,
@@ -149,7 +149,7 @@ G.Rift = (() => {
     G.Game.flash('#c9a6ff', 0.9);
     G.Audio.sfx('rift');
     if (cfg.gym != null) {
-      const st = G.League.STEPS[cfg.gym];
+      const st = G.League.stepAt(cfg.gym);
       G.Spawner.say('Téléportation : ' + G.League.title(st) + ' !', 2.6, true);
     } else G.Spawner.say('Has entrado en la grieta…', 2.4, true);
   }
