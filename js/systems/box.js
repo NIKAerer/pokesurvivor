@@ -10,21 +10,22 @@
  * Relâcher un Pokémon libère sa place et donne des Super Bonbons.
  */
 G.Box = (() => {
-  const START = 8, STEP = 2, MAX = 120;
+  const START = 8, STEP = 2, MAX = 300;     // version de Nika : 300 (les anciens comptes ont parfois plus de 120 Pokémon)
   /** Bonbons d'un doublon, selon sa rareté (un shiny en double : ×3). */
   const CANDY = { 1: 3, 2: 4, 3: 6, 4: 10, 5: 25 };
   /** Super Bonbons quand on relâche, selon la rareté. */
   const RELEASE = { 1: 2, 2: 3, 3: 5, 4: 8, 5: 15 };
 
   const S = () => G.DB.save || {};
-  const box = () => (Array.isArray(S().box) ? S().box : []);
+  // Seulement les Pokémon qui existent (comme le menu) : sinon la boîte paraît pleine alors qu'il reste de la place.
+  const box = () => (Array.isArray(S().box) ? [...new Set(S().box)].filter(d => G.DEX_BY[d] && G.SPRITE_META[d]) : []);
 
   /** Les anciennes sauvegardes gardent tous leurs Pokémon : la boîte s'adapte. */
   function fix() {
     const s = S();
     if (!s.box || s.boxFixed) return;
     s.boxFixed = 1;
-    if (s.box.length > START) s.boxBonus = s.box.length - START;
+    if (box().length > START) s.boxBonus = box().length - START;
   }
   function cap() { const s = S(); fix(); return Math.min(MAX, START + STEP * (s.boxExtra | 0) + (s.boxBonus | 0)); }
   function free() { return Math.max(0, cap() - box().length); }
