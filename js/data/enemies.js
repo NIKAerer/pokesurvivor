@@ -199,6 +199,18 @@ G.Enemies = (() => {
     return G.U.pickN(pool, 4).map(p => defFor(p, TIERS[ti], ti));
   }
 
+  /** Version de Nika : vague spéciale d'une seule espèce (events.js) — nombreux mais fragiles. */
+  function swarmDefs(dexes, t, behavior) {
+    const ti = tierAt(t);
+    return dexes.filter(d => G.DEX_BY[d] && G.SPRITE_META[d]).map(d => {
+      const def = defFor(G.DEX_BY[d], TIERS[ti], ti);
+      def.behavior = behavior;
+      def.hp = Math.round(def.hp * 0.55);
+      if (behavior === 'runner') def.spd = Math.round(def.spd * 1.5);
+      return def;
+    });
+  }
+
   /** Bolsa de enemigos disponibles en el segundo `t`. */
   function bagAt(t) {
     // Durante una horda de un tipo sólo salen los de ese tipo (systems/events.js).
@@ -232,7 +244,7 @@ G.Enemies = (() => {
   }
 
   return {
-    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs,
+    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs, swarmDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };

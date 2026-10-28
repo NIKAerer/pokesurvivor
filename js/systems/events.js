@@ -20,6 +20,16 @@
  */
 G.Events = (() => {
   const EVERY = [240, 300], DUR = 30, LOST_TIME = 120;
+  /* Version de Nika : vagues spéciales d'une espèce, beaucoup d'un coup mais fragiles.
+   * L'évolution vient après 10 min. */
+  const SWARMS = [
+    { name: 'Nuée de Nosferapti !', dex: [41], evo: [41, 42], behavior: 'runner', color: '#9b7bff' },
+    { name: 'Éboulement de Racaillou !', dex: [74], evo: [74, 75], behavior: 'charger', color: '#c9a36b' },
+    { name: 'Horde de Rattata !', dex: [19], evo: [19, 20], behavior: 'runner', color: '#c79bd8' },
+    { name: 'Invasion de Chenipan !', dex: [10, 13], evo: [11, 14], behavior: 'chase', color: '#8ad65f' },
+    { name: 'Banc de Tentacool !', dex: [72], evo: [72, 73], behavior: 'chase', color: '#5fb8ff' }
+  ];
+  const SWARM_EVO = 600;
   const THIEF_FIRST = [120, 240], THIEF_NEXT = [240, 360], THIEF_LIFE = 15;
   const authority = () => !G.Coop.active || G.Coop.isHost;
 
@@ -55,7 +65,7 @@ G.Events = (() => {
     if (nextT > 0) return;
     if (G.EnemyMgr.bossAlive()) { nextT = 10; return; }
     nextT = G.U.rand(EVERY[0], EVERY[1]);
-    const ids = ['horde', 'gold', 'lost'].filter(id => id !== last);
+    const ids = ['horde', 'gold', 'lost', 'swarm'].filter(id => id !== last);
     start(G.U.pick(ids), time, players);
   }
 
@@ -69,6 +79,13 @@ G.Events = (() => {
       G.Sprites.preload(defs.map(d => d.dex));
       cur = { id, t: 0, dur: DUR, type, defs };
       G.Spawner.burst(Math.round(6 * G.Coop.scaleRate(players.length)));
+    } else if (id === 'swarm') {
+      const sw = G.U.pick(SWARMS);
+      const defs = G.Enemies.swarmDefs(time >= SWARM_EVO ? sw.evo : sw.dex, time, sw.behavior);
+      if (!defs.length) return start('gold', time, players);
+      G.Sprites.preload(defs.map(d => d.dex));
+      cur = { id, t: 0, dur: 25, type: sw.name, color: sw.color, defs };
+      for (let i = 0; i < 3; i++) G.Spawner.burst(Math.round(6 * G.Coop.scaleRate(players.length)));
     } else if (id === 'gold') {
       cur = { id, t: 0, dur: DUR };
       for (const e of G.EnemyMgr.all()) if (!e.remote) e.makeGolden();
@@ -82,7 +99,8 @@ G.Events = (() => {
 
   function announce() {
     if (!cur) return;
-    if (cur.id === 'horde') say('¡Horda de tipo ' + G.U.TYPE_NAME[cur.type] + '!', 3, G.U.TYPE_COLOR[cur.type]);
+    if (cur.id === 'swarm') say(cur.type, 3);
+    else if (cur.id === 'horde') say('¡Horda de tipo ' + G.U.TYPE_NAME[cur.type] + '!', 3, G.U.TYPE_COLOR[cur.type]);
     else if (cur.id === 'gold') say('¡Hora dorada! Doble de experiencia', 3, '#ffd23f');
     else if (lost) say('¡Un ' + lost.name + ' se ha perdido! Búscalo y llévalo a la marca', 3.4, '#7dffb0');
     G.Audio.sfx(cur.id === 'gold' ? 'shiny' : 'surge');
@@ -97,7 +115,7 @@ G.Events = (() => {
   }
 
   /** Lo que sale durante una horda (lo usa G.Enemies.bagAt). */
-  function bag() { return cur && cur.id === 'horde' && cur.defs.length ? cur.defs : null; }
+  function bag() { return cur && (cur.id === 'horde' || cur.id === 'swarm') && cur.defs && cur.defs.length ? cur.defs : null; }
 
   // ---------------- duende del tesoro ----------------
 
@@ -310,12 +328,13 @@ G.Events = (() => {
     }
     if (cur && cur.id !== 'lost') {
       const left = Math.max(0, Math.ceil(cur.dur - cur.t));
-      const txt = (cur.id === 'gold' ? 'HORA DORADA' : 'HORDA ' + G.U.TYPE_NAME[cur.type].toUpperCase()) + ' · ' + left + ' s';
+      const txt = (cur.id === 'gold' ? 'HORA DORADA' : cur.id === 'swarm' ? String(cur.type).replace(' !', '').toUpperCase()
+        : 'HORDA ' + G.U.TYPE_NAME[cur.type].toUpperCase()) + ' · ' + left + ' s';
       ctx.save();
       ctx.font = F(800, 12); ctx.textAlign = 'center';
       ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.8)';
       ctx.strokeText(txt, w / 2, 112);
-      ctx.fillStyle = cur.id === 'gold' ? '#ffd23f' : G.U.TYPE_COLOR[cur.type] || '#fff';
+      ctx.fillStyle = cur.id === 'gold' ? '#ffd23f' : cur.color || G.U.TYPE_COLOR[cur.type] || '#fff';
       ctx.fillText(txt, w / 2, 112);
       ctx.restore();
     }
