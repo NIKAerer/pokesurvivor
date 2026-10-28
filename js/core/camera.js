@@ -15,10 +15,15 @@ G.Camera = {
   // En pantallas más anchas que 16:9 (móviles en horizontal) se asegura
   // también un alto mínimo de mundo, para no ver una franja estrecha.
   MIN_VIEW_H: 420,
+  PHONE_SHORT: 340,
 
   resize(cssW, cssH, dpr = 1) {
     this.dpr = dpr;
     this.scale = Math.min(cssW / this.VIEW_W, cssH / this.MIN_VIEW_H);
+    // Version de Nika : sur téléphone (petit côté < 600 px) la caméra était trop loin.
+    // Le petit côté de l'écran montre PHONE_SHORT unités de monde, debout comme couché.
+    const short = Math.min(cssW, cssH);
+    if (short < 600) this.scale = short / this.PHONE_SHORT;
     this.w = cssW / this.scale;
     this.h = cssH / this.scale;
   },
