@@ -194,6 +194,9 @@ G.Icons = (() => {
     medal2: { pal: { r: '#4fb4ff', q: '#2a6fb0', m: '#c9d2de', n: '#7d8899', w: '#ffffff', s: '#ffffff' }, rows: MEDAL },
     medal3: { pal: { r: '#c47bff', q: '#7a3fb0', m: '#ffd23f', n: '#c08a10', w: '#fff3b0', s: '#fffbe0' }, rows: MEDAL },
     medalOff: { pal: { r: '#3a4870', q: '#2a3458', m: '#3a4870', n: '#2a3458', w: '#4a5a88', s: '#4a5a88' }, rows: MEDAL },
+    // Version de Nika : menu Accueil (cadeau du jour, onglet Accueil).
+    gift: { pal: { r: '#ff5f6d', d: '#b8303c', w: '#ffc2c8', y: '#ffd23f' }, rows: ['...kk..kk...', '..kyykkyyk..', '...kyyyyk...', 'kkkkkyykkkkk', 'krrrryyrrrrk', 'kwrrryyrrrdk', 'kkkkkyykkkkk', '.krrryyrrrk.', '.kwrryyrrdk.', '.krrryyrrdk.', '.kdddyydddk.', '.kkkkkkkkkk.'] },
+    home: { pal: { r: '#ff7a4d', w: '#f4ead2', d: '#c9b48a', b: '#8a5a2b' }, rows: ['.....kk.....', '....krrk....', '...krrrrk...', '..krrrrrrk..', '.krrrrrrrrk.', 'kkkkkkkkkkkk', '.kwwwwwwwdk.', '.kwkkwwbbdk.', '.kwkkwwbbdk.', '.kwwwwwbbdk.', '.kwwwwwbbdk.', '.kkkkkkkkkk.'] },
     trophy: { pal: { y: '#ffd23f', d: '#c08a10', w: '#fff3b0' }, rows: [
       '............', '..kkkkkkkk..', 'kkkwyyyydkkk', 'k.kwyyyydk.k', 'k.kwyyyydk.k', '.kkwyyyydkk.',
       '...kyyyyk...', '....kyyk....', '....kyyk....', '...kddddk...', '..kyyyyyyk..', '..kkkkkkkk..'] },

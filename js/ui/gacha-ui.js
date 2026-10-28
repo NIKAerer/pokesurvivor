@@ -62,8 +62,8 @@ G.GachaUI = (() => {
        <p class="note">· Une Épique ou mieux au plus tard toutes les ${G.Gacha.PITY_4} ouvertures (aussi une par une).<br>
        · Après ${G.Gacha.PITY_5} ouvertures sans Légendaire, la suivante en est une.<br>
        · Un doublon donne des Bonbons de son espèce (pour monter son rang). Les shiny ne se répètent pas.<br>
-       · Boîte pleine (${G.Box.cap()} places) : un nouveau Pokémon donne ses Bonbons au lieu d'entrer. Agrandis-la au menu.<br>
-       · Les Poké Balls se gagnent en partie ou s'achètent avec des pièces (le prix monte à chaque achat).</p>`;
+       · Il faut une place libre dans la boîte par Poké Ball ouverte (×10 : 10 places). Agrandis-la ou relâche un Pokémon au menu.<br>
+       · Les Poké Balls se gagnent en partie (ennemis, boss, Ligue, Tour) ou s'achètent : ${G.Shop.BASE} pièces, +${G.Shop.STEP} par achat dans la journée, ${G.Shop.DAY} par jour.</p>`;
 
     const t = s.tickets;
     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
@@ -71,27 +71,23 @@ G.GachaUI = (() => {
     $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
     $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> Poké Ball${t.t1 > 1 ? 's' : ''} à ouvrir`
       + ` · Boîte ${s.box.length}/${G.Box.cap()}` + (G.Box.full() ? ' <b class="warn">pleine</b>' : '');
-    // Version de Nika : on peut aussi acheter des tickets avec les pièces.
-    // Version de Nika : 300 pièces, +50 à chaque ticket acheté (gacha plus rare).
-    const PRICE = { t1: 300 + 50 * (s.ticketsBought | 0), t10: 3000 };
-    for (const k of ['t1']) {          // version de Nika : un seul ticket
-      const b = $('buy-' + k);
-      b.innerHTML = `Acheter ${G.Icons.html(k === 't1' ? 'ticket' : 'ticket10', 16)} · <span class="coin"></span> ${PRICE[k]}`;
-      b.disabled = s.coins < PRICE[k];
-      b.onclick = () => {
-        const sv = G.DB.save;
-        if (sv.coins < PRICE[k]) return;
-        sv.coins -= PRICE[k];
-        sv.tickets = sv.tickets || { t1: 0, t10: 0 };
-        sv.tickets[k] = (sv.tickets[k] || 0) + 1;
-        sv.ticketsBought = (sv.ticketsBought | 0) + 1;
-        G.DB.commit(true);
-        G.Audio.sfx('buy');
-        refresh();
-      };
+    // Version de Nika : prix du jour (shop.js), il remonte à zéro chaque jour.
+    const b = $('buy-t1'), price = G.Shop.price(), left = G.Shop.left();
+    b.innerHTML = left > 0
+      ? `Acheter ${G.Icons.html('ticket', 16)} · <span class="coin"></span> ${price} <small>(${left}/${G.Shop.DAY} aujourd'hui)</small>`
+      : `Plus de Poké Balls à acheter aujourd'hui`;
+    b.disabled = !G.Shop.canBuy();
+    b.onclick = () => { if (G.Shop.buy()) { G.Audio.sfx('buy'); refresh(); } };
+    $('pull-1').disabled = !G.Gacha.costOf(s, 1) || !G.Gacha.roomFor(1);
+    $('pull-10').disabled = !G.Gacha.costOf(s, 10, 't1') || !G.Gacha.roomFor(10);
+    const room = $('gacha-room');
+    if (room) {
+      const f = G.Box.free();
+      room.innerHTML = f >= 10 ? '' : f > 0
+        ? `Il reste ${f} place${f > 1 ? 's' : ''} dans ta boîte : ×10 bloqué.`
+        : `Ta boîte est pleine : agrandis-la ou relâche un Pokémon pour ouvrir des Poké Balls.`;
+      room.classList.toggle('hidden', f >= 10);
     }
-    $('pull-1').disabled = !G.Gacha.costOf(s, 1);
-    $('pull-10').disabled = !G.Gacha.costOf(s, 10, 't1');
     G.UI.refreshCoins();
   }
 
@@ -100,7 +96,11 @@ G.GachaUI = (() => {
   async function pull(n, use = 't1') {
     if (busy) return;
     const res = G.Gacha.pull(G.DB.save, n, gen, use);
-    if (!res) { G.Audio.sfx('error'); G.UI.toast('No tienes tickets suficientes: consíguelos jugando'); return; }
+    if (!res) {
+      G.Audio.sfx('error');
+      G.UI.toast(G.Gacha.roomFor(n) ? 'Pas assez de Poké Balls : gagne-en en partie' : 'Pas assez de place dans ta boîte');
+      return;
+    }
     G.Progress.checkAch();
     G.DB.commit(true);
     busy = true;
