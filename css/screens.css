@@ -158,3 +158,8 @@
 #over-caught:empty { display: none; }
 .scr.tcard .chip { background: #f1e8df; color: #8a6a55; border: 0; text-shadow: none; box-shadow: none; }
 .scr.tcard .chip.on { background: var(--ink); color: #fff; }
+
+/* Version de Nika : pas de fondu sur les écrans pleins (menu, Boutique, Pokédex...).
+ * Pendant le fondu on voyait une image du décor derrière, entre deux écrans. */
+.scr.hub, .scr.ts { animation: none; }
+.scr.ts .ts-body { animation: psin .18s ease-out; }
