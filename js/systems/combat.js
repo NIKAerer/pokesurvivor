@@ -542,7 +542,7 @@ G.Combat = (() => {
 
   // Golpe crítico (Mejoras → Golpe Crítico): x1,5 de daño, número naranja y grande.
   const CRIT_MUL = 1.5;
-  const isCrit = pl => !ghost && pl.critChance > 0 && Math.random() < pl.critChance;
+  const isCrit = pl => { const c = pl.critChance + (pl.inTeam ? G.Talents.crit() : 0); return !ghost && c > 0 && Math.random() < c; };
 
   const VAMP = 0.01;
   let vampAcc = 0, vampT = 0;
@@ -560,7 +560,7 @@ G.Combat = (() => {
   }
 
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
-    const k = typeK(m.type, e);
+    const k = typeK(m.type, e) * G.Talents.moveK(pl, m, e);
     const crit = isCrit(pl);
     dmg *= k * (crit ? CRIT_MUL : 1);
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
@@ -705,6 +705,7 @@ G.Combat = (() => {
       e.touchCd = 0.55;
       e.strike(pl);
       pl.hurt(e.dmg * G.Roles.foeK(e.dex, 'P'), e.atkType, false, 'P');   // contact = physique (Attaque / Défense)
+      if (pl.inTeam) G.Talents.onContact(e, pl, e.dmg);      // Statik, Corps Ardent, Peau Dure...
       if (pl.hasItem('rockyhelmet')) e.hurt(15 + pl.level * 4, '#9aa6b5', e.x - pl.x, e.y - pl.y, 80);
       const [nx, ny] = G.U.norm(e.x - pl.x, e.y - pl.y);
       e.kx += nx * 150; e.ky += ny * 150;

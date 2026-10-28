@@ -96,7 +96,9 @@ G.PickUI = (() => {
     const info = $('pick-info');
     const statBar = (lbl, v, max, txt, col) => `<div class="ps-row"><span>${lbl}</span>
       <i><b style="width:${Math.round(Math.min(1, v / max) * 100)}%;background:${col}"></b></i><em>${txt}</em></div>`;
-    let html = `<h4>Rôle</h4><p class="ps-role">${G.Roles.chip(mon.dex)} Bonus d'équipe : ${G.Roles.info(mon.dex).team} (compte double pour ton chef).</p><h4>Statistiques</h4>` +
+    let html = `<h4>Rôle</h4><p class="ps-role">${G.Roles.chip(mon.dex)} Bonus d'équipe : ${G.Roles.info(mon.dex).team} (compte double pour ton chef).</p>`
+      + (G.Talents.name(mon.dex) ? `<h4>Talent</h4><p class="ps-role">${G.Talents.chip(mon.dex)} ${G.Talents.desc(mon.dex)}</p>` : '')
+      + `<h4>Statistiques</h4>` +
       statBar('PV', mon.hp, 185, mon.hp, '#5fe08a') +
       statBar('Vitesse', mon.spd, 145, mon.spd, '#5fd4ff');
     // Version de Nika : les vraies stats (physique / spécial).

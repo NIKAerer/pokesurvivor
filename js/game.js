@@ -193,7 +193,7 @@ G.Game = (() => {
   /** Experiencia que hace falta para el siguiente nivel (cofres con candado). */
   function levelXp() {
     if (!pl) return 20;
-    const k = (G.Coop.active ? G.Coop.xpFactor() : 1) * (pl.xpMul || 1);
+    const k = (G.Coop.active ? G.Coop.xpFactor() : 1) * (pl.xpMul || 1) * G.Talents.xpK();
     return Math.ceil((pl.xpNext - pl.xp + 1) / k);
   }
 
@@ -373,7 +373,7 @@ G.Game = (() => {
     G.Audio.music(null);
     G.Audio.sfx(dead ? 'gameover' : 'back');
     const save = G.DB.save;
-    const mul = pl.coinMul;
+    const mul = pl.coinMul * G.Talents.coinK();      // talents (Ramassage, Cherche Miel...)
     const parts = {
       tiempo: Math.floor(time / 5),
       derrotados: Math.floor(pl.kills * 0.25),

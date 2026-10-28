@@ -91,6 +91,7 @@ G.Roles = (() => {
       nb.regen = Math.min(0.015, n('soin') * PER.regen);
       nb.spd = n('vit') * PER.spd;
       nb.cd = 1 / (1 + n('dps') * PER.cd);
+      G.Talents.recompute(); G.Talents.fold(nb);      // talents de l'équipe (talents.js)
       b = nb;
       syncHp(L);
     } else b = nb;
@@ -107,7 +108,7 @@ G.Roles = (() => {
     L.hp = d > 0 ? L.hp + d : Math.min(L.hp, L.maxHp);
   }
 
-  function reset() { b = zero(); vampPool = 0; }
+  function reset() { b = zero(); vampPool = 0; G.Talents.reset(); }
 
   /** Vol de vie de l'équipe (mêlée) : mis de côté puis rendu, au plus 2 % des PV max par seconde. */
   function onDamage(dmg) { if (b.vamp > 0) vampPool += dmg * b.vamp; }
@@ -116,7 +117,8 @@ G.Roles = (() => {
     const L = G.Team.leader;
     if (!L || L.dead) { vampPool = 0; return; }
     syncHp(L);
-    if (b.regen > 0 && L.hp < L.maxHp) L.hp = Math.min(L.maxHp, L.hp + L.maxHp * b.regen * dt);
+    const rg = b.regen + G.Talents.regenNow();
+    if (rg > 0 && L.hp < L.maxHp) L.hp = Math.min(L.maxHp, L.hp + L.maxHp * rg * dt);
     if (vampPool > 0) {
       const h = Math.min(vampPool, L.maxHp * 0.02 * dt);
       vampPool -= h;
