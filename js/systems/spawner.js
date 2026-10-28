@@ -11,6 +11,7 @@
  * jugáis (ver G.Coop.scaleRate / scaleHp).
  */
 G.Spawner = (() => {
+  const MOVE_ANIMS = ['Idle', 'Walk'];
   // Tope de enemigos a la vez (antes 420: con tantos se ralentizaba). Cuando
   // se llega al tope, los que siguen saliendo son "élite" (más vida, daño y
   // experiencia), así la dificultad no baja.
@@ -47,7 +48,7 @@ G.Spawner = (() => {
     waveIdx = 0; G.League.reset();
     acc = 0; bossIdx = 0; surgeT = 32; announce = null; announceT = 0; preloadT = 0;
     G.Enemies.rollRun();
-    G.Sprites.preload(G.Enemies.upcomingDex(0, 80));
+    G.Sprites.preload(G.Enemies.upcomingDex(0, 80), 8000, false, MOVE_ANIMS);
   }
 
   /** Enemigos por segundo según el minuto de la run. */
@@ -145,7 +146,9 @@ G.Spawner = (() => {
 
     // Precarga lo que va a salir en el próximo minuto.
     preloadT -= dt;
-    if (preloadT <= 0) { preloadT = 10; G.Sprites.preload(G.Enemies.upcomingDex(t, 60)); }
+    // Version de Nika : seulement marcher / attendre. Les attaques se chargent quand elles
+    // servent (avant, les 7 animations de ~40 espèces restaient en mémoire : ~400 Mo).
+    if (preloadT <= 0) { preloadT = 10; G.Sprites.preload(G.Enemies.upcomingDex(t, 60), 8000, false, MOVE_ANIMS); }
 
     checkWave(t);
     G.League.update(t, def => spawnBoss(anchor(), t, def));
