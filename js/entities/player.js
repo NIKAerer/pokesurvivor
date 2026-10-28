@@ -95,7 +95,7 @@ G.Player = class Player {
   atkFor(m) { return this.atk * (m && m.cat ? G.Roles.catK(this.dex, m.cat) : 1); }
   get spd() {
     const s = this.baseSpd * this.spdMul * (1 + this.buffs.spd.n * this.buffs.spd.amount) * (this.slowT > 0 ? 0.5 : 1)
-      * (this.inTeam ? 1 + G.Roles.b.spd : 1);
+      * (this.inTeam ? (1 + G.Roles.b.spd) * G.Talents.spdNow() : 1);
     const w = G.Weather.speedFor(this.mon.types);
     const slow = this.inLiquid ? G.World.liquidEffect(this.mon.types).slow || 1 : 1;
     return s * slow * w;
@@ -225,6 +225,7 @@ G.Player = class Player {
       eff = G.Types.label(k);
       amount *= k * G.Weather.mult(type);
     }
+    if (this.inTeam && !pure) amount *= G.Talents.hurtK(type);     // talents (Lévitation, Isograisse...)
     // Con un ataque cuerpo a cuerpo activo se recibe un 25 % menos: hay que
     // estar encima de los enemigos para pegar (iban muy por detrás).
     const close = this.activeGroup().some(m => m.kind === 'melee') ? 0.75 : 1;
@@ -240,6 +241,7 @@ G.Player = class Player {
         return;
       }
     }
+    if (G.Talents.saves(this, d)) d = this.hp - 1;          // Fermeté
     this.hp -= d;
     this.invuln = 0.45;
     this.flash = 0.14;
@@ -273,7 +275,7 @@ G.Player = class Player {
 
   /** Devuelve cuántos niveles ha subido (pueden ser varios de golpe). */
   gainXp(amount) {
-    this.xp += amount * this.xpMul;
+    this.xp += amount * this.xpMul * (this.inTeam ? G.Talents.xpK() : 1);
     let leveled = 0;
     while (this.xp >= this.xpNext) {
       this.xp -= this.xpNext;

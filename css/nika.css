@@ -269,6 +269,9 @@
 /* ---- Version de Nika : rôles (2026-10-19) ---- */
 .role-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 800;
   background: color-mix(in srgb, var(--r) 22%, transparent); color: var(--r); border: 1px solid color-mix(in srgb, var(--r) 55%, transparent); }
+.talent-chip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 800;
+  background: #2a3550; border: 1px solid #ffd23f88; color: #ffe38a; }
+.lv-role small { font-size: 11px; opacity: .85; }
 .role-chip small { font-weight: 600; opacity: .85; color: #dfe8f7; }
 #scr-levelup .lv-role { display: flex; justify-content: center; margin-top: 4px; }
 .ps-mv.role { box-shadow: 0 0 0 1px var(--m) inset; }
