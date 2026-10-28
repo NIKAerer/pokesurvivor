@@ -46,6 +46,8 @@
 .pick-card small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .pick-card.on { border-color: #ffd23f; }
 .pick-card canvas { max-width: 100%; height: auto; }
+.pick-rnd { --c: #8a7fd0; justify-content: center; }
+.pick-rnd .pick-q { font-size: 30px; line-height: 54px; height: 54px; color: #ffd23f; text-shadow: 0 2px 0 #000; }
 .pick-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .pick-actions .btn { flex: 1; }
 .pick-move { font-size: 11px; padding: 2px 8px; border-radius: 8px; background: color-mix(in srgb, var(--m) 30%, transparent); border: 1px solid var(--m); }

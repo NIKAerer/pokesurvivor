@@ -63,8 +63,8 @@ G.HUD = (() => {
     else if (L.fighting()) { txt = 'Combat : ' + cur.who + ' !'; col = '#ff6b6b'; }
     else {
       const t = L.timeLeft(st.time);
-      txt = t == null ? cur.who + ' vaincu !' : cur.who + ' dans ' + Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
-      if (t == null) col = '#5fe08a';
+      txt = t == null ? cur.who + ' : prochaine partie' : cur.who + ' dans ' + Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+      if (t == null) col = '#8fa3c4';
     }
     ctx.fillStyle = col;
     ctx.fillText(txt, x0 + 8, y0 + 54);
@@ -311,8 +311,8 @@ G.HUD = (() => {
     if (G.Rift.inArena) {
       ctx.textAlign = 'center';
       ctx.font = F(800, 12);
-      ctx.fillStyle = '#d9c2ff';
-      ctx.fillText('GRIETA · ' + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
+      ctx.fillStyle = G.Rift.inGym ? '#ffcb3d' : '#d9c2ff';
+      ctx.fillText((G.Rift.inGym ? 'ARÈNE · ' : 'GRIETA · ') + G.U.mmss(G.Rift.timeLeft), w / 2, boss ? 98 : 76);
     }
 
     // Eventos: cuenta atrás, flecha al Pokémon perdido / a la marca y a los duendes.

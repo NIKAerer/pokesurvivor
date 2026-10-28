@@ -1,8 +1,11 @@
 /* ============ league.js — la Ligue Pokémon (version de Nika) ============
  * Le but du jeu : 8 arènes, puis le Conseil 4, puis le Maître.
- * Chaque partie propose le défi suivant : vers la minute 9-13, le champion
- * arrive avec son équipe (des boss). Si tu bats toute son équipe, tu gagnes
- * le badge (ou la victoire) et une récompense, et la partie continue.
+ * Toutes les 5 minutes (5:00, 10:00...), tu es téléporté dans l'arène du
+ * champion suivant (rift.js, arène du type du champion) contre son équipe.
+ * Si tu bats toute son équipe, tu gagnes le badge et une récompense, puis tu
+ * reviens sur la carte ; le défi suivant arrive 5 minutes plus tard. Si tu
+ * perds (ou si le temps est écoulé), tu reviens sans badge et tu retentes au
+ * prochain palier de 5 minutes.
  * Chaque défi gagné rend les parties suivantes plus difficiles (diff()).
  * Après le Maître : générique de fin, puis mode libre (plus de défi).
  *
@@ -25,7 +28,8 @@ G.League = (() => {
     { kind: 'champ', who: 'Blue', type: 'normal', team: [6, 9, 3] }
   ];
 
-  let fought = false, alive = 0, wonRun = false;
+  const EVERY = 300;
+  let nextAt = EVERY;
 
   const S = () => {
     const s = G.DB.save;
@@ -37,8 +41,10 @@ G.League = (() => {
   const done = () => !!S().done;
   const current = () => (done() ? null : STEPS[step()]);
 
-  /** Seconde où le champion arrive (un peu plus tard à chaque défi). */
-  const at = i => 600 + i * 20;
+  /** Prochain palier de 5 minutes après t (au moins 60 s plus tard). */
+  const after = t => Math.max(Math.ceil((t + 1) / EVERY) * EVERY, t + 60);
+  /** Plus de défi juste avant la Sentencia d'Arceus (minute 30). */
+  const tooLate = t => t >= G.Judgment.AT - 60;
   /** Difficulté des parties : +12 % de PV et +6 % de dégâts par défi gagné. */
   function diff() { return 1 + Math.min(step(), STEPS.length) * 0.12; }
   function dmgK() { return 1 + Math.min(step(), STEPS.length) * 0.06; }
@@ -50,15 +56,14 @@ G.League = (() => {
       : 'Maître de la Ligue · ' + st.who;
   }
 
-  function reset() { fought = false; alive = 0; wonRun = false; }
-  /** Combat contre le champion en cours (les autres boss attendent). */
-  function fighting() { return fought && !wonRun && alive > 0; }
+  function reset() { nextAt = EVERY; }
+  /** Combat dans l'arène du champion en cours. */
+  function fighting() { const a = G.Rift.arena; return !!(a && a.gym != null && a.phase === 'fight'); }
 
-  /** Pour le HUD : secondes avant le défi (null s'il n'y en a pas). */
+  /** Pour le HUD : secondes avant le défi (null s'il n'y en a plus dans cette partie). */
   function timeLeft(t) {
-    const st = current();
-    if (!st || fought) return null;
-    return Math.max(0, at(step()) - t);
+    if (!current() || tooLate(nextAt)) return null;
+    return Math.max(0, nextAt - t);
   }
 
   function bossDef(dex, i, k) {
@@ -74,33 +79,49 @@ G.League = (() => {
     };
   }
 
-  /** Appelé par le spawner à chaque image. */
-  function update(t, spawnBoss) {
+  /** Appelé par le spawner à chaque image (le spawner ne tourne pas dans une arène). */
+  function update(t) {
     const st = current();
-    if (!st || fought || t < at(step())) return;
-    fought = true;
-    const i = step();
+    if (!st || t < nextAt || tooLate(t) || G.Rift.inArena || G.Judgment.active) return;
+    if (G.Coop.active && !G.Coop.isHost) return;
+    nextAt = after(t);                               // au cas où l'arène ne s'ouvrirait pas
+    G.Rift.gym(step());
+  }
+
+  /** L'équipe du champion qui arrive dans l'arène (rift.js). */
+  function spawnTeam(x, y) {
+    const i = step(), st = STEPS[i], ids = [];
+    if (!st) return ids;
     st.team.forEach((dex, k) => {
       if (!G.DEX_BY[dex] || !G.SPRITE_META[dex]) return;
-      const e = spawnBoss(bossDef(dex, i, k));
-      if (e) { e.champion = true; alive++; }
+      const off = (k - (st.team.length - 1) / 2) * 70;
+      const e = G.Spawner.bossAt(x + off, y, G.Game.st.time, bossDef(dex, i, k));
+      if (e) { e.champion = true; ids.push(e.id); }
     });
     const verb = st.kind === 'gym' ? 'Le champion ' : st.kind === 'elite' ? 'Le Conseil 4 : ' : 'Le Maître ';
     G.Spawner.say(verb + st.who + ' te défie ! (' + st.team.map(d => G.DEX_BY[d].name).join(', ') + ')', 4.2, true);
     G.Audio.sfx('boss');
     G.Camera.kick(1.2);
+    return ids;
   }
 
-  /** Un ennemi est tombé (progress.js). */
+  /** Un champion est tombé (progress.js) : combien il en reste. */
   function onKill(e) {
-    if (!e.champion || wonRun) return;
-    alive--;
-    if (alive > 0) { G.Spawner.say('Plus que ' + alive + ' Pokémon !', 2.4, true); return; }
-    win();
+    const a = G.Rift.arena;
+    if (!e.champion || !a || a.gym == null) return;
+    const left = (a.ids || []).filter(id => { const x = G.EnemyMgr.get(id); return x && x !== e && !x.dead; }).length;
+    if (left > 0) G.Spawner.say('Plus que ' + left + ' Pokémon !', 2.4, true);
+  }
+
+  /** Défi perdu (tous K.O. ou temps écoulé) : on retente au prochain palier. */
+  function lost() {
+    const st = current();
+    nextAt = after(G.Game.st.time);
+    if (st) G.Spawner.say(st.who + ' t\'a battu… Nouvel essai ' + (tooLate(nextAt) ? 'à la prochaine partie' : 'dans 5 min') + '.', 3.4, true);
   }
 
   function win() {
-    wonRun = true;
+    nextAt = after(G.Game.st.time);
     const L = S(), i = L.step, st = STEPS[i];
     const pl = G.Game.player;
     const coins = 300 + i * 120, tickets = 5 + i;
@@ -154,5 +175,7 @@ G.League = (() => {
     G.Audio.sfx('legend');
   }
 
-  return { STEPS, fighting, step, done, current, title, diff, dmgK, reset, update, onKill, timeLeft, at, showCredits, win };
+  return { STEPS, fighting, step, done, current, title, diff, dmgK, reset, update, onKill, lost, spawnTeam, timeLeft, EVERY, showCredits, win,
+    /** Pour les tests : le prochain défi tout de suite. */
+    debugNow() { nextAt = G.Game.st.time; } };
 })();
