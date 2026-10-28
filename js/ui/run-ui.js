@@ -187,8 +187,9 @@ G.RunUI = (() => {
     const ask = $('over-ask');
     if (ask) ask.querySelector('.x').onclick = () => ask.remove();
     $('btn-again').onclick = onBack;
+    const row = $('over-caught');
+    row.innerHTML = '';
     if (r.caught && r.caught.length) {
-      const row = $('over-caught');
       for (const c of r.caught) {
         const w = document.createElement('div');
         w.appendChild(G.UI.spriteCanvas(c.dex, 90, 72, { shiny: true, lively: true, scale: 2 }));

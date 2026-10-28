@@ -27,6 +27,7 @@ G.SettingsUI = (() => {
   function open(t) {
     if (t) tab = t;
     $('scr-settings').classList.remove('hidden');
+    if (G.PickUI && G.DB.save) G.PickUI.theme($('scr-settings'));
     render();
   }
   function close() { $('scr-settings').classList.add('hidden'); }

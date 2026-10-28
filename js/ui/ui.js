@@ -14,6 +14,8 @@ G.UI = (() => {
   function show(id, keepMenu = false) {
     for (const s of SCREENS) if (s !== id && !(keepMenu && s === 'scr-menu')) $(s).classList.add('hidden');
     $(id).classList.remove('hidden');
+    // Version de Nika : écrans « Couleur du type » (shop.css, screens.css).
+    if (($(id).classList.contains('ts') || $(id).classList.contains('tcard')) && G.PickUI && G.DB.save) G.PickUI.theme($(id));
   }
   function hide(id) { $(id).classList.add('hidden'); }
   function hideAll() { for (const s of SCREENS) $(s).classList.add('hidden'); }
