@@ -321,7 +321,7 @@ G.PickUI = (() => {
       + L.REGIONS.map(rg => { const o = L.STEPS.findIndex(x => x.region === rg);
         return `<h4>${rg}</h4><div class="hl-badges">` + L.region(rg).map((st, k) => { const i2 = o + k;
           return `<span class="hl-b ${st.kind}${i2 < stp ? ' on' : ''}${i2 === stp && !L.done() ? ' next' : ''}" style="--t:${G.U.TYPE_COLOR[st.type]}"><i></i><small>${L.title(st)}</small></span>`; }).join('') + '</div>'; }).join('')
-      + `<h4>Tour de Combat</h4><p class="note">Meilleur étage : <b>${G.Tower.best() || 0}</b>. Un dresseur à 1:00 puis toutes les 75 s, une défaite arrête la partie.</p>`;
+      + `<h4>Tour de Combat</h4><p class="note">Meilleur étage : <b>${G.Tower.best() || 0}</b>. Une salle par étage : vide-la, choisis une carte, passe la porte. Tu attaques seulement à l'arrêt, avec ton partenaire seul. Un dresseur tous les 5 étages, une défaite arrête la partie.</p>`;
 
     // Les tuiles de l'accueil (badges rouges = quelque chose t'attend).
     const sub = (id, txt) => { $(id).querySelector('small').innerHTML = txt; };

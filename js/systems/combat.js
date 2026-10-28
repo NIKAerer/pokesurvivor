@@ -29,6 +29,8 @@ G.Combat = (() => {
 
     m.t -= dt;
     if (m.t > 0) return;
+    // Version de Nika : Tour de Combat façon Archero, on attaque seulement à l'arrêt.
+    if (G.Tower.active && G.Tower.STILL && pl.walking) { m.t = 0; return; }
     // Los ataques que necesitan blanco esperan a tenerlo (no gastes animación al aire).
     if (needsTarget(m) && !(pl.target && G.U.dist(pl.x, pl.y, pl.target.x, pl.target.y) <= reach(m, pl))) {
       m.t = 0.05;

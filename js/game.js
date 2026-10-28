@@ -723,8 +723,9 @@ G.Game = (() => {
     time += dt;
     if (!coop && (checkT += dt) >= 15) { checkT = 0; checkpoint(); }
 
+    const tower = G.Tower.active;           // version de Nika : Tour de Combat (salles, tower.js)
     const b = Math.floor(time / 240);
-    if (b !== biome && !G.Rift.inArena && !G.Judgment.active) {
+    if (b !== biome && !tower && !G.Rift.inArena && !G.Judgment.active) {
       biome = b;
       G.World.setBiome(b);
       G.Audio.sfx('biome');
@@ -743,7 +744,7 @@ G.Game = (() => {
     G.World.update(dt, G.Camera);
 
     const all = everyone();
-    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); G.Spawner.update(dt, all, time); }
+    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); if (!tower) G.Spawner.update(dt, all, time); else G.Spawner.tickBanner(dt); }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
     G.EnemyMgr.rebuildGrid();
@@ -755,15 +756,18 @@ G.Game = (() => {
     G.Pickups.update(dt, all, onCollect);
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
-    G.Rift.update(dt, pl, time);
-    G.Judgment.update(dt, pl, time);
-    G.Events.update(dt, all, time);
-    G.Rocket.update(dt, pl, time);
-    G.Weather.update(dt, time, pl);
+    if (tower) G.Tower.update(dt, pl);
+    else {
+      G.Rift.update(dt, pl, time);
+      G.Judgment.update(dt, pl, time);
+      G.Events.update(dt, all, time);
+      G.Rocket.update(dt, pl, time);
+      G.Weather.update(dt, time, pl);
+    }
     G.DayNight.update(time);
     G.FX.update(dt);
 
-    G.Audio.music(G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? (G.Rift.inGym ? 'boss' : 'rift') : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
+    G.Audio.music(tower ? (G.Tower.step().boss && !G.Tower.door ? 'boss' : 'rift') : G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? (G.Rift.inGym ? 'boss' : 'rift') : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (G.Coop.isHost) checkAllDown(dt);
   }
@@ -804,6 +808,8 @@ G.Game = (() => {
     for (const e of extra) items.push({ y: e.y, ent: e });
     const rift = G.Rift.drawable();
     if (rift) items.push({ y: rift.y, ent: rift });
+    const door = G.Tower.drawable();
+    if (door) items.push({ y: door.y, ent: door });
     const arceus = pl && state !== 'ui' ? G.Judgment.drawable() : null;
     if (arceus) items.push({ y: arceus.y, ent: arceus });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });
@@ -1007,6 +1013,8 @@ G.Game = (() => {
     /** Abandona la partida en curso (p. ej. al cerrar sesión desde Ajustes). */
     quit() { if (state !== 'ui' && state !== 'over') quitRun(); },
     /** Para grabar vídeos: abre las cartas de subir de nivel. */
+    /** Version de Nika : une carte au choix sans monter de niveau (salle de la Tour vidée). */
+    bonusCard() { pendingLevels++; },
     debugLevelUp() { tampered = true; pl.level++; pendingLevels++; },
     toUI() { state = 'ui'; Backdrop.restore(); },
     get state() { return state; }, get player() { return pl; }, st

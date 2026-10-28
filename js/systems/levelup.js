@@ -129,7 +129,7 @@ G.LevelUp = (() => {
     for (const mem of members) memberCards(mem, out, waiting, members.length);
 
     // --- nouveau Pokémon dans l'équipe (jusqu'à 6) ---
-    if (G.Team.leader === pl && !G.Team.full()) {
+    if (G.Team.leader === pl && !G.Team.full() && !(G.Tower.active && G.Tower.SOLO)) {
       for (const mon of G.Team.recruitOffers(2)) {
         G.Sprites.preload([mon.dex]);   // prêt s'il rejoint l'équipe
         out.push({

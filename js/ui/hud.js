@@ -40,12 +40,12 @@ G.HUD = (() => {
     // Version de Nika : en Tour de Combat, l'étage et le record à la place des badges.
     if (G.Tower.active) {
       ctx.font = F(800, 11); ctx.fillStyle = '#ffcb3d';
-      ctx.fillText('TOUR DE COMBAT · ÉTAGE ' + cur.floor, x0 + 8, y0 + 14);
+      const T = G.Tower, here = T.door ? T.floor : cur.floor;
+      ctx.fillText('TOUR DE COMBAT · ÉTAGE ' + here, x0 + 8, y0 + 14);
       ctx.fillStyle = '#8fa3c4';
-      ctx.fillText('Réussis : ' + G.Tower.floor + ' · record ' + G.Tower.best(), x0 + 8, y0 + 32);
-      const t = L.timeLeft(st.time);
-      ctx.fillStyle = L.fighting() ? '#ff6b6b' : '#eaf2ff';
-      ctx.fillText(L.fighting() ? 'Combat : ' + cur.who + ' !' : t == null ? 'Plus de défi' : cur.who + ' dans ' + Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0'), x0 + 8, y0 + 54);
+      ctx.fillText('Record : étage ' + Math.max(T.best(), T.floor), x0 + 8, y0 + 32);
+      ctx.fillStyle = T.door ? '#5fe08a' : cur.boss ? '#ff6b6b' : '#eaf2ff';
+      ctx.fillText(T.door ? 'Porte ouverte : monte !' : cur.boss ? 'Dresseur : ' + cur.who : 'Pokémon restants : ' + T.left(), x0 + 8, y0 + 54);
       return;
     }
     // Titre : la phase de la Ligue.
@@ -203,14 +203,14 @@ G.HUD = (() => {
     ctx.fillText(G.U.mmss(st.time), cx, 42 + top);
     ctx.font = F(600, 10);
     ctx.fillStyle = '#8fa3c4';
-    ctx.fillText(G.World.biomeName().toUpperCase() + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', cx, 58 + top);
+    ctx.fillText((G.Tower.active ? 'SALLE ' + (G.U.TYPE_NAME[G.Tower.room && G.Tower.room.type] || '').toUpperCase() : G.World.biomeName().toUpperCase()) + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', cx, 58 + top);
     // Version de Nika : vague en cours et prochain boss
     {
       // (le prochain défi de la Ligue est déjà dans le cadre des badges)
       const wv = G.Spawner.wave(), nb = G.Spawner.nextBossIn(st.time);
       const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
       const txt = (wv ? 'VAGUE ' + wv : '') + (nb != null && !G.Rift.inArena ? '  ·  BOSS DANS ' + fmt(nb) : '');
-      if (txt && !G.EnemyMgr.bossAlive()) {
+      if (txt && !G.EnemyMgr.bossAlive() && !G.Tower.active) {
         ctx.font = F(800, 11);
         ctx.fillStyle = nb != null && nb < 15 ? '#ff6b6b' : '#ffcb3d';
         ctx.fillText(txt, cx, 72 + top);
