@@ -206,8 +206,9 @@ G.Enemies = (() => {
     if (horde) return horde;
     if (!cast) rollRun();
     const bag = [];
+    const on = activeTiers(t);
     for (const tier of cast) {
-      if (t < tier.from) continue;
+      if (t < tier.from || !on.includes(tier)) continue;
       const w = t - tier.from > 260 ? 3 : 10;       // los tramos viejos pierden peso
       for (const e of tier.list) for (let i = 0; i < w; i++) bag.push(e);
     }
@@ -215,11 +216,18 @@ G.Enemies = (() => {
   }
 
   /** dex del elenco que aparecerán pronto (para precargar sprites). */
+  // Version de Nika (2026-10-27) : seuls les 4 derniers paliers apparaissent encore.
+  // Avant, les 6 paliers (42 espèces) restaient actifs et préchargés avec les boss
+  // déjà battus : vers 10-15 min, plus de 100 Mo de sprites et l'iPhone plantait.
+  const ACTIVE_TIERS = 4;
+  function activeTiers(t) { return cast.filter(c => c.from <= t).slice(-ACTIVE_TIERS); }
+
   function upcomingDex(t, ahead = 60) {
     if (!cast) rollRun();
     const out = [];
-    for (const tier of cast) if (tier.from <= t + ahead) for (const e of tier.list) out.push(e.dex);
-    for (const b of bosses) if (b.at <= t + ahead) out.push(b.dex);
+    const on = activeTiers(t + ahead);
+    for (const tier of on) for (const e of tier.list) out.push(e.dex);
+    for (const b of bosses) if (b.at <= t + ahead && b.at >= t - 30) out.push(b.dex);
     return out;
   }
 

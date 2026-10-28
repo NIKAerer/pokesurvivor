@@ -32,12 +32,37 @@ G.Sprites = (() => {
     c = document.createElement('canvas');
     c.width = img.width; c.height = img.height;
     const x = c.getContext('2d');
+    // Version de Nika : mémoire des canvas pleine (iPhone) → pas de destello, mais pas de plantage.
+    if (!x) { c.width = 0; trim(true); return img; }
     x.drawImage(img, 0, 0);
+    used += c.width * c.height * 4;
     x.globalCompositeOperation = 'source-in';
     x.fillStyle = '#ffffff';
     x.fillRect(0, 0, c.width, c.height);
     whites.set(img, c);
     return c;
+  }
+
+  /**
+   * Version de Nika (2026-10-27) : le destello des Pokémon se fait image par image
+   * dans un petit canvas partagé. Avant, chaque feuille touchée gardait une copie
+   * blanche entière : autant de mémoire que les sprites eux-mêmes, ce qui
+   * faisait planter l'iPhone vers 10-15 min de partie.
+   */
+  let scratch = null, sctx = null;
+  function whiteFrame(img, sx, sy, w, h) {
+    if (!scratch) { scratch = document.createElement('canvas'); sctx = scratch.getContext('2d'); }
+    if (!sctx) return null;
+    if (scratch.width < w || scratch.height < h) {
+      scratch.width = Math.max(scratch.width, w); scratch.height = Math.max(scratch.height, h);
+    }
+    sctx.globalCompositeOperation = 'copy';
+    sctx.drawImage(img, sx, sy, w, h, 0, 0, w, h);
+    sctx.globalCompositeOperation = 'source-in';
+    sctx.fillStyle = '#ffffff';
+    sctx.fillRect(0, 0, w, h);
+    sctx.globalCompositeOperation = 'source-over';
+    return scratch;
   }
 
   /** ¿Tiene versión shiny? (assets/pokemon/{dex}/s/) */
@@ -68,17 +93,34 @@ G.Sprites = (() => {
   // Hojas en memoria como mucho. Antes no se soltaba ninguna: en partidas de
   // más de una hora pasaban cientos de especies, se llenaba la memoria gráfica
   // y la pantalla se quedaba en negro hasta que el navegador recargaba la página.
-  const MAX_SHEETS = 200, IDLE_MS = 20000;   // ~0,66 MB cada una ya dibujada: ~130 MB
-  function evict(now) {
-    const old = [...sheets].filter(([, s]) => now - s.at > IDLE_MS).sort((a, b) => a[1].at - b[1].at);
-    const drop = old.slice(0, Math.max(sheets.size - Math.floor(MAX_SHEETS * 0.75), 0));
-    for (const [k, s] of drop) {
-      sheets.delete(k);
-      if (s.cut) { s.cut = null; if (s.img.getContext) s.img.width = 0; continue; }
-      s.img.onload = s.img.onerror = null;
-      s.img.src = '';                 // suelta la imagen decodificada
+  // Version de Nika (2026-10-27) : un budget en octets plutôt qu'en nombre de feuilles.
+  // Avec 200 feuilles on arrivait à 80-140 Mo de canvas vers 10-15 min : l'iPhone
+  // (limite de mémoire des canvas, puis de l'onglet) faisait planter la partie.
+  const MAX_SHEETS = 200, IDLE_MS = 20000;
+  const PHONE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  const BUDGET = (PHONE ? 80 : 160) * 1e6;
+  let used = 0;                        // octets des feuilles découpées + leurs copies blanches
+  const bytesOf = s => (s.cut && s.img.width ? s.img.width * s.img.height * 4 : 0);
+  function drop(k, s) {
+    sheets.delete(k);
+    const w = whites.get(s.img);
+    if (w) { used -= w.width * w.height * 4; w.width = 0; whites.delete(s.img); }
+    if (s.cut) { used -= bytesOf(s); s.cut = null; if (s.img.getContext) s.img.width = 0; return; }
+    s.img.onload = s.img.onerror = null;
+    s.img.src = '';                   // suelta la imagen decodificada
+  }
+  /** Libère les feuilles les plus anciennes ; `hard` = mémoire pleine, on vide plus. */
+  function trim(hard = false, now = Date.now()) {
+    const idle = hard ? 1500 : used > BUDGET ? 6000 : IDLE_MS;
+    const limit = hard ? BUDGET * 0.5 : BUDGET * 0.8;
+    if (!hard && used <= BUDGET && sheets.size < MAX_SHEETS) return;
+    const old = [...sheets].filter(([, s]) => now - s.at > idle).sort((a, b) => a[1].at - b[1].at);
+    for (const [k, s] of old) {
+      if (used <= limit && sheets.size < MAX_SHEETS * 0.75) break;
+      drop(k, s);
     }
   }
+  function evict(now) { trim(false, now); }
 
   // ---- Version de Nika : planches regroupées (tools/pack_sprites.py) ----
   // Un lien Claude n'accepte que ~500 fichiers : plusieurs Pokémon partagent une
@@ -98,6 +140,7 @@ G.Sprites = (() => {
   setInterval(() => {                  // lâche les planches inutilisées depuis 4 s
     const now = Date.now();
     for (const [k, p] of plates) if (p.ready && !p.wait.length && now - p.at > 4000) { plates.delete(k); p.img.src = ''; }
+    trim(false, now);
   }, 2000);
   function fromAtlas(dex, name, shiny, now) {
     const e = G.SPRITE_ATLAS[dex + (shiny ? 's' : '')];
@@ -111,7 +154,11 @@ G.Sprites = (() => {
       const g = shiny ? animMeta(dex, name, true) : (meta(dex).a[name]);
       const w = g.w * g.n, h = g.h * g.r;
       s.img.width = w; s.img.height = h;
-      s.img.getContext('2d').drawImage(im, x, y, w, h, 0, 0, w, h);
+      const c = s.img.getContext('2d');
+      // Mémoire des canvas pleine : on libère et on réessaiera plus tard (avant : erreur).
+      if (!c) { s.img.width = 0; trim(true); s.failed = true; s.retryAt = performance.now() + 1000 * Math.min(8, 2 ** s.tries++); return; }
+      c.drawImage(im, x, y, w, h, 0, 0, w, h);
+      used += w * h * 4;
       s.ready = true;
     };
     if (p.ready) cut(); else p.wait.push(cut);
@@ -133,7 +180,7 @@ G.Sprites = (() => {
       if (s.failed && performance.now() > s.retryAt) { s.failed = false; s.img.src = s.src + '?r=' + s.tries; }
       return s;
     }
-    if (sheets.size >= MAX_SHEETS) evict(now);
+    if (sheets.size >= MAX_SHEETS || used > BUDGET) evict(now);
     if (G.SPRITE_ATLAS) { s = fromAtlas(dex, name, shiny, now); sheets.set(k, s); return s; }
     s = { ready: false, failed: false, img: new Image(), tries: 0, retryAt: 0, at: now,
           src: `assets/pokemon/${dex}/${shiny ? 's/' : ''}${name}.png` };
@@ -147,9 +194,9 @@ G.Sprites = (() => {
   const ANIMS = ['Idle', 'Walk', 'Attack', 'Shoot', 'Charge', 'Hurt', 'Faint'];
 
   /** Precarga todas las animaciones de esos Pokémon. */
-  function preload(dexes, timeout = 8000, shiny = false) {
+  function preload(dexes, timeout = 8000, shiny = false, anims = ANIMS) {
     const hs = [];
-    for (const d of dexes) for (const a of ANIMS) { const s = sheet(d, a, shiny); if (s) hs.push(s); }
+    for (const d of dexes) for (const a of anims) { const s = sheet(d, a, shiny); if (s) hs.push(s); }
     return new Promise(res => {
       const t0 = performance.now();
       (function check() {
@@ -293,12 +340,15 @@ G.Sprites = (() => {
       if (!opts.flash || opts.softFlash) ctx.drawImage(s.img, sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
       if (opts.flash) {
         if (opts.softFlash) ctx.globalAlpha = prev * alpha * 0.55;
-        ctx.drawImage(white(s.img), sx, sy, m.w, m.h, dx, dy, m.w * k, m.h * k);
+        const wf = whiteFrame(s.img, sx, sy, m.w, m.h);
+        if (wf) ctx.drawImage(wf, 0, 0, m.w, m.h, dx, dy, m.w * k, m.h * k);
       }
       ctx.globalAlpha = prev;
     }
   }
 
   return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, dirFromAngle, bodyRadius, bodyHeight,
-           drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; } };
+           drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; }, get usedMB() { return Math.round(used / 1e6); },
+           /** Pour les tests : [clé, octets, âge en ms] de chaque feuille. */
+           debugSheets() { const n = Date.now(); return [...sheets].map(([k, s]) => [k, bytesOf(s), n - s.at]); } };
 })();
