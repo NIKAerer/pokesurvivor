@@ -473,3 +473,4 @@
   .scr { padding: max(8px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px)); }
   .scr > .box { max-height: 100%; overflow-y: auto; }
 }
+#scr-menu { display: none !important; }

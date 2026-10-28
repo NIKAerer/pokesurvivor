@@ -82,6 +82,7 @@
 <link rel="stylesheet" href="css/nika.css">
 <link rel="stylesheet" href="css/hub.css">
 <link rel="stylesheet" href="css/shop.css">
+<link rel="stylesheet" href="css/screens.css">
 </head>
 <body>
 
@@ -244,18 +245,24 @@
 </section>
 
 <!-- ====== Ajustes ====== -->
-<section id="scr-settings" class="scr dim hidden">
-  <div class="box settings">
-    <div class="row between"><h2>Ajustes</h2><button class="btn small ghost" id="set-close">Cerrar</button></div>
-    <div class="tabs" id="set-tabs">
-      <button class="gen-tab" data-t="sound">Sonido</button>
-      <button class="gen-tab" data-t="gfx">Gráficos</button>
-      <button class="gen-tab" data-t="ctl">Controles</button>
-      <button class="gen-tab" data-t="acc">Cuenta</button>
-      <button class="gen-tab" data-t="data">Progression</button>
-      <button class="gen-tab" data-t="about">Acerca de</button>
+<section id="scr-settings" class="scr hidden ts">
+  <div class="ts-top">
+    <button class="ts-back" id="set-close" aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button>
+    <h2>Options</h2>
+    <div class="ts-wallet"></div>
+  </div>
+  <div class="ts-body">
+    <div class="ts-wrap">
+      <div class="ts-tabs" id="set-tabs">
+        <button class="gen-tab" data-t="sound">Sonido</button>
+        <button class="gen-tab" data-t="gfx">Gráficos</button>
+        <button class="gen-tab" data-t="ctl">Controles</button>
+        <button class="gen-tab" data-t="acc">Cuenta</button>
+        <button class="gen-tab" data-t="data">Progression</button>
+        <button class="gen-tab" data-t="about">Acerca de</button>
+      </div>
+      <div class="ts-card"><div id="set-body" class="set-body"></div></div>
     </div>
-    <div id="set-body" class="set-body"></div>
   </div>
 </section>
 
@@ -399,15 +406,21 @@
 </section>
 
 <!-- ====== Misiones, logros y perfil ====== -->
-<section id="scr-goals" class="scr dim hidden">
-  <div class="box wide">
-    <div class="row between"><h2>Misiones</h2><button class="btn small ghost" data-back>Volver</button></div>
-    <div class="tabs" id="goals-tabs">
-      <div class="tab on" data-tab="missions">Misiones</div>
-      <div class="tab" data-tab="ach">Logros</div>
-      <div class="tab" data-tab="profile">Perfil</div>
+<section id="scr-goals" class="scr hidden ts">
+  <div class="ts-top">
+    <button class="ts-back" data-back aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button>
+    <h2>Missions</h2>
+    <div class="ts-wallet"></div>
+  </div>
+  <div class="ts-body">
+    <div class="ts-wrap">
+      <div class="ts-tabs" id="goals-tabs">
+        <div class="tab on" data-tab="missions">Misiones</div>
+        <div class="tab" data-tab="ach">Logros</div>
+        <div class="tab" data-tab="profile">Perfil</div>
+      </div>
+      <div id="goals-body" class="goals-body"></div>
     </div>
-    <div id="goals-body" class="goals-body"></div>
   </div>
 </section>
 
@@ -429,16 +442,22 @@
 </div>
 
 <!-- ====== Colección ====== -->
-<section id="scr-dex" class="scr dim hidden">
-  <div class="box wide">
-    <div class="row between"><h2>Pokémon <span id="dex-total" class="sub" style="font-size:15px"></span></h2><button class="btn small ghost" data-back>Volver</button></div>
-    <div class="gen-tabs" id="dex-gens"></div>
-    <div class="split" style="margin-top:8px">
-      <div>
-        <div class="filters" id="dex-filters"></div>
-        <div class="grid" id="dex-grid"></div>
+<section id="scr-dex" class="scr hidden ts">
+  <div class="ts-top">
+    <button class="ts-back" data-back aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button>
+    <h2>Pokédex</h2> <span id="dex-total" class="ts-count"></span>
+    <div class="ts-wallet"></div>
+  </div>
+  <div class="ts-body">
+    <div class="ts-wrap">
+      <div class="gen-tabs ts-tabs" id="dex-gens"></div>
+      <div class="dex-split">
+        <div class="dex-left">
+          <div class="filters" id="dex-filters"></div>
+          <div class="grid" id="dex-grid"></div>
+        </div>
+        <div class="ts-card" id="dex-detail"></div>
       </div>
-      <div class="panel" id="dex-detail"></div>
     </div>
   </div>
 </section>
@@ -607,16 +626,24 @@
 </section>
 
 <!-- ====== Table des types (version de Nika, js/ui/types-ui.js) ====== -->
-<section id="scr-types" class="scr dim hidden">
-  <div class="box wide types-box">
-    <div class="row between"><h2>Table des types</h2><button class="btn small ghost" data-back>Volver</button></div>
-    <p class="sub" style="margin:0 0 8px">Choisis le type de l'attaque : on te montre contre quels Pokémon sauvages elle est forte ou faible.</p>
-    <div class="chips types-pick" id="types-pick"></div>
-    <div id="types-out"></div>
+<section id="scr-types" class="scr hidden ts">
+  <div class="ts-top">
+    <button class="ts-back" data-back aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button>
+    <h2>Types</h2>
+    <div class="ts-wallet"></div>
+  </div>
+  <div class="ts-body">
+    <div class="ts-wrap">
+      <div class="ts-card types-card">
+        <p class="sub" style="margin:0 0 10px">Choisis le type de l'attaque : on te montre contre quels Pokémon sauvages elle est forte ou faible.</p>
+        <div class="chips types-pick" id="types-pick"></div>
+        <div id="types-out"></div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section id="scr-pause" class="scr dim hidden">
+<section id="scr-pause" class="scr dim hidden tcard">
   <div class="box center" style="width:min(460px,100%)">
     <h2>Pausa</h2>
     <p class="sub kbd-hint"><kbd>WASD</kbd> moverse · <kbd>Esc</kbd> pausa</p>
@@ -633,11 +660,12 @@
   </div>
 </section>
 
-<section id="scr-over" class="scr dim hidden">
+<section id="scr-over" class="scr dim hidden tcard">
   <div class="box center" style="width:min(480px,100%)">
     <h2 id="over-title">Has caído…</h2>
     <div id="over-stats" class="stats"></div>
-    <button id="btn-again" class="btn gold">Rejouer</button>
+    <div id="over-caught" class="over-team"></div>
+    <button id="btn-again" class="btn gold">Continuer</button>
   </div>
 </section>
 

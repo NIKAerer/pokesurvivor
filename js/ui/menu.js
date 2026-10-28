@@ -33,7 +33,9 @@ G.MenuUI = (() => {
 
   // ---------------- menú principal ----------------
 
-  function open() {
+  // Version de Nika (2026-10-28) : l'ancien menu n'existe plus, tout ramène au nouveau (pick-ui.js).
+  function open() { G.PickUI.open(); }
+  function openOld() {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);
