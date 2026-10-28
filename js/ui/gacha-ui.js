@@ -83,6 +83,10 @@ G.GachaUI = (() => {
     room.innerHTML = f >= 10 ? '' : f > 0
       ? `Il reste ${f} place${f > 1 ? 's' : ''} dans ta boîte : ×10 bloqué.`
       : `Ta boîte est pleine : agrandis-la ou relâche un Pokémon pour ouvrir des Poké Balls.`;
+    if (f < 10) {
+      room.insertAdjacentHTML('beforeend', ` <button class="btn small gold" id="gacha-rel">Relâcher des Pokémon</button>`);
+      $('gacha-rel').onclick = () => G.PickUI.openRelease();
+    }
     room.classList.toggle('hidden', f >= 10);
     G.UI.refreshCoins();
   }

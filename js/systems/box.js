@@ -50,17 +50,31 @@ G.Box = (() => {
     s.candy[dex] = Math.max(0, (s.candy[dex] | 0) + n);
   }
 
+  /** Super Bonbons rendus en relâchant ce Pokémon. */
+  const gain = dex => RELEASE[(G.DEX_BY[dex] || {}).rarity] || 2;
+  /** Relâcher plusieurs Pokémon d'un coup (on en garde toujours au moins un). Renvoie les Super Bonbons gagnés. */
+  function releaseMany(list) {
+    const s = S(), keep = box().filter(d => !list.includes(d));
+    if (!keep.length) return 0;
+    let n = 0;
+    for (const d of list) if (box().includes(d)) { s.box = s.box.filter(x => x !== d); n += gain(d); }
+    s.balls = (s.balls | 0) + n;
+    if (!s.box.includes(s.partner)) { s.partner = keep[0]; s.partnerShiny = false; }
+    G.DB.commit(true);
+    return n;
+  }
+
   /** Relâcher : il faut garder au moins un Pokémon. Renvoie les Super Bonbons gagnés. */
   function release(dex) {
     const s = S();
     if (box().length <= 1 || !box().includes(dex)) return 0;
     s.box = s.box.filter(d => d !== dex);
-    const n = RELEASE[(G.DEX_BY[dex] || {}).rarity] || 2;
+    const n = gain(dex);
     s.balls = (s.balls | 0) + n;
     if (s.partner === dex) { s.partner = s.box[0]; s.partnerShiny = false; }
     G.DB.commit(true);
     return n;
   }
 
-  return { START, STEP, MAX, CANDY, cap, free, full, price, canExpand, expand, candy, addCandy, release };
+  return { START, STEP, MAX, CANDY, cap, free, full, price, canExpand, expand, candy, addCandy, release, releaseMany, gain };
 })();

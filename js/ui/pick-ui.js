@@ -57,6 +57,7 @@ G.PickUI = (() => {
     for (const d of box()) if (!G.DB.owns(d)) G.DB.grant(d, 'starter');   // le Pokédex les compte
     G.Sprites.preload(box());          // charger les sprites avant de jouer
     view = 'home';
+    relMode = false; relSel.clear();
     render();
     G.DailyUI.maybeShow(render);       // version de Nika : cadeau du jour
   }
@@ -100,6 +101,9 @@ G.PickUI = (() => {
   const PET_TXT = ['{n} est tout content !', '{n} se frotte contre toi.', '{n} a hâte de partir à l\'aventure !',
     '{n} fait un petit saut de joie !', '{n} te regarde avec confiance.', '{n} pousse un petit cri joyeux !'];
   let petN = 0, petDex = 0;
+  // Relâcher plusieurs Pokémon d'un coup depuis l'onglet Boîte.
+  let relMode = false;
+  const relSel = new Set();
   function pet(mon, stage) {
     const s = G.DB.save, d = new Date(), day = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
     if (!s.pet || s.pet.day !== day) s.pet = { day, done: [] };
@@ -289,10 +293,11 @@ G.PickUI = (() => {
     rnd.title = 'Aléatoire : un de tes Pokémon au hasard à chaque partie';
     rnd.innerHTML = '<b class="pick-q">?</b><small>Aléatoire</small>';
     rnd.onclick = () => { s.partnerRandom = !s.partnerRandom; G.DB.commit(); G.Audio.sfx('select'); render(); };
-    list.appendChild(rnd);
+    if (!relMode) list.appendChild(rnd);
+    for (const d of [...relSel]) if (!mons.includes(d)) relSel.delete(d);
     for (const dex of mons) {
       const b = document.createElement('button');
-      b.className = 'pick-card' + (dex === s.partner && !s.partnerRandom ? ' on' : '');
+      b.className = 'pick-card' + (relMode ? (relSel.has(dex) ? ' rel' : '') : dex === s.partner && !s.partnerRandom ? ' on' : '');
       b.style.setProperty('--c', G.U.TYPE_COLOR[G.DEX_BY[dex].types[0]]);
       b.title = G.DEX_BY[dex].name;
       b.appendChild(G.UI.spriteCanvas(dex, 64, 54, { fit: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
@@ -300,7 +305,15 @@ G.PickUI = (() => {
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
       if (G.Rank.of(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-rk">${G.Rank.of(dex)}</span>`);
       b.insertAdjacentHTML('beforeend', `<span class="pick-role" title="${G.Roles.info(dex).name}">${G.Icons.html(G.Roles.info(dex).ico, 12)}</span>`);
-      b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select'); render(); };
+      if (relMode && relSel.has(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-relx">${G.Box.gain(dex)}</span>`);
+      b.onclick = relMode
+        ? () => {
+          if (relSel.has(dex)) relSel.delete(dex);
+          else if (relSel.size < mons.length - 1) relSel.add(dex);
+          else { G.UI.toast('Garde au moins un Pokémon.'); return; }
+          G.Audio.sfx('select'); render();
+        }
+        : () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select'); render(); };
       list.appendChild(b);
     }
     // Version de Nika : boîte limitée, on l'agrandit avec des pièces.
@@ -308,6 +321,24 @@ G.PickUI = (() => {
     $('pick-count').innerHTML = `Tes Pokémon <b class="${G.Box.full() ? 'warn' : ''}">${mons.length}/${cap}</b>`
       + ` <button id="pick-expand" class="btn small ${G.Box.canExpand() ? 'gold' : 'ghost'}" ${G.Box.canExpand() ? '' : 'disabled'} title="Agrandir la boîte">+${G.Box.STEP} places · <span class="coin"></span> ${G.Box.price()}</button>`;
     $('pick-expand').onclick = () => { if (G.Box.expand()) { G.Audio.sfx('buy'); render(); } };
+    $('pick-count').insertAdjacentHTML('beforeend', ` <button id="pick-relmode" class="btn small ${relMode ? 'gold' : 'ghost'}">${relMode ? 'Terminé' : 'Relâcher'}</button>`);
+    $('pick-relmode').onclick = () => { relMode = !relMode; relSel.clear(); G.Audio.sfx('select'); render(); };
+    const bar = $('pick-relbar');
+    bar.classList.toggle('hidden', !relMode);
+    if (relMode) {
+      const sel = [...relSel], gain = sel.reduce((a, d) => a + G.Box.gain(d), 0);
+      bar.innerHTML = sel.length
+        ? `<span>${sel.length} choisi${sel.length > 1 ? 's' : ''} · +${gain} Super Bonbons</span><button id="pick-reldo" class="btn small gold">Relâcher ${sel.length}</button>`
+        : `<span>Touche les Pokémon à relâcher (ils rendent des Super Bonbons, leurs Bonbons et leur rang restent).</span>`;
+      if (sel.length) $('pick-reldo').onclick = () => {
+        const n = G.Box.releaseMany(sel);
+        if (!n) return;
+        relSel.clear(); relMode = false;
+        G.Audio.sfx('buy');
+        G.UI.toast(sel.length + ' Pokémon relâché' + (sel.length > 1 ? 's' : '') + ' · +' + n + ' Super Bonbons');
+        render();
+      };
+    }
     quick(mons0);
 
     // La Ligue : en haut (région en cours) et en entier dans l'onglet Ligue.
@@ -433,5 +464,8 @@ G.PickUI = (() => {
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
   }
 
-  return { open, init, theme, wallet };
+  /** Ouvre la Boîte directement en mode « Relâcher » (depuis la Boutique quand elle est pleine). */
+  function openRelease() { open(); relMode = true; relSel.clear(); view = 'box'; showView(); render(); }
+
+  return { open, openRelease, init, theme, wallet };
 })();
