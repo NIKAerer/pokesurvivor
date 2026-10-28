@@ -283,135 +283,92 @@ G.MenuUI = (() => {
   }
 
   // ---------------- mejoras ----------------
-
-  let upgDex = null;
+  // Version de Nika (2026-10-28) : écran refait au style « Couleur du type ».
+  // Retirés : Répertoire (la 1re attaque se choisit sur 3 cartes, il ne servait plus ;
+  // remboursé), Veto et Raccourcis des capacités (inutiles avec 4 attaques fixes au doigt).
+  const fmt = n => (Math.round(n * 10) / 10).toLocaleString('fr');
+  const UPG_FX = {
+    hp: v => `+${v * 8} PV`, atk: v => `+${v * 4} % dégâts`, crit: v => `+${v * 3} % critiques`,
+    cd: v => `-${v * 3} % recharge`, def: v => `-${v * 2} % dégâts subis`, regen: v => `+${fmt(v * 0.2)} PV/s`,
+    spd: v => `+${v * 3} % vitesse`, magnet: v => `+${v * 12} % portée`, xp: v => `+${v * 5} % XP`,
+    coins: v => `+${v * 8} % pièces`, reroll: v => `${v} changement${v > 1 ? 's' : ''} de cartes`
+  };
+  const UPG_NAME = { hp: 'Vitalité', atk: 'Force', crit: 'Coup critique', cd: 'Réflexes', def: 'Carapace', regen: 'Synthèse',
+    spd: 'Foulée', magnet: 'Aimant', xp: 'Sagesse', coins: 'Fortune', reroll: 'Changement de cartes' };
+  const UPG_GROUPS = [
+    ['Attaque', 'fist', ['atk', 'crit', 'cd']],
+    ['Défense', 'shield', ['hp', 'def', 'regen']],
+    ['Aventure', 'boot', ['spd', 'magnet', 'xp', 'coins', 'reroll']]
+  ];
 
   function openUpgrades() {
     G.UI.show('scr-upgrades', true);
-    const s = G.DB.save;
-    if (!upgDex || !s.owned[upgDex]) upgDex = s.partner;
-    // Selector con tus Pokémon: el compañero primero, luego los que ya tienen mejoras.
-    const sel = $('upg-mon');
-    const lv = d => Object.values(s.pupg[d] || {}).reduce((a, b) => a + b, 0);
-    const mons = Object.keys(s.owned).map(Number).filter(d => G.DEX_BY[d])
-      .sort((a, b) => (b === s.partner) - (a === s.partner) || lv(b) - lv(a) || a - b);
-    sel.innerHTML = mons.map(d => `<option value="${d}">${G.DEX_BY[d].name}${d === s.partner ? ' (compañero)' : ''}${lv(d) ? ' · ' + lv(d) + ' niveles' : ''}</option>`).join('');
-    sel.value = upgDex;
-    sel.onchange = () => { upgDex = +sel.value; G.Audio.sfx('select'); renderUpgrades(); };
+    const lv = G.DB.upgradesOf();
+    // Répertoire retiré : on rend les pièces une fois.
+    if (lv.moves > 0) {
+      const back = G.Upgrades.cost('moves', 0);
+      G.DB.save.coins += back; lv.moves = 0; G.DB.commit(true);
+      G.UI.toast(`Répertoire retiré : ${back} pièces remboursées`, 4000);
+    }
     renderUpgrades();
   }
 
   function renderUpgrades() {
     const s = G.DB.save;
-    const levels = G.DB.upgradesOf(upgDex);
-    const mon = G.DEX_BY[upgDex];
-    const shiny = upgDex === s.partner && !!s.partnerShiny && G.DB.ownsShiny(upgDex);
-    G.UI.sprite($('upg-stage'), upgDex, { lively: true, scale: 2, hero: true, shiny });
-    $('upg-stage').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
+    const levels = G.DB.upgradesOf();
+    G.PickUI.theme($('scr-upgrades'));
+    const ids = UPG_GROUPS.flatMap(g => g[2]);
+    const got = ids.reduce((a, id) => a + Math.min(levels[id] || 0, G.Upgrades.BY[id].max), 0);
+    const all = ids.reduce((a, id) => a + G.Upgrades.BY[id].max, 0);
+    const mon = G.DEX_BY[s.partner];
+    const shiny = !!s.partnerShiny && G.DB.ownsShiny(s.partner);
+    const sum = $('upg-sum');
+    sum.innerHTML = `<div class="ts-stage"><canvas width="120" height="110"></canvas></div>
+      <div class="us-txt"><b>Niveau d'équipe ${got} / ${all}</b>
+      <div class="ts-bar"><i style="width:${Math.round(100 * got / all)}%"></i></div>
+      <small>Les améliorations comptent pour toute ton équipe et tous tes Pokémon, à chaque partie.</small></div>`;
+    G.UI.sprite(sum.querySelector('canvas'), mon.dex, { lively: true, scale: 2, hero: true, shiny });
+
     const box = $('upg-list');
     box.innerHTML = '';
-    for (const u of G.Upgrades.LIST) {
-      if (u.id === 'ban') continue;          // version de Nika : 4 attaques fixes, pas de veto
-      const lvl = levels[u.id] || 0;
-      const maxed = lvl >= u.max;
-      const cost = maxed ? 0 : G.Upgrades.cost(u.id, lvl);
-      const el = document.createElement('div');
-      el.className = 'panel upg-item';
-      el.innerHTML = `
-        <div class="ic">${G.Icons.html(u.icon, 32)}</div>
-        <div>
-          <b>${u.name}</b> <span style="color:var(--muted);font-size:13px">${u.unit}</span>
-          <div class="pips">${Array.from({ length: u.max }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('')}</div>
-        </div>
-        <div class="upg-btns">
-          ${u.id === 'ban' && lvl > 0 ? `<button class="btn small" data-ban>Elegir (${banList().length}/${lvl})</button>` : ''}
-          <button class="btn small ${maxed ? '' : 'gold'}" data-buy data-sfx="none" ${maxed || s.coins < cost ? 'disabled' : ''}>
-          ${maxed ? 'Máx.' : `<span class="coin"></span> ${cost}`}</button></div>`;
-      if (u.id === 'ban' && lvl > 0) el.querySelector('[data-ban]').onclick = () => { banOpen = !banOpen; renderUpgrades(); };
-      el.querySelector('[data-buy]').onclick = () => {
-        // Se vuelve a leer todo al pulsar (la partida puede haber cambiado desde que se dibujó).
-        const sv = G.DB.save, lv = G.DB.upgradesOf(upgDex), now = lv[u.id] || 0;
-        if (now >= u.max) { renderUpgrades(); return; }
-        const price = G.Upgrades.cost(u.id, now);
-        if (sv.coins < price) { renderUpgrades(); return; }
-        sv.coins -= price;
-        lv[u.id] = now + 1;
-        G.DB.commit(true);
-        G.Audio.sfx('buy');
-        G.UI.refreshCoins();
-        G.UI.toast(`Équipe · ${u.name} : niveau ${now + 1}`);
-        renderUpgrades();
-      };
-      box.appendChild(el);
-      if (u.id === 'ban' && lvl > 0 && banOpen) box.appendChild(banPicker(lvl));
+    for (const [title, ico, list] of UPG_GROUPS) {
+      const g = document.createElement('div');
+      g.className = 'ts-group';
+      g.innerHTML = `<h3>${G.Icons.html(ico, 18)} ${title}</h3><div class="ts-cards"></div>`;
+      const wrap = g.querySelector('.ts-cards');
+      for (const id of list) {
+        const u = G.Upgrades.BY[id];
+        const lvl = Math.min(levels[id] || 0, u.max);
+        const maxed = lvl >= u.max;
+        const cost = maxed ? 0 : G.Upgrades.cost(id, lvl);
+        const el = document.createElement('div');
+        el.className = 'ts-card up-card' + (maxed ? ' max' : '');
+        el.innerHTML = `
+          <div class="up-ic">${G.Icons.html(u.icon, 30)}</div>
+          <div class="up-txt">
+            <div class="up-name"><b>${UPG_NAME[id]}</b><small>Niv. ${lvl}/${u.max}</small></div>
+            <div class="up-fx">${lvl ? UPG_FX[id](lvl) : 'Rien pour l\'instant'}${maxed ? '' : ` <span class="up-next">→ ${UPG_FX[id](lvl + 1)}</span>`}</div>
+            <div class="up-pips">${Array.from({ length: u.max }, (_, i) => `<i class="${i < lvl ? 'on' : ''}"></i>`).join('')}</div>
+          </div>
+          <button class="ts-btn" data-sfx="none" ${maxed || s.coins < cost ? 'disabled' : ''}>${maxed ? 'MAX' : `<span class="coin"></span>${cost.toLocaleString('fr')}`}</button>`;
+        el.querySelector('button').onclick = () => {
+          // Se vuelve a leer todo al pulsar (la partida puede haber cambiado desde que se dibujó).
+          const sv = G.DB.save, lv = G.DB.upgradesOf(), now = lv[id] || 0;
+          if (now >= u.max) { renderUpgrades(); return; }
+          const price = G.Upgrades.cost(id, now);
+          if (sv.coins < price) { renderUpgrades(); return; }
+          sv.coins -= price;
+          lv[id] = now + 1;
+          G.DB.commit(true);
+          G.Audio.sfx('buy');
+          G.UI.refreshCoins();
+          G.UI.toast(`${UPG_NAME[id]} : niveau ${now + 1}`);
+          renderUpgrades();
+        };
+        wrap.appendChild(el);
+      }
+      box.appendChild(g);
     }
-    box.appendChild(bindPanel());
-  }
-
-  // ---------------- atajos: hueco fijo para cada movimiento ----------------
-  // save.pbind[dex] = [movimiento del hueco 1, del 2, del 3, del 4] (o null).
-  function bindPanel() {
-    const s = G.DB.save;
-    s.pbind = s.pbind || {};
-    const list = s.pbind[upgDex] || [null, null, null, null];
-    const mon = G.DEX_BY[upgDex];
-    const ids = G.Moves.poolFor(mon).concat([G.startMoveOf(upgDex)]).filter((v, i, a) => a.indexOf(v) === i)
-      .sort((a, b) => G.Moves.BY_ID[a].name.localeCompare(G.Moves.BY_ID[b].name, 'es'));
-    const el = document.createElement('div');
-    el.className = 'panel bind-panel';
-    el.innerHTML = `<b>Atajos de movimientos</b>
-      <p class="sub" style="margin:2px 0 8px">Elige qué movimiento va siempre en cada hueco (teclas 1-4 o los iconos de abajo), para la memoria muscular. Si aún no tienes tantos movimientos, va al hueco más cercano.</p>
-      <div class="bind-slots">${[0, 1, 2, 3].map(i => `<label class="bind-slot"><span>${i + 1}</span>
-        <select class="field" data-slot="${i}"><option value="">Libre</option>${ids.map(id =>
-          `<option value="${id}" ${list[i] === id ? 'selected' : ''}>${G.Moves.BY_ID[id].name}</option>`).join('')}</select></label>`).join('')}</div>`;
-    el.querySelectorAll('select[data-slot]').forEach(sel => {
-      sel.onchange = () => {
-        const l = (s.pbind[upgDex] || [null, null, null, null]).slice(0, 4);
-        while (l.length < 4) l.push(null);
-        const i = +sel.dataset.slot, id = sel.value || null;
-        // Un movimiento sólo puede estar en un hueco.
-        for (let j = 0; j < 4; j++) if (id && l[j] === id) l[j] = null;
-        l[i] = id;
-        s.pbind[upgDex] = l;
-        G.DB.commit();
-        G.Audio.sfx('select');
-        renderUpgrades();
-      };
-    });
-    return el;
-  }
-
-  // ---------------- veto: movimientos bloqueados ----------------
-  // Lista por Pokémon en save.pban[dex]; con N niveles de Veto, N movimientos.
-  let banOpen = false;
-  function banList() {
-    const s = G.DB.save;
-    s.pban = s.pban || {};
-    return s.pban[upgDex] || (s.pban[upgDex] = []);
-  }
-  function banPicker(max) {
-    const mon = G.DEX_BY[upgDex];
-    const start = G.startMoveOf(upgDex);
-    const ids = G.Moves.poolFor(mon).filter(id => id !== start)
-      .sort((a, b) => G.Moves.BY_ID[a].name.localeCompare(G.Moves.BY_ID[b].name, 'es'));
-    const list = banList();
-    const el = document.createElement('div');
-    el.className = 'panel ban-picker';
-    el.innerHTML = `<p class="sub" style="margin:0 0 8px">Toca los movimientos que no quieres que te salgan en las cartas (${list.length}/${max}). El movimiento de inicio no se puede vetar.</p>
-      <div class="ban-moves">${ids.map(id => { const d = G.Moves.BY_ID[id]; const on = list.includes(id);
-        return `<button class="chip ${on ? 'on ban' : ''}" data-id="${id}">${G.Icons.html('move:' + id, 16)} ${d.name}${on ? ' ' + G.Icons.html('ban', 14) : ''}</button>`; }).join('')}</div>`;
-    el.querySelectorAll('[data-id]').forEach(b => {
-      b.onclick = () => {
-        const l = banList(), id = b.dataset.id, i = l.indexOf(id);
-        if (i >= 0) l.splice(i, 1);
-        else if (l.length >= max) { G.UI.toast('Ya tienes ' + max + ' vetados: quita uno primero'); return; }
-        else l.push(id);
-        G.DB.commit();
-        G.Audio.sfx('select');
-        renderUpgrades();
-      };
-    });
-    return el;
   }
 
   return { init, open, GEN_NAMES, openUpgrades, openDex, dexPending };

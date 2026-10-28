@@ -121,9 +121,7 @@ G.Game = (() => {
     G.Team.reset(pl);
     banked = { t1: 0, t10: 0 };
     caught = [];
-    // Atajos: movimientos con hueco fijo (save.pbind[dex] = [id del 1, id del 2, ...]),
-    // antes de aprender nada: addMove ya los coloca.
-    (save.pbind && save.pbind[mon.dex] || []).forEach((id, i) => { if (id) pl.bind[id] = i; });
+    // (Version de Nika : les Raccourcis des capacités sont retirés, save.pbind n'est plus lu.)
     // Mejora "Veto": movimientos que no quieres que te salgan.
     pl.banned = new Set((save.pban && save.pban[mon.dex] || []).slice(0, perks.bans));
     // Mejora "Repertorio": un segundo movimiento de ataque al azar.

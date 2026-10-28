@@ -126,21 +126,35 @@ G.PickUI = (() => {
     G.UI.toast(txt, 1800);
   }
 
+  /** Pièces, Poké Balls et Super Bonbons (menu, Boutique, Améliorations). */
+  function wallet() {
+    const s = G.DB.save, t = s.tickets || { t1: 0, t10: 0 };
+    return `<span class="pw" title="Pièces"><span class="coin"></span><b>${s.coins.toLocaleString('fr')}</b></span>
+      <span class="pw" title="Poké Balls à ouvrir (Boutique)">${G.Icons.html('ticket', 16)}<b>${t.t1}</b></span>
+      <span class="pw" title="Super Bonbons (rang)">${G.Icons.html('pball', 16)}<b>${G.Rank.balls()}</b></span>`;
+  }
+
+  /** Version de Nika (« Couleur du type ») : l'écran prend la couleur du type du partenaire. */
+  function theme(el) {
+    const mon = G.DEX_BY[G.DB.save.partner] || G.DEX_BY[1];
+    const c1 = G.U.TYPE_COLOR[mon.types[0]], c2 = G.U.TYPE_COLOR[mon.types[1] || mon.types[0]];
+    el.style.setProperty('--c', c1);
+    el.style.setProperty('--c2', c2);
+    // Fond clair (Électrik, Glace...) : le texte posé dessus passe en foncé.
+    const rgb = (c1.match(/[0-9a-f]{2}/gi) || []).map(h => parseInt(h, 16));
+    el.classList.toggle('light', rgb.length === 3 && (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) > 175);
+    const w = el.querySelector('.ts-wallet');
+    if (w) w.innerHTML = wallet();
+  }
+
   function render() {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const t = s.tickets || { t1: 0, t10: 0 };
-    $('pick-wallet').innerHTML = `<span class="pw" title="Pièces"><span class="coin"></span><b>${s.coins.toLocaleString('fr')}</b></span>
-      <span class="pw" title="Poké Balls à ouvrir (Boutique)">${G.Icons.html('ticket', 16)}<b>${t.t1}</b></span>
-      <span class="pw" title="Super Bonbons (rang)">${G.Icons.html('pball', 16)}<b>${G.Rank.balls()}</b></span>`;
+    $('pick-wallet').innerHTML = wallet();
 
     // Version de Nika (menu « Couleur du type ») : le fond prend la couleur du type.
-    const c1 = G.U.TYPE_COLOR[mon.types[0]], c2 = G.U.TYPE_COLOR[mon.types[1] || mon.types[0]];
-    $('scr-pick').style.setProperty('--c', c1);
-    $('scr-pick').style.setProperty('--c2', c2);
-    // Fond clair (Électrik, Glace...) : le texte posé dessus passe en foncé.
-    const rgb = (c1.match(/[0-9a-f]{2}/gi) || []).map(h => parseInt(h, 16));
-    $('scr-pick').classList.toggle('light', rgb.length === 3 && (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) > 175);
+    theme($('scr-pick'));
     const hasSh = G.DB.ownsShiny(mon.dex), shiny = hasSh && !!s.partnerShiny;
     const av = $('hub-av');
     av.innerHTML = '';
@@ -413,5 +427,5 @@ G.PickUI = (() => {
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
   }
 
-  return { open, init };
+  return { open, init, theme, wallet };
 })();

@@ -62,5 +62,5 @@ G.Box = (() => {
     return n;
   }
 
-  return { START, STEP, CANDY, cap, free, full, price, canExpand, expand, candy, addCandy, release };
+  return { START, STEP, MAX, CANDY, cap, free, full, price, canExpand, expand, candy, addCandy, release };
 })();
