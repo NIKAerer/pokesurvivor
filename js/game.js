@@ -87,7 +87,7 @@ G.Game = (() => {
 
   /** @param coop  { seed, host, members } para una partida en grupo */
   function startRun(coop = null) {
-    holdBy = []; awayBy = null;
+    holdBy = []; awayBy = null; checkT = 0;
     const save = G.DB.save;
     const mon = G.DEX_BY[save.partner];
     const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));   // améliorations du menu
@@ -292,8 +292,43 @@ G.Game = (() => {
     G.Audio.sfx('shinyGet');
   };
 
+  /*
+   * Version de Nika (2026-10-28) : sauvegarde de secours. Toutes les 15 s de jeu
+   * (et quand l'appli passe en arrière-plan), on note où en est la partie. Si
+   * elle s'arrête sans écran de fin (plantage, iPhone qui ferme l'appli), on
+   * verse au prochain lancement ce qu'elle aurait rapporté (recover()).
+   */
+  let checkT = 0;
+  function checkpoint() {
+    const save = G.DB.save;
+    if (!save || !pl || pl.uid || state === 'over' || state === 'ui') return;
+    save.runCrash = { t: Math.floor(time), kills: pl.kills, bosses: pl.bosses, coins: pl.coins, mul: pl.coinMul,
+                      lv: pl.level, at: Date.now() };
+    bankTickets(false);
+    G.DB.commit();
+  }
+  addEventListener('pagehide', checkpoint);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) checkpoint(); });
+
+  /** Au lancement : une partie coupée net ? On rend ses gains. Renvoie les pièces rendues (0 sinon). */
+  function recover() {
+    const save = G.DB.save, r = save && save.runCrash;
+    if (!r) return 0;
+    delete save.runCrash;
+    const coins = Math.round((Math.floor(r.t / 5) + Math.floor(r.kills * 0.25) + r.bosses * 80 + r.coins) * (r.mul || 1));
+    save.coins += coins;
+    save.stats.runs++;
+    save.stats.totalKills += r.kills;
+    save.stats.bestTime = Math.max(save.stats.bestTime, r.t);
+    save.stats.bestLevel = Math.max(save.stats.bestLevel, r.lv);
+    save.stats.coinsEarned += coins;
+    G.DB.commit(true);
+    return coins;
+  }
+
   function endRun(dead = true) {
     if (state === 'over' || !pl) return;
+    delete G.DB.save.runCrash;               // la partie se termine normalement
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
     const wasHost = !!pl.coopHost;
     const team = coop ? G.Coop.members.slice() : [];
@@ -386,6 +421,7 @@ G.Game = (() => {
       G.Audio.sfx('confirm');
       card.apply(pl);
       state = 'playing';
+      afterLevelUp();                  // les objets ramassés pendant les cartes
     });
   }
 
@@ -419,6 +455,10 @@ G.Game = (() => {
   function offerItem(id) {
     if (!pl || !G.Items.BY[id]) return;
     if (state === 'levelup' || G.UI.isOpen('scr-levelup')) { laterItems.push(id); return; }
+    // Version de Nika (2026-10-28) : un 2e objet pendant que le choix du 1er est ouvert
+    // attend son tour. Avant, il remplaçait le 1er choix : le jeu restait en pause
+    // (« choice ») sans écran, figé pour toujours.
+    if (openItem || G.UI.isOpen('scr-item')) { if (id !== (openItem && openItem.next)) laterItems.push(id); return; }
     let mine = false;            // esta elección es la que ha parado el juego
     const take = got => {
       openItem = null;
@@ -572,6 +612,20 @@ G.Game = (() => {
     }
   }
 
+  /** Filet de sécurité : en pause pour un choix dont l'écran n'est plus là → on reprend. */
+  let stuckT = 0;
+  function unstick(real) {
+    const lost = (state === 'levelup' && !G.UI.isOpen('scr-levelup')) ||
+                 (state === 'choice' && !G.UI.isOpen('scr-item') && !G.UI.isOpen('scr-credits'));
+    stuckT = lost && !G.Coop.active ? stuckT + real : 0;
+    if (stuckT < 1.5) return;
+    stuckT = 0;
+    console.error('[Game] choix perdu (' + state + '), on reprend');
+    openItem = null;
+    state = 'playing';
+    afterLevelUp();
+  }
+
   function frame(ts) {
     const real = (ts - last) / 1000 || 0;
     const dt = Math.min(1 / 30, real) * speedK;
@@ -583,6 +637,7 @@ G.Game = (() => {
 
     handleKeys();
 
+    unstick(real);
     if (state === 'playing') update(dt);
     else if (state === 'evolving') evolvingTick(dt);
     else if (pl && state !== 'ui') { G.FX.update(dt * 0.25); pl.anim.update(dt * 0.25); }
@@ -620,6 +675,7 @@ G.Game = (() => {
       return;
     }
     time += dt;
+    if (!coop && (checkT += dt) >= 15) { checkT = 0; checkpoint(); }
 
     const b = Math.floor(time / 240);
     if (b !== biome && !G.Rift.inArena && !G.Judgment.active) {
@@ -889,7 +945,7 @@ G.Game = (() => {
   })();
 
   return {
-    init, startRun, everyone, levelXp, flash, addBalls,
+    init, startRun, everyone, levelXp, flash, addBalls, recover,
     /** Para pruebas: salta el reloj de la run. */
     debugTime(t) { tampered = true; time = t; },
     /** Para grabar vídeos: cámara lenta (0,5 = mitad de velocidad). */
@@ -924,7 +980,12 @@ G.Flow = {
       document.getElementById('boot').classList.add('hidden');
       // En otra tarea: crear el sonido para comprobarlo cuesta ~60 ms y no debe bloquear la carga.
       // Version de Nika : pas de menu, on va droit au choix du Pokémon.
-      setTimeout(() => this.tapToStart(() => G.PickUI.open()), 0);
+      setTimeout(() => this.tapToStart(() => {
+        G.PickUI.open();
+        // Version de Nika : la dernière partie s'est coupée sans écran de fin.
+        const got = G.Game.recover();
+        if (got > 0) { G.UI.refreshCoins(); G.UI.toast('Ta dernière partie s\'est arrêtée d\'un coup : ses gains sont sauvés (+' + got + ' pièces)', 6000); }
+      }), 0);
     });
   },
   /**
