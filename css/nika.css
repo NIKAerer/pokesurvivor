@@ -457,3 +457,9 @@
 #tutor-pick .tp-box { max-width: 680px; width: 100%; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; max-height: 100%; }
 #tutor-pick .tp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; width: 100%; overflow-y: auto; max-height: 55vh; }
 #tutor-pick .tp-list .ps-mv { font: inherit; color: inherit; cursor: pointer; border: 0; text-align: left; }
+/* Caresse au menu (version de Nika) */
+.pick-stage { cursor: pointer; }
+.pick-stage.pet canvas { animation: pet-hop .5s ease-out; }
+@keyframes pet-hop { 0% { transform: translateY(0) } 35% { transform: translateY(-14px) scale(1.05, .95) } 70% { transform: translateY(0) scale(.97, 1.03) } 100% { transform: none } }
+.pet-heart { position: absolute; bottom: 40%; pointer-events: none; animation: pet-up 1.2s ease-out both; }
+@keyframes pet-up { 0% { opacity: 0; transform: translateY(0) scale(.6) } 20% { opacity: 1 } 100% { opacity: 0; transform: translateY(-70px) scale(1.1) } }

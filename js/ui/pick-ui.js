@@ -95,6 +95,36 @@ G.PickUI = (() => {
     });
   }
 
+  /** Version de Nika : toucher son Pokémon au menu. La 1re caresse du jour donne 1 Bonbon. */
+  const PET_TXT = ['{n} est tout content !', '{n} se frotte contre toi.', '{n} a hâte de partir à l\'aventure !',
+    '{n} fait un petit saut de joie !', '{n} te regarde avec confiance.', '{n} pousse un petit cri joyeux !'];
+  let petN = 0, petDex = 0;
+  function pet(mon, stage) {
+    const s = G.DB.save, d = new Date(), day = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    if (!s.pet || s.pet.day !== day) s.pet = { day, done: [] };
+    petN = petDex === mon.dex ? petN + 1 : 1; petDex = mon.dex;
+    stage.classList.remove('pet'); void stage.offsetWidth; stage.classList.add('pet');
+    for (let i = 0; i < 3; i++) {
+      const h = document.createElement('span');
+      h.className = 'pet-heart';
+      h.style.left = (35 + Math.random() * 30) + '%';
+      h.style.animationDelay = (i * 0.12) + 's';
+      h.innerHTML = G.Icons.html('heart', 16);
+      stage.appendChild(h);
+      setTimeout(() => h.remove(), 1400);
+    }
+    G.Audio.sfx('select');
+    let txt = (petN >= 6 ? '{n} adore les câlins !' : G.U.pick(PET_TXT)).replace('{n}', mon.name);
+    if (!s.pet.done.includes(mon.dex)) {
+      s.pet.done.push(mon.dex);
+      G.Box.addCandy(mon.dex, 1);
+      G.DB.commit();
+      txt += ' +1 Bonbon';
+      setTimeout(render, 900);
+    }
+    G.UI.toast(txt, 1800);
+  }
+
   function render() {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
@@ -114,6 +144,7 @@ G.PickUI = (() => {
     stage.className = 'pick-stage';
     stage.appendChild(G.UI.spriteCanvas(mon.dex, 170, 130, { lively: true, scale: 4, hero: true, shiny }));
     hero.appendChild(stage);
+    stage.onclick = () => pet(mon, stage);
     hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
       <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex)}
       ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
