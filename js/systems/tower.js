@@ -90,6 +90,7 @@ G.Tower = (() => {
     G.Game.flash('#ffffff', 0.5);
     if (st.boss) {
       room.ids = G.League.spawnTeam(room.x, room.y - ts * 3.5);
+      tame(st, room.ids);
     } else {
       const list = wild(st);
       list.forEach((w, k) => {
@@ -102,6 +103,21 @@ G.Tower = (() => {
       G.Spawner.say('Étage ' + st.floor + ' · ' + G.U.TYPE_NAME[st.type], 2.2, true);
     }
     G.Sprites.preload(room.ids.map(id => (G.EnemyMgr.get(id) || {}).dex).filter(Boolean), 6000, false, ['Idle', 'Walk']);
+  }
+
+  /** Le dresseur suit la courbe des salles (sinon ~500 fois les PV d'un sauvage et un coup presque mortel) :
+   *  son équipe a en tout BOSS_HP fois les PV d'un sauvage de l'étage, et BOSS_DMG fois ses dégâts. */
+  const BOSS_HP = 12, BOSS_DMG = 1.8;
+  function tame(st, ids) {
+    const ref = wild(st), n = Math.max(1, ids.length);
+    const hp = ref.reduce((a, w) => a + w.def.hp * w.sc.hp, 0) / ref.length;
+    const dmg = ref.reduce((a, w) => a + w.def.dmg * w.sc.dmg, 0) / ref.length;
+    for (const id of ids) {
+      const e = G.EnemyMgr.get(id);
+      if (!e) continue;
+      e.maxHp = e.hp = Math.round(hp * BOSS_HP / n * (n > 1 ? 1.3 : 1));
+      e.dmg = dmg * BOSS_DMG;
+    }
   }
 
   /** Personne ne sort de la salle. */
