@@ -24,6 +24,15 @@
  * el 28:00 ya no se abren grietas). Si a las 30:00 estás en una grieta o
  * eligiendo una carta, empieza al terminar.
  *
+ * Version de Nika (combat final gagnable) :
+ *   - Épreuve : 3 min. Arceus est invincible et te poursuit, un légendaire
+ *     arrive toutes les 12 s (×1,35 de vie et de dégâts à chaque fois) et
+ *     chacun lâche des Super Bonbons.
+ *   - Puis Arceus baisse sa garde : il devient un vrai boss qu'on peut battre
+ *     (ses pilliers, rayons et ondes continuent). Plus de légendaires.
+ *   - Le battre = victoire : la partie se termine, gros butin, et une petite
+ *     chance qu'Arceus te rejoigne (s'il reste une place dans ta boîte).
+ *
  * Cooperativo: lo decide el anfitrión. Mensajes (ver coop.js):
  *   'jd' cfg (empieza) · 'jk' (salta la animación)
  *   y en cada envío del anfitrión, ja: [x, y, animación, dirección] de Arceus.
@@ -31,7 +40,12 @@
 G.Judgment = (() => {
   const AT = 30 * 60;
   const ARENA_R = 24;                 // en tiles (la arena de la grieta: 11)
-  const BOSS_EVERY = 5;               // sin tope: siguen saliendo mientras aguantes
+  const BOSS_EVERY = 12;              // version de Nika : un légendaire toutes les 12 s pendant l'épreuve
+  const GROW = 1.35;                  // version de Nika : chaque légendaire ×1,35 (au lieu de ×2)
+  const TRIAL = 180;                  // version de Nika : 3 min d'épreuve, puis Arceus est attaquable
+  const ARCEUS_HP = 40;               // vie d'Arceus = 40 × celle du premier légendaire
+  const JOIN = 0.1;                   // chance qu'Arceus te rejoigne après la victoire
+  const LOOT = { coins: 1500, balls: 30, t1: 3, ct: 2 };
   const TOUCH = 0.4;                  // vida que quita tocar a Arceus
   const ARCEUS = 493, SCALE = 1.5;
   // Línea de tiempo de la animación (segundos).
@@ -47,6 +61,7 @@ G.Judgment = (() => {
   let A = null;                       // Arceus
   let center = null;                  // centro de la arena (mundo)
   let arenaT = 0, bossT = 0, bossN = 0, base = 0, downs = 0;
+  let final = null, won = false, wonT = 0;   // Arceus attaquable (G.Enemy) · victoire
   // Daño a un solo enemigo por segundo (el que más recibe en cada segundo; con
   // ataques en área, sumar todo daría una vida enorme). Se guardan los últimos
   // 30 s y vale la media de los 6 mejores.
@@ -57,6 +72,7 @@ G.Judgment = (() => {
   function reset() {
     phase = null; ct = 0; cfg = null; ported = landed = canSkip = false; cues = {};
     A = null; center = null; arenaT = bossT = 0; bossN = 0; base = 0; downs = 0;
+    final = null; won = false; wonT = 0;
     hits = new Map(); hitT = 0; samples = []; embers = []; cam = null;
   }
 
@@ -167,7 +183,7 @@ G.Judgment = (() => {
     const n = G.Game.everyone().length, t = G.Game.st.time;
     const floor = (3200 + t * 9) * 0.35 * G.Coop.scaleHp(n);
     base = Math.max(floor, singleDps() * 3);
-    G.Spawner.say('¡Huye de Arceus! Es invencible', 3, true);
+    G.Spawner.say('Tiens 3 minutes face à Arceus : ensuite, il baisse sa garde !', 3.4, true);
   }
 
   // ---------------- cada fotograma ----------------
@@ -213,13 +229,16 @@ G.Judgment = (() => {
       return;
     }
     if (phase !== 'fight') return;
+    if (won) { wonT += dt; if (wonT > 5) { phase = null; G.Game.quit(); } return; }
     arenaT += dt;
     A.touchCd -= dt; A.spin += dt;
     if (authority()) {
-      arceusTick(dt);
+      if (!final && arenaT >= TRIAL) guardDown();
+      if (final) finalTick(dt);
+      else arceusTick(dt);
       keepInside();
       bossT -= dt;
-      if (bossT <= 0) { bossT = BOSS_EVERY; spawnBoss(); }
+      if (!final && bossT <= 0) { bossT = BOSS_EVERY; spawnBoss(); }
     } else netTick(dt);
     A.anim.update(dt);
     touch(pl);
@@ -320,9 +339,60 @@ G.Judgment = (() => {
     A.anim.loop(Math.abs(A.x - ox) + Math.abs(A.y - oy) > 0.5 ? 'Walk' : 'Idle');
   }
 
+  /** Version de Nika : Arceus baisse sa garde et devient un boss qu'on peut battre. */
+  function guardDown() {
+    const t = G.Game.st.time, n = G.Game.everyone().length;
+    const def = {
+      dex: ARCEUS, name: G.DEX_BY[ARCEUS].name,
+      hp: Math.round(base * ARCEUS_HP * Math.max(1, n * 0.7)),
+      spd: 62, dmg: Math.round(60 + t / 15), xp: Math.round(2000 + t * 2),
+      behavior: 'ranged', shotDmg: Math.round(34 + t / 30), shotCd: 1.1, range: 320
+    };
+    const e = new G.Enemy(def, A.x, A.y, { hp: 1, spd: 1, dmg: 1 }, true);
+    e.judge = true; e.judgeArceus = true; e.flying = false;
+    G.EnemyMgr.add(e);
+    final = e;
+    A.gone = true;
+    G.FX.ring(A.x, A.y, 10, 260, GOLD, 0.9, 6);
+    G.Camera.kick(0.8);
+    G.Audio.sfx('rift');
+    G.Spawner.say('Arceus baisse sa garde : bats-le !', 3, true);
+  }
+
+  /** Arceus attaquable : il garde ses pilliers, rayons et ondes. */
+  function finalTick(dt) {
+    if (final.dead) { if (!won) victory(); return; }
+    A.x = final.x; A.y = final.y;
+    const tg = target();
+    if (A.cast) { castTick(dt, tg); return; }
+    A.cd -= dt * 0.7;
+    if (tg && A.cd <= 0) cast(Math.random() < 0.5 ? 'rain' : 'cross', tg);
+  }
+
+  /** Victoire (sur chaque ordenador : le butin est pour chacun). */
+  function victory() {
+    if (won) return;
+    won = true; wonT = 0;
+    if (G.Coop.isHost) G.Coop.broadcast(['jw']);
+    for (const p of G.Game.everyone()) p.invuln = 8;       // plus rien ne te touche jusqu'à la fin
+    const s = G.DB.save, pl = G.Game.player;
+    if (pl) { pl.coins += LOOT.coins; pl.t1 += LOOT.t1; }
+    G.Game.addBalls(LOOT.balls);
+    G.Tutor.add(LOOT.ct);
+    let join = false;
+    if (s && Math.random() < JOIN) {
+      if (!s.box.includes(ARCEUS) && G.Box.free() > 0) { s.box.push(ARCEUS); G.DB.grant(ARCEUS, 'judgment'); join = true; }
+      else G.Box.addCandy(ARCEUS, 25);
+    }
+    G.DB.commit(true);
+    G.Game.flash('#fff3c8', 0.9);
+    G.Audio.sfx('levelup');
+    G.Spawner.say(join ? 'Arceus est vaincu… et il te rejoint !' : 'Arceus est vaincu ! +' + LOOT.coins + ' pièces, +' + LOOT.balls + ' Super Bonbons, +' + LOOT.t1 + ' Poké Balls, +' + LOOT.ct + ' CT', 5, true);
+  }
+
   /** Tocar a Arceus (cada uno mira el suyo). */
   function touch(pl) {
-    if (!pl || pl.dead || A.touchCd > 0) return;
+    if (!pl || pl.dead || A.touchCd > 0 || A.gone) return;
     const rr = A.r + pl.r;
     if (G.U.dist2(A.x, A.y, pl.x, pl.y) > rr * rr) return;
     A.touchCd = 0.9;
@@ -358,7 +428,7 @@ G.Judgment = (() => {
       x = center.x + Math.cos(a) * d; y = center.y + Math.sin(a) * d;
       if (G.Game.everyone().every(p => G.U.dist2(p.x, p.y, x, y) > 280 * 280)) break;
     }
-    const k = Math.pow(2, bossN);          // cada uno, el doble que el anterior
+    const k = Math.pow(GROW, bossN);       // version de Nika : ×1,35 à chaque légendaire
     const def = {
       dex, name: mon.name,
       hp: Math.round(base * k),
@@ -386,7 +456,7 @@ G.Judgment = (() => {
 
   /** Arceus, ordenado por Y con el resto de la escena. */
   function drawable() {
-    if (!A || !ported) return null;
+    if (!A || !ported || A.gone) return null;
     return { y: A.y, draw: drawArceus };
   }
 
@@ -622,7 +692,8 @@ G.Judgment = (() => {
     ctx.textAlign = 'center';
     ctx.font = F(800, 12);
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)';
-    const txt = 'SENTENCIA · ' + G.U.mmss(arenaT) + ' · JEFES ' + downs;
+    const txt = won ? 'ARCEUS EST VAINCU !' : final ? 'ARCEUS ATTAQUABLE · ' + G.U.mmss(arenaT)
+      : 'ÉPREUVE · ' + G.U.mmss(Math.max(0, TRIAL - arenaT)) + ' · LÉGENDAIRES ' + downs;
     ctx.strokeText(txt, w / 2, boss ? 98 : 76);
     ctx.fillStyle = GOLD;
     ctx.fillText(txt, w / 2, boss ? 98 : 76);
@@ -676,6 +747,7 @@ G.Judgment = (() => {
 
   function onEvent(ev) {
     if (ev[0] === 'jd') begin(ev[1]);
+    else if (ev[0] === 'jw') victory();
     else if (ev[0] === 'jk') doSkip();
   }
 
@@ -697,10 +769,13 @@ G.Judgment = (() => {
     /** Lo que suena: nada en la animación hasta que aterriza. */
     get music() { return phase === 'cine' && ct < T_LAND ? null : 'judgment'; },
     /** Para el resumen de la partida: { time, bosses } o null. */
-    summary() { return phase === 'fight' ? { time: arenaT, bosses: downs } : null; },
+    summary() { return phase === 'fight' || won ? { time: arenaT, bosses: downs, won } : null; },
     /** Para pruebas: vida del primer legendario y daño medido. */
     get debug() { return { base, single: singleDps(), samples: samples.length }; },
     /** Para pruebas: la Sentencia ya. */
-    debugStart() { if (!phase && authority()) start(); }
+    debugStart() { if (!phase && authority()) start(); },
+    /** Pour les tests : sauter l'épreuve. */
+    debugFinal() { if (phase === 'fight' && !final) arenaT = TRIAL; },
+    get final() { return final; }
   };
 })();

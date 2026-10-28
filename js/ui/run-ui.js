@@ -165,7 +165,7 @@ G.RunUI = (() => {
   }
 
   function showOver(r, onBack) {
-    $('over-title').textContent = r.dead ? 'Has caído…' : 'Run terminada';
+    $('over-title').textContent = r.judge && r.judge.won ? 'Arceus est vaincu !' : r.dead ? 'Has caído…' : 'Run terminada';
     // Version de Nika : seulement la partie (pas de pièces, tickets ni dons).
     const team = G.Team.members();
     $('over-stats').innerHTML = `
