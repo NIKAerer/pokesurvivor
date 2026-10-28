@@ -84,7 +84,9 @@
 .qk-all b { font-size: 15px; font-weight: 400; }
 
 /* Équipe, Boîte, Ligue : un grand panneau sombre */
-.hub-view:not([data-v="home"]) { place-items: stretch center; }
+.hub-view:not([data-v="home"]) { place-items: stretch center; grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
+.hub-backrow { width: min(980px, 100%); display: flex; align-items: center; gap: 12px; }
+.hub-backrow h2 { margin: 0; font-weight: 400; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: #fff; text-shadow: 0 3px 0 var(--cd); }
 .hub-panel { width: min(980px, 100%); height: 100%; min-height: 0; box-sizing: border-box; padding: 12px; border-radius: 20px;
   background: #0b1020e6; box-shadow: 0 5px 0 var(--cd); overflow-y: auto; color: #fff; }
 .hub-team { display: grid; grid-template-columns: 240px 1fr; gap: 12px; overflow: hidden; }
