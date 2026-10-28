@@ -28,12 +28,12 @@ G.HUD = (() => {
 
   // Dégâts par seconde de toute l'équipe, une valeur par seconde (60 dernières).
   /** Version de Nika : la Ligue en haut à droite (badges et prochain défi). */
-  function drawLeague(ctx, w, st, touch, sa, small, tall) {
+  function drawLeague(ctx, w, st, touch, sa, small, tall, TOP) {
     const L = G.League, cur = L.current(), i = L.step(), S = L.STEPS;
     const BW = small ? 168 : 190, BH = 64;
     // À gauche du bouton pause (lui-même décalé par l'encoche de l'iPhone).
     // Téléphone debout (version de Nika) : sous le bouton pause, pour ne pas couvrir l'équipe.
-    const x0 = tall ? w - BW - 10 : w - BW - 14 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = tall ? 64 + sa.top : 12;
+    const x0 = tall ? w - BW - 10 : w - BW - 14 - (touch ? 56 + Math.min(44, sa.right) : 0), y0 = tall ? 64 + sa.top : TOP;
     roundRect(ctx, x0, y0, BW, BH, 9);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     ctx.textAlign = 'left';
@@ -95,12 +95,15 @@ G.HUD = (() => {
     // Version de Nika : téléphone à l'horizontale (écran bas) = HUD compact,
     // et rien sous l'encoche de l'iPhone.
     const sa = touch ? G.Touch.safeArea() : { top: 0, right: 0, bottom: 0, left: 0 };
-    const small = h < 500;
     const tall = h > w && w < 600;      // version de Nika : téléphone debout
+    // Compact aussi debout : l'équipe (190 px) et la Ligue (168 px) tiennent côte à côte.
+    const small = h < 500 || tall;
 
     // ---------- version de Nika : l'équipe en haut à gauche ----------
     // Chaque Pokémon : nom, niveau, ses attaques (icônes) et sa barre d'XP.
-    const px = 10 + Math.min(48, sa.left), py = small ? 8 : 10;
+    // Version de Nika : équipe, Ligue et pause alignés sur la même ligne du haut.
+    const TOP = (small ? 6 : 8) + Math.min(20, sa.top);
+    const px = 10 + Math.min(48, sa.left), py = TOP + 4;
     const team = G.Team.members().length ? G.Team.members() : [pl];
     const RW = small ? 190 : 236, RH = small ? 33 : 48, PW = small ? 29 : 40;
     // Positions dans une ligne : nom, icônes d'attaques, barre d'XP, jauge de dégâts.
@@ -189,7 +192,7 @@ G.HUD = (() => {
     }
 
     // ---------- version de Nika : la Ligue (en haut à droite) ----------
-    drawLeague(ctx, w, st, touch, sa, small, tall);
+    drawLeague(ctx, w, st, touch, sa, small, tall, TOP);
 
     // ---------- reloj / bioma / kills ----------
     // (debout : à droite sous la Ligue)
@@ -381,7 +384,9 @@ G.HUD = (() => {
     const S = small ? 46 : 54, GAP = small ? 7 : 9;
     const n = Math.max(1, pl.slots.length);
     const totalW = n * S + (n - 1) * GAP;
-    let sx = (w - totalW) / 2;
+    // Version de Nika : objet + attaques centrés ensemble sous la barre de PV.
+    const IW = S + (small ? 12 : 18);
+    let sx = (w - totalW - IW) / 2 + IW;
     // Por encima de la barra de inicio del iPhone (allí los toques a veces no llegan).
     let sy = h - S - (small ? 8 : 18) - (touch ? Math.min(small ? 14 : 28, G.Touch.safeArea().bottom) : 0);
     // En móvil, donde la haya puesto el jugador: el bloque objeto + todos los
@@ -397,8 +402,8 @@ G.HUD = (() => {
     // Version de Nika : barre de PV juste au-dessus des attaques, fine pour ne pas cacher l'action.
     {
       // Sur téléphone, pas de nom d'attaque : la barre se pose juste sur les cases.
-      const hw = Math.min(w * 0.42, Math.max(small ? 220 : 260, Math.max(n, pl.maxMoves) * (S + GAP))), HH = small ? 13 : 16;
-      const hx = sx + totalW / 2 - hw / 2, hy = small ? sy - 6 - HH - 7 : sy - 44;   // au-dessus du nom de l'attaque
+      const hw = Math.min(w * (tall ? 0.72 : 0.42), Math.max(small ? 220 : 260, Math.max(n, pl.maxMoves) * (S + GAP))), HH = small ? 13 : 16;
+      const hx = sx - IW + (totalW + IW) / 2 - hw / 2, hy = small ? sy - 6 - HH - 7 : sy - 44;   // au-dessus du nom de l'attaque
       const fr = pl.hp / pl.maxHp, low = fr < 0.3;
       roundRect(ctx, hx - 3, hy - 3, hw + 6, HH + 6, (HH + 6) / 2);
       ctx.fillStyle = low && Math.sin(performance.now() / 120) > 0 ? '#ff3b4dcc' : '#0b1020dd'; ctx.fill();
@@ -494,7 +499,7 @@ G.HUD = (() => {
 
     // ---------- objeto equipado (a la izquierda de los movimientos) ----------
     {
-      const ix = sx - S - (small ? 12 : 18), iy = sy;
+      const ix = sx - IW, iy = sy - 6;     // même ligne que les attaques
       roundRect(ctx, ix, iy, S, S, 12);
       ctx.fillStyle = pl.item ? 'rgba(40,30,10,.9)' : 'rgba(10,16,28,.55)';
       ctx.fill();
@@ -517,7 +522,7 @@ G.HUD = (() => {
     if (touch) {
       const pp = G.Touch.spot('pause');
       const bx = pp ? G.U.clamp(pp[0] * w - 20, 4, w - 44) : w - 52 - Math.min(44, sa.right);
-      const by = pp ? G.U.clamp(pp[1] * h - 20, 10, h - 44) : 12 + Math.min(20, sa.top), bs = 40;
+      const by = pp ? G.U.clamp(pp[1] * h - 20, 10, h - 44) : TOP, bs = 40;
       roundRect(ctx, bx, by, bs, bs, 10);
       ctx.fillStyle = 'rgba(10,16,28,.7)'; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(244,248,255,.8)'; ctx.stroke();
@@ -527,7 +532,7 @@ G.HUD = (() => {
     }
 
     // pista de controles
-    if (st.time < 14) {
+    if (st.time < 14 && !small) {      // (téléphone couché : passait sous les cases)
       ctx.font = F(600, 10);
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(180,200,230,.55)';
