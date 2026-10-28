@@ -81,14 +81,25 @@ G.PickUI = (() => {
     hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
       <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex)}
       ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
-    // Version de Nika : le rang du Pokémon (monte avec des Super Bonbons).
+    // Version de Nika : le rang du Pokémon (Bonbons de l'espèce d'abord, puis Super Bonbons).
     {
-      const rk = G.Rank.of(mon.dex), max = rk >= G.Rank.MAX, c = G.Rank.cost(rk);
+      const rk = G.Rank.of(mon.dex), max = rk >= G.Rank.MAX, p = G.Rank.pay(mon.dex), ok = G.Rank.canUp(mon.dex);
       const stars = Array.from({ length: G.Rank.MAX }, (_, i) => `<i class="${i < rk ? 'on' : ''}"></i>`).join('');
+      const price = [p.candy ? `${G.Icons.html('candy', 14)} ${p.candy}` : '', p.balls ? `${G.Icons.html('pball', 14)} ${p.balls}` : ''].filter(Boolean).join(' + ');
       hero.insertAdjacentHTML('beforeend', `<div class="pick-rank"><span title="+5 % PV et dégâts par rang">Rang ${rk}/${G.Rank.MAX} · +${Math.round(rk * G.Rank.BONUS * 100)} %</span>
         <div class="rk-pips">${stars}</div>
-        ${max ? '<b class="rk-max">Rang max !</b>' : `<button id="pick-rankup" class="btn small ${G.Rank.balls() >= c ? 'gold' : 'ghost'}" ${G.Rank.balls() >= c ? '' : 'disabled'}>Monter · ${G.Icons.html('pball', 14)} ${c}</button>`}</div>`);
+        <span class="pick-candy" title="Bonbons ${mon.name} (doublons de la Boutique)">${G.Icons.html('candy', 14)} ${G.Box.candy(mon.dex)} Bonbons</span>
+        ${max ? '<b class="rk-max">Rang max !</b>' : `<button id="pick-rankup" class="btn small ${ok ? 'gold' : 'ghost'}" ${ok ? '' : 'disabled'}>Monter · ${price}</button>`}</div>`);
       if (!max) $('pick-rankup').onclick = () => { if (G.Rank.up(mon.dex)) { G.Audio.sfx('buy'); render(); } };
+      // Relâcher : libère une place de la boîte.
+      if (box().length > 1) {
+        hero.insertAdjacentHTML('beforeend', `<button id="pick-release" class="btn small ghost pick-release">Relâcher</button>`);
+        $('pick-release').onclick = () => {
+          if (!confirm('Relâcher ' + mon.name + ' ? Il quitte ta boîte (ses Bonbons et son rang restent si tu le retrouves).')) return;
+          const n = G.Box.release(mon.dex);
+          if (n) { G.Audio.sfx('select'); G.UI.toast(mon.name + ' est relâché. +' + n + ' Super Bonbons'); render(); }
+        };
+      }
     }
     if (hasSh) $('pick-shiny').onclick = () => { s.partnerShiny = !s.partnerShiny; G.DB.commit(); G.Audio.sfx('select'); render(); };
 
@@ -185,7 +196,11 @@ G.PickUI = (() => {
       b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select'); render(); };
       list.appendChild(b);
     }
-    $('pick-count').textContent = `Tes Pokémon (${mons.length})`;
+    // Version de Nika : boîte limitée, on l'agrandit avec des pièces.
+    const cap = G.Box.cap();
+    $('pick-count').innerHTML = `Tes Pokémon <b class="${G.Box.full() ? 'warn' : ''}">${mons.length}/${cap}</b>`
+      + ` <button id="pick-expand" class="btn small ${G.Box.canExpand() ? 'gold' : 'ghost'}" ${G.Box.canExpand() ? '' : 'disabled'} title="Agrandir la boîte">+${G.Box.STEP} places · <span class="coin"></span> ${G.Box.price()}</button>`;
+    $('pick-expand').onclick = () => { if (G.Box.expand()) { G.Audio.sfx('buy'); render(); } };
     // La Ligue : badges gagnés et prochain défi.
     const L = G.League, cur = L.current(), stp = L.step();
     // Version de Nika : seulement la région en cours (13 défis chacune).
