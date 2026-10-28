@@ -224,6 +224,8 @@ G.Enemies = (() => {
       const w = t - tier.from > 260 ? 3 : 10;       // los tramos viejos pierden peso
       for (const e of tier.list) for (let i = 0; i < w; i++) bag.push(e);
     }
+    // Version de Nika : la nuit, des Pokémon nocturnes en plus (daynight.js).
+    for (const e of (G.DayNight ? G.DayNight.bag(t) : [])) for (let i = 0; i < 4; i++) bag.push(e);
     return bag.length ? bag : cast[0].list;
   }
 

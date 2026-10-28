@@ -231,7 +231,9 @@ G.Team = (() => {
   function checkEvolve(p) {
     const lv = evoLevel(p.dex);
     if (lv == null || p.level < lv) return;
-    const list = G.EVOS[p.dex].filter(x => G.DEX_BY[x[0]] && G.SPRITE_META[x[0]]);
+    let list = G.EVOS[p.dex].filter(x => G.DEX_BY[x[0]] && G.SPRITE_META[x[0]]);
+    // Version de Nika : jour / nuit (daynight.js) ; s'il n'y a que celle de l'autre moment, il attend.
+    list = list.filter(x => G.DayNight.evoOk(x[0]));
     if (!list.length) return;
     evolve(p, G.U.pick(list)[0]);
   }

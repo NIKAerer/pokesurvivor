@@ -761,6 +761,7 @@ G.Game = (() => {
     G.Rocket.update(dt, pl, time);
     G.Weather.update(dt, time, pl);
     G.Tuto.update(time, !!pl.uid);
+    G.DayNight.update(time);
     G.FX.update(dt);
 
     G.Audio.music(G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? (G.Rift.inGym ? 'boss' : 'rift') : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
@@ -866,6 +867,7 @@ G.Game = (() => {
     if (state === 'evolving') drawEvolving(ctx);
     ctx.restore();
 
+    G.DayNight.draw(ctx, w, h);
     G.Weather.draw(ctx, w, h, frameDt);
     G.World.drawVignette(ctx, w, h);
     // Niebla: la viñeta se cierra un poco (sin tapar el centro).
