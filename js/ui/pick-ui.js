@@ -56,6 +56,7 @@ G.PickUI = (() => {
     if (s.tickets && s.tickets.t10 > 0) { s.tickets.t1 += s.tickets.t10 * 10; s.tickets.t10 = 0; G.DB.commit(); }
     for (const d of box()) if (!G.DB.owns(d)) G.DB.grant(d, 'starter');   // le Pokédex les compte
     G.Sprites.preload(box());          // charger les sprites avant de jouer
+    view = 'home';
     render();
     G.DailyUI.maybeShow(render);       // version de Nika : cadeau du jour
   }
@@ -133,34 +134,56 @@ G.PickUI = (() => {
       <span class="pw" title="Poké Balls à ouvrir (Boutique)">${G.Icons.html('ticket', 16)}<b>${t.t1}</b></span>
       <span class="pw" title="Super Bonbons (rang)">${G.Icons.html('pball', 16)}<b>${G.Rank.balls()}</b></span>`;
 
-    // Le Pokémon choisi : grand sprite sur une estrade de la couleur de son type.
-    const hero = $('pick-hero');
+    // Version de Nika (menu « Couleur du type ») : le fond prend la couleur du type.
     const c1 = G.U.TYPE_COLOR[mon.types[0]], c2 = G.U.TYPE_COLOR[mon.types[1] || mon.types[0]];
     $('scr-pick').style.setProperty('--c', c1);
     $('scr-pick').style.setProperty('--c2', c2);
-    hero.innerHTML = '';
+    // Fond clair (Électrik, Glace...) : le texte posé dessus passe en foncé.
+    const rgb = (c1.match(/[0-9a-f]{2}/gi) || []).map(h => parseInt(h, 16));
+    $('scr-pick').classList.toggle('light', rgb.length === 3 && (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) > 175);
     const hasSh = G.DB.ownsShiny(mon.dex), shiny = hasSh && !!s.partnerShiny;
+    const av = $('hub-av');
+    av.innerHTML = '';
+    av.appendChild(G.UI.spriteCanvas(mon.dex, 34, 30, { fit: true, shiny }));
+    const rk = G.Rank.of(mon.dex);
+    // Accueil : le partenaire en grand (on le caresse en le touchant).
+    const hero = $('pick-hero');
+    hero.innerHTML = '';
     const stage = document.createElement('div');
     stage.className = 'pick-stage';
-    stage.appendChild(G.UI.spriteCanvas(mon.dex, 170, 130, { lively: true, scale: 4, hero: true, shiny }));
+    stage.appendChild(G.UI.spriteCanvas(mon.dex, 200, 160, { lively: true, scale: 4, hero: true, shiny }));
     hero.appendChild(stage);
     stage.onclick = () => pet(mon, stage);
-    hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
+    hero.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 16) + ' ' : ''}${mon.name}</b>
+      <div class="hub-chips">${mon.types.map(t => `<span class="hc-type" style="--t:${G.U.TYPE_COLOR[t]}">${G.I18n.t(G.U.TYPE_NAME[t])}</span>`).join('')}
+      <span class="hc-dark">Rang ${rk} · +${Math.round(rk * G.Rank.BONUS * 100)} %</span>
+      <span class="hc-dark">${G.Icons.html('candy', 12)} ${G.Box.candy(mon.dex)}</span></div>`);
+
+    // Équipe : rang, Bonbons, shiny, relâcher (Bonbons de l'espèce d'abord, puis Super Bonbons).
+    const rb = $('pick-rankbox');
+    rb.innerHTML = '';
+    const mini = document.createElement('div');
+    mini.className = 'pick-stage hub-mini';
+    mini.appendChild(G.UI.spriteCanvas(mon.dex, 120, 100, { lively: true, scale: 3, hero: true, shiny }));
+    mini.onclick = () => pet(mon, mini);
+    rb.appendChild(mini);
+    rb.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
       <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex)}
       ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
-    // Version de Nika : le rang du Pokémon (Bonbons de l'espèce d'abord, puis Super Bonbons).
     {
-      const rk = G.Rank.of(mon.dex), max = rk >= G.Rank.MAX, p = G.Rank.pay(mon.dex), ok = G.Rank.canUp(mon.dex);
+      const max = rk >= G.Rank.MAX, p = G.Rank.pay(mon.dex), ok = G.Rank.canUp(mon.dex);
       const stars = Array.from({ length: G.Rank.MAX }, (_, i) => `<i class="${i < rk ? 'on' : ''}"></i>`).join('');
       const price = [p.candy ? `${G.Icons.html('candy', 14)} ${p.candy}` : '', p.balls ? `${G.Icons.html('pball', 14)} ${p.balls}` : ''].filter(Boolean).join(' + ');
-      hero.insertAdjacentHTML('beforeend', `<div class="pick-rank"><span title="+5 % PV et dégâts par rang">Rang ${rk}/${G.Rank.MAX} · +${Math.round(rk * G.Rank.BONUS * 100)} %</span>
+      rb.insertAdjacentHTML('beforeend', `<div class="pick-rank"><span title="+5 % PV et dégâts par rang">Rang ${rk}/${G.Rank.MAX} · +${Math.round(rk * G.Rank.BONUS * 100)} %</span>
         <div class="rk-pips">${stars}</div>
         <span class="pick-candy" title="Bonbons ${mon.name} (doublons de la Boutique)">${G.Icons.html('candy', 14)} ${G.Box.candy(mon.dex)} Bonbons</span>
-        ${max ? '<b class="rk-max">Rang max !</b>' : `<button id="pick-rankup" class="btn small ${ok ? 'gold' : 'ghost'}" ${ok ? '' : 'disabled'}>Monter · ${price}</button>`}</div>`);
+        ${max ? '<b class="rk-max">Rang max !</b>' : `<button id="pick-rankup" class="btn small ${ok ? 'gold' : 'ghost'}" ${ok ? '' : 'disabled'}>Monter · ${price}</button>`}</div>
+        <button id="hub-upg2" class="btn small">${G.Icons.html('up', 14)} Améliorations</button>`);
       if (!max) $('pick-rankup').onclick = () => { if (G.Rank.up(mon.dex)) { G.Audio.sfx('buy'); render(); } };
+      $('hub-upg2').onclick = () => G.MenuUI.openUpgrades();
       // Relâcher : libère une place de la boîte.
       if (box().length > 1) {
-        hero.insertAdjacentHTML('beforeend', `<button id="pick-release" class="btn small ghost pick-release">Relâcher</button>`);
+        rb.insertAdjacentHTML('beforeend', `<button id="pick-release" class="btn small ghost pick-release">Relâcher</button>`);
         $('pick-release').onclick = () => {
           if (!confirm('Relâcher ' + mon.name + ' ? Il quitte ta boîte (ses Bonbons et son rang restent si tu le retrouves).')) return;
           const n = G.Box.release(mon.dex);
@@ -271,31 +294,89 @@ G.PickUI = (() => {
     $('pick-count').innerHTML = `Tes Pokémon <b class="${G.Box.full() ? 'warn' : ''}">${mons.length}/${cap}</b>`
       + ` <button id="pick-expand" class="btn small ${G.Box.canExpand() ? 'gold' : 'ghost'}" ${G.Box.canExpand() ? '' : 'disabled'} title="Agrandir la boîte">+${G.Box.STEP} places · <span class="coin"></span> ${G.Box.price()}</button>`;
     $('pick-expand').onclick = () => { if (G.Box.expand()) { G.Audio.sfx('buy'); render(); } };
-    // La Ligue : badges gagnés et prochain défi.
+    quick(mons0);
+
+    // La Ligue : en haut (région en cours) et en entier dans l'onglet Ligue.
     const L = G.League, cur = L.current(), stp = L.step();
-    // Version de Nika : seulement la région en cours (13 défis chacune).
     const reg = cur ? cur.region : L.REGIONS[L.REGIONS.length - 1], off = L.STEPS.findIndex(x => x.region === reg);
-    $('pick-league').innerHTML = `<span class="lg-reg">${reg}</span>` + L.region(reg).map((st, k) => [st, off + k]).map(([st, i]) =>
-      `<span class="lg-b ${st.kind}${i < stp ? ' on' : ''}${i === stp && !L.done() ? ' next' : ''}" style="--c:${G.U.TYPE_COLOR[st.type]}" title="${L.title(st)}"></span>`).join('')
-      + `<span class="lg-txt">${cur ? 'Prochain défi : <b>' + L.title(cur) + '</b> (' + G.I18n.t(G.U.TYPE_NAME[cur.type]) + ') dès ' + G.U.mmss(L.EVERY) + ', puis toutes les 5 min' : '<b>Maître de Kanto, Johto et Sinnoh ★</b> · mode libre'}</span>`;
-    // Missions terminées dont la récompense attend.
+    const regSteps = L.region(reg), got = Math.max(0, Math.min(regSteps.length, stp - off));
+    $('pick-league').innerHTML = `<div class="hl-row"><span>Ligue ${reg === 'Kanto' ? 'de' : 'de'} ${reg} · ${got} / ${regSteps.length}</span>`
+      + `<span class="hl-next">${cur ? L.title(cur) + ' à ' + G.U.mmss(L.EVERY) : 'Maître ★'}</span></div>`
+      + `<i class="hl-bar"><b style="width:${Math.round(got / regSteps.length * 100)}%"></b></i>`;
+    $('hub-leaguefull').innerHTML = `<h3>Ligue Pokémon</h3><p class="note">${cur ? 'Prochain défi : <b>' + L.title(cur) + '</b> (' + G.I18n.t(G.U.TYPE_NAME[cur.type]) + ') dès ' + G.U.mmss(L.EVERY) + ' en partie, puis toutes les 5 min.' : '<b>Maître de Kanto, Johto et Sinnoh ★</b> · mode libre'}</p>`
+      + L.REGIONS.map(rg => { const o = L.STEPS.findIndex(x => x.region === rg);
+        return `<h4>${rg}</h4><div class="hl-badges">` + L.region(rg).map((st, k) => { const i2 = o + k;
+          return `<span class="hl-b ${st.kind}${i2 < stp ? ' on' : ''}${i2 === stp && !L.done() ? ' next' : ''}" style="--t:${G.U.TYPE_COLOR[st.type]}"><i></i><small>${L.title(st)}</small></span>`; }).join('') + '</div>'; }).join('')
+      + `<h4>Tour de Combat</h4><p class="note">Meilleur étage : <b>${G.Tower.best() || 0}</b>. Un dresseur à 1:00 puis toutes les 75 s, une défaite arrête la partie.</p>`;
+
+    // Les tuiles de l'accueil (badges rouges = quelque chose t'attend).
+    const sub = (id, txt) => { $(id).querySelector('small').innerHTML = txt; };
+    const badge = (id, n) => { $(id).textContent = n; $(id).classList.toggle('hidden', !n); };
+    const gift = G.DailyUI.ready();
+    sub('pick-gift', gift ? 'Prêt !' : 'Demain');
+    $('pick-gift-n').classList.toggle('hidden', !gift);
     const pend = G.Progress.pending();
-    $('pick-goals-n').textContent = pend;
-    $('pick-goals-n').classList.toggle('hidden', !pend);
-    // Le bouton Jouer montre qui part au combat (« ? » en aléatoire).
+    sub('pick-goals', pend ? pend + ' à récupérer' : 'En cours');
+    badge('pick-goals-n', pend);
+    const dexAll = G.DEX.filter(p => G.SPRITE_META[p.dex]).length, dexOwn = G.DEX.filter(p => G.SPRITE_META[p.dex] && (s.owned || {})[p.dex]).length;
+    sub('pick-dex', dexOwn + ' / ' + dexAll);
+    badge('pick-dex-n', G.MenuUI.dexPending());
+    sub('pick-gacha', t.t1 ? t.t1 + ' à ouvrir' : 'Poké Balls');
+    badge('pick-shop-n', t.t1);
+    sub('pick-upg', mon.name);
+    sub('pick-tower', 'Record ' + (G.Tower.best() || 0));
+    $('pick-tower').classList.toggle('on', s.pickMode === 'tower');
+
+    // Mode et bouton Jouer (il montre qui part au combat, « ? » en aléatoire).
+    const tower = s.pickMode === 'tower';
+    $('hub-mode').innerHTML = `<small>Mode</small><b>${tower ? 'Tour' : 'Aventure'}</b>`;
     const pb = $('pick-play');
     pb.innerHTML = '';
     if (s.partnerRandom) pb.insertAdjacentHTML('beforeend', '<b class="pick-q pp-q">?</b>');
     else pb.appendChild(G.UI.spriteCanvas(mon.dex, 40, 34, { fit: true, shiny }));
-    pb.insertAdjacentHTML('beforeend', '<span>Jouer</span>');
-    $('pick-tower').title = 'Tour de Combat · meilleur étage : ' + G.Tower.best();
-    const dp = G.MenuUI.dexPending();
-    $('pick-dex-n').textContent = dp;
-    $('pick-dex-n').classList.toggle('hidden', !dp);
+    pb.insertAdjacentHTML('beforeend', `<span>JOUER</span><em>${tower ? 'Tour de Combat' : 'Aventure'}</em>`);
+    showView();
+  }
+
+  /** Version de Nika : la boîte en accès rapide sur l'accueil (le partenaire d'abord). */
+  function quick(mons0) {
+    const s = G.DB.save, q = $('pick-quick');
+    q.innerHTML = '';
+    const list = [s.partner].concat(mons0.slice().reverse().filter(d => d !== s.partner)).slice(0, 8);
+    for (const dex of list) {
+      const b = document.createElement('button');
+      b.className = 'qk' + (dex === s.partner && !s.partnerRandom ? ' on' : '');
+      b.appendChild(G.UI.spriteCanvas(dex, 56, 46, { fit: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
+      b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
+      b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select'); render(); };
+      q.appendChild(b);
+    }
+    for (let i = list.length, f = G.Box.free(); i < 8 && f > 0; i++, f--) q.insertAdjacentHTML('beforeend', '<span class="qk empty">+</span>');
+    const all = document.createElement('button');
+    all.className = 'qk qk-all';
+    all.innerHTML = `<b>Boîte</b><small>${mons0.length}/${G.Box.cap()}</small>`;
+    all.onclick = () => go('box');
+    q.appendChild(all);
+    $('hub-boxn').textContent = mons0.length + ' / ' + G.Box.cap();
+  }
+
+  // Onglets du bas : Accueil, Équipe, Boîte, Ligue (Boutique ouvre son écran).
+  let view = 'home';
+  function go(v) {
+    if (v === 'shop') { G.GachaUI.open(); return; }
+    view = v;
+    G.Audio.sfx('select');
+    showView();
+  }
+  function showView() {
+    document.querySelectorAll('#scr-pick .hub-view').forEach(el => el.classList.toggle('on', el.dataset.v === view));
+    document.querySelectorAll('#hub-tabs button').forEach(el => el.classList.toggle('on', el.dataset.v === view));
+    $('scr-pick').dataset.view = view;
   }
 
   function play() {
     const save = G.DB.save;
+    if (save.pickMode === 'tower') G.Tower.start();     // version de Nika : la Tour de Combat (tower.js)
     if (save.partnerRandom) {
       const mons = box();
       if (mons.length) { save.partner = G.U.pick(mons); save.partnerShiny = false; }
@@ -307,19 +388,27 @@ G.PickUI = (() => {
 
   function init() {
     $('pick-play').onclick = play;
-    // Version de Nika : la Tour de Combat (tower.js) est une partie à part.
-    $('pick-tower').onclick = () => { G.Tower.start(); play(); };
+    const mode = m => { const s = G.DB.save; s.pickMode = m; G.DB.commit(); G.Audio.sfx('select'); render(); };
+    $('hub-mode').onclick = () => mode(G.DB.save.pickMode === 'tower' ? 'run' : 'tower');
+    $('pick-tower').onclick = () => mode(G.DB.save.pickMode === 'tower' ? 'run' : 'tower');
     $('pick-upg').onclick = () => G.MenuUI.openUpgrades();
     $('pick-gacha').onclick = () => G.GachaUI.open();
     $('pick-dex').onclick = () => G.MenuUI.openDex();
     $('pick-goals').onclick = () => G.GoalsUI.open('missions');
-    $('pick-set').innerHTML = G.Icons.html('gear', 18);
-    // Icônes des boutons du bas (refonte du menu).
-    for (const [id, ico] of [['pick-upg', 'up'], ['pick-gacha', 'ticket'], ['pick-dex', 'book'], ['pick-goals', 'trophy'], ['pick-tower', 'crown']]) {
-      const b = $(id);
-      if (!b.querySelector('.pa-ico')) b.insertAdjacentHTML('afterbegin', `<span class="pa-ico">${G.Icons.html(ico, 18)}</span>`);
-    }
+    $('pick-gift').onclick = () => {
+      if (!G.DailyUI.maybeShow(render)) G.UI.toast('Reviens demain pour le prochain cadeau !');
+    };
+    $('pick-set').innerHTML = G.Icons.html('gear', 20);
     $('pick-set').onclick = () => G.SettingsUI.open('sound');
+    // Icônes des tuiles et des onglets.
+    for (const [id, ico] of [['pick-gift', 'gift'], ['pick-goals', 'trophy'], ['pick-dex', 'book'], ['pick-gacha', 'ticket'], ['pick-upg', 'up'], ['pick-tower', 'crown']]) {
+      $(id).querySelector('.ht-ico').innerHTML = G.Icons.html(ico, 34);
+    }
+    const TAB_ICO = { team: 'star', box: 'ball', home: 'home', shop: 'ticket', league: 'medal1' };
+    document.querySelectorAll('#hub-tabs button').forEach(b => {
+      b.querySelector('.ht-ico').innerHTML = G.Icons.html(TAB_ICO[b.dataset.v], 26);
+      b.onclick = () => go(b.dataset.v);
+    });
     // « Retour » des écrans Améliorations et Gacha : revient ici.
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
   }
