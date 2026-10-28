@@ -53,8 +53,9 @@ G.Game = (() => {
   }
 
   /** Móvil en vertical: aviso de girarlo (y pausa). */
+  // Version de Nika : plus d'aviso « tourne ton téléphone », on peut jouer debout.
   function checkOrientation() {
-    const portrait = G.Touch.active && innerHeight > innerWidth;
+    const portrait = false;
     const el = document.getElementById('rotate');
     if (!el) return;
     if (portrait && !document.getElementById('rotate-ico').innerHTML) document.getElementById('rotate-ico').innerHTML = G.Icons.html('phone', 48);

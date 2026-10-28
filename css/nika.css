@@ -467,3 +467,9 @@
 /* Boutique : pas assez de place dans la boîte */
 #gacha-room { color: #ffb4a8; font-weight: 700; margin: 4px 0; }
 #buy-t1 small { opacity: .8; font-weight: 400; }
+
+/* Version de Nika : téléphone debout (on peut jouer sans tourner l'écran) */
+@media (max-width: 600px) and (orientation: portrait) {
+  .scr { padding: max(8px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px)); }
+  .scr > .box { max-height: 100%; overflow-y: auto; }
+}
