@@ -310,6 +310,12 @@ G.HUD = (() => {
       }
       ctx.restore();
     }
+    // Version de Nika : le Pokémon volé par la Team Rocket et le temps qu'il reste.
+    const rk = G.Rocket.thief;
+    if (rk && !rk.dead && G.Rocket.stolen) {
+      ctx.textAlign = 'center'; ctx.font = F(800, 12); ctx.fillStyle = '#ff6b7a';
+      ctx.fillText('TEAM ROCKET · ' + G.DEX_BY[G.Rocket.stolen.dex].name + ' · ' + Math.ceil(Math.max(0, rk.life)) + ' s', w / 2, boss ? 112 : 90);
+    }
     if (G.Rift.inArena) {
       ctx.textAlign = 'center';
       ctx.font = F(800, 12);

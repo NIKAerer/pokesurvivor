@@ -100,12 +100,14 @@ G.Team = (() => {
   let allies = [];
   let leader = null;
 
-  function reset(pl) { leader = pl; allies = []; G.Roles.reset(); G.Roles.recompute(); }
+  function reset(pl) { leader = pl; allies = []; held = 0; G.Roles.reset(); G.Roles.recompute(); }
 
   /** Tous les membres, le chef en premier. */
   function members() { return leader ? [leader, ...allies] : []; }
 
-  function full() { return allies.length + 1 >= MAX; }
+  // (Un Pokémon volé par la Team Rocket garde sa place jusqu'à la fin du vol.)
+  let held = 0;
+  function full() { return allies.length + 1 + held >= MAX; }
 
   function has(dex) { return members().some(m => m.dex === dex || G.Team.family(m.dex) === G.Team.family(dex)); }
 
@@ -287,6 +289,27 @@ G.Team = (() => {
     return true;
   }
 
+  /** Version de Nika : la Team Rocket vole un allié au hasard (rocket.js). */
+  function steal() {
+    if (!allies.length) return null;
+    const a = allies.splice(Math.floor(Math.random() * allies.length), 1)[0];
+    allies.forEach((x, i) => { x.slot = i; });
+    held = 1;
+    G.Roles.recompute();
+    return a;
+  }
+  /** Perdu pour la partie : sa place se libère. */
+  function release() { held = 0; }
+  /** On le récupère : il revient à sa place derrière le chef. */
+  function giveBack(a) {
+    held = 0;
+    if (!a || !leader || full()) return false;
+    a.slot = allies.length; a.x = leader.x; a.y = leader.y;
+    allies.push(a);
+    G.Roles.recompute();
+    return true;
+  }
+
   /** Nouveaux Pokémon possibles pour les cartes : formes de base, hasard pondéré par rareté. */
   const RARE_W = { 1: 10, 2: 6, 3: 3, 4: 1.2, 5: 0.4 };
   function recruitOffers(n) {
@@ -308,6 +331,6 @@ G.Team = (() => {
   function update(dt) { for (const a of allies) a.update(dt); G.Roles.update(dt); }
   function tick(dt, now) { if (!leader || leader.dead) return; for (const a of allies) G.Combat.tick(dt, a, now); }
 
-  return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, update, tick, family, evoTick, drawEvo,
+  return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, steal, giveBack, release, update, tick, family, evoTick, drawEvo,
            get allies() { return allies; }, get leader() { return leader; } };
 })();
