@@ -423,6 +423,12 @@ G.PickUI = (() => {
       b.querySelector('.ht-ico').innerHTML = G.Icons.html(TAB_ICO[b.dataset.v], 26);
       b.onclick = () => go(b.dataset.v);
     });
+    // Équipe, Boîte, Ligue : un bouton « Retour » vers l'Accueil, comme sur les autres écrans.
+    const VIEW_NAME = { team: 'Équipe', box: 'Boîte', league: 'Ligue' };
+    document.querySelectorAll('#scr-pick .hub-view:not([data-v="home"])').forEach(v => {
+      v.insertAdjacentHTML('afterbegin', `<div class="hub-backrow"><button class="ts-back" data-sfx="back" aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button><h2>${VIEW_NAME[v.dataset.v] || ''}</h2></div>`);
+      v.querySelector('.ts-back').onclick = () => { view = 'home'; showView(); };
+    });
     // « Retour » des écrans Améliorations et Gacha : revient ici.
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
   }
