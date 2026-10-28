@@ -249,7 +249,8 @@
   #scr-pick .pick-main { min-height: 0; height: calc(100vh - 158px); }
   #scr-pick .pick-actions .btn { padding: 5px 4px; font-size: 13px; }
   #scr-pick .pick-actions #pick-play { font-size: 16px; }
-  #scr-pick .pick-stage canvas { width: 84px !important; }
+  #scr-pick .pick-stage canvas { width: 96px !important; }
+  #scr-pick .pick-num { display: none; }
   #scr-pick .pick-name { font-size: 16px; }
 }
 @media (max-height: 460px) {
@@ -375,3 +376,53 @@
   .dg-goal small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
 }
 @media (max-height: 420px) { #scr-dex .gen-tab { padding: 2px 10px; } #scr-dex .gen-tab b { font-size: 13px; } }
+
+/* ============ Refonte du menu (version de Nika, 2026-10-28) ============ */
+#scr-pick .pick-box { position: relative; overflow: hidden; border-radius: 22px;
+  box-shadow: 0 10px 40px #0008, inset 0 0 0 1px #ffffff1f; }
+#scr-pick .pick-box::before { content: ""; position: absolute; inset: -40%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--c) 40%, transparent), transparent 40%),
+              radial-gradient(circle at 75% 65%, color-mix(in srgb, var(--c2) 30%, transparent), transparent 42%);
+  animation: pickglow 14s ease-in-out infinite alternate; opacity: .55; }
+@keyframes pickglow { to { transform: translate(6%, -4%) rotate(8deg); } }
+#scr-pick .pick-box > * { position: relative; z-index: 1; }
+/* En-tête : porte-monnaie en pastilles */
+.pick-wallet { gap: 6px; }
+.pw { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 6px; border-radius: 999px;
+  background: #0b1020b3; box-shadow: inset 0 0 0 1px #ffffff22; font-size: 14px; }
+.pw .coin { width: 16px; height: 16px; }
+/* Ligue : une carte */
+#scr-pick .pick-league { padding: 4px 10px; border-radius: 12px; background: #0b102099; box-shadow: inset 0 0 0 1px #ffffff18; margin-top: 4px; }
+/* Héros : estrade lumineuse */
+#scr-pick .pick-hero { box-shadow: 0 0 24px color-mix(in srgb, var(--c) 45%, transparent), inset 0 0 0 1px #ffffff22;
+  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 40%, #0b1020) 0, color-mix(in srgb, var(--c) 14%, #0b1020cc) 70%); }
+/* Fiche en onglets */
+.pick-info { display: flex; flex-direction: column; padding-top: 0 !important; box-shadow: inset 0 0 0 1px #ffffff18; }
+.ps-tabs { position: sticky; top: 0; z-index: 2; display: flex; gap: 4px; padding: 6px 0 5px; background: linear-gradient(#0b1020f2 75%, #0b102000); }
+.ps-tab { flex: 1; padding: 5px 4px; border-radius: 9px; border: 0; background: #ffffff12; color: #cfd9ec; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.ps-tab.on { background: color-mix(in srgb, var(--c) 55%, #1a2440); color: #fff; box-shadow: inset 0 -2px 0 #ffd23f; }
+.ps-pane { display: none; }
+.ps-pane.on { display: block; animation: psin .18s ease-out; }
+@keyframes psin { from { opacity: 0; transform: translateY(4px); } }
+/* Boîte : cartes plus nettes */
+#scr-pick .pick-side { padding: 6px; border-radius: 14px; background: #0b102080; box-shadow: inset 0 0 0 1px #ffffff18; }
+#scr-pick .pick-card { transition: transform .12s, box-shadow .12s; box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--c) 70%, #000); }
+#scr-pick .pick-card:hover { transform: translateY(-2px); }
+#scr-pick .pick-card.on { box-shadow: 0 0 12px #ffd23f88, inset 0 -3px 0 #ffd23f; }
+/* Barre du bas : icônes + Jouer avec le Pokémon */
+#scr-pick .pick-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; position: relative; }
+.pa-ico { display: inline-flex; filter: drop-shadow(0 1px 0 #0006); }
+#pick-play { gap: 8px !important; }
+#pick-play canvas { width: 34px; height: auto; margin: -6px 0; filter: drop-shadow(0 2px 2px #0007); }
+#pick-play .pp-q { font-size: 22px; color: #6b3d00; line-height: 1; }
+#pick-play span { letter-spacing: 1px; }
+@media (max-height: 420px) {
+  .pw { padding: 1px 8px 1px 4px; font-size: 12px; }
+  #scr-pick .pick-league { padding: 2px 8px; }
+  .ps-tab { padding: 3px 2px; font-size: 11px; }
+  #scr-pick .pick-side { padding: 4px; }
+  #scr-pick .pick-actions .btn { gap: 4px; }
+  .pa-ico img, .pa-ico canvas { width: 14px; height: 14px; }
+  #pick-play canvas { width: 26px; }
+}
+@media (max-width: 760px) { #scr-pick .pick-actions .btn:not(#pick-play) { font-size: 0; } #scr-pick .pick-actions .btn:not(#pick-play) .pa-ico { font-size: 13px; } }

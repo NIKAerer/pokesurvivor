@@ -63,9 +63,9 @@ G.PickUI = (() => {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
     const t = s.tickets || { t1: 0, t10: 0 };
-    $('pick-wallet').innerHTML = `<span class="coin"></span> <b>${s.coins.toLocaleString('fr')}</b>
-      &nbsp; ${G.Icons.html('ticket', 16)} <b>${t.t1}</b>
-      &nbsp; ${G.Icons.html('pball', 16)} <b>${G.Rank.balls()}</b>`;
+    $('pick-wallet').innerHTML = `<span class="pw" title="Pièces"><span class="coin"></span><b>${s.coins.toLocaleString('fr')}</b></span>
+      <span class="pw" title="Poké Balls à ouvrir (Boutique)">${G.Icons.html('ticket', 16)}<b>${t.t1}</b></span>
+      <span class="pw" title="Super Bonbons (rang)">${G.Icons.html('pball', 16)}<b>${G.Rank.balls()}</b></span>`;
 
     // Le Pokémon choisi : grand sprite sur une estrade de la couleur de son type.
     const hero = $('pick-hero');
@@ -96,7 +96,11 @@ G.PickUI = (() => {
     const info = $('pick-info');
     const statBar = (lbl, v, max, txt, col) => `<div class="ps-row"><span>${lbl}</span>
       <i><b style="width:${Math.round(Math.min(1, v / max) * 100)}%;background:${col}"></b></i><em>${txt}</em></div>`;
-    let html = `<h4>Rôle</h4><p class="ps-role">${G.Roles.chip(mon.dex)} Bonus d'équipe : ${G.Roles.info(mon.dex).team} (compte double pour ton chef).</p>`
+    // Version de Nika (refonte du menu) : la fiche en 3 onglets au lieu d'une longue liste.
+    const TABS = [['fiche', 'Fiche'], ['moves', 'Attaques'], ['evo', 'Évolutions']];
+    const tab = TABS.some(x => x[0] === s.pickTab) ? s.pickTab : 'fiche';
+    let html = `<div class="ps-tabs">${TABS.map(([k, n]) => `<button class="ps-tab${k === tab ? ' on' : ''}" data-t="${k}">${n}</button>`).join('')}</div>`
+      + `<div class="ps-pane" data-p="fiche"><h4>Rôle</h4><p class="ps-role">${G.Roles.chip(mon.dex)} Bonus d'équipe : ${G.Roles.info(mon.dex).team} (compte double pour ton chef).</p>`
       + (G.Talents.name(mon.dex) ? `<h4>Talent</h4><p class="ps-role">${G.Talents.chip(mon.dex)} ${G.Talents.desc(mon.dex)}</p>` : '')
       + `<h4>Statistiques</h4>` +
       statBar('PV', mon.hp, 185, mon.hp, '#5fe08a') +
@@ -115,16 +119,22 @@ G.PickUI = (() => {
       chain.push([nx[0][0], nx[0][1], nx.length - 1]);
       d = nx[0][0];
     }
-    html += '<h4>Évolutions</h4><div class="ps-evo" id="pick-evo"></div>';
+    html += '</div><div class="ps-pane" data-p="evo"><h4>Évolutions</h4><div class="ps-evo" id="pick-evo"></div></div>';
     // Les attaques qu'il peut apprendre (la première est sa signature).
     const learn = G.Team.learnset(mon.dex);
     const myRole = G.Roles.moveRole(mon.dex);
-    html += `<h4>Attaques (garde 4 sur ${learn.length})</h4><div class="ps-moves">` + learn.map((id, k) => {
+    html += `<div class="ps-pane" data-p="moves"><h4>Attaques (garde 4 sur ${learn.length})</h4><div class="ps-moves">` + learn.map((id, k) => {
       const d = G.Moves.BY_ID[id];
       const tip = (G.Roles.MOVE_ROLE[d.role] || '') + (d.kind !== 'buff' ? ' · ' + G.Roles.CAT_NAME[d.cat] : '');
       return `<span class="ps-mv${k ? '' : ' sig'}${d.role === myRole ? ' role' : ''}" title="${tip}" style="--m:${G.U.TYPE_COLOR[d.type]}">${G.Icons.html('move:' + id, 18)}<small>${d.name}${k ? '' : ' ★'}</small>${d.kind !== 'buff' ? `<i class="cat ${d.cat}">${d.cat === 'P' ? 'Phy' : 'Spé'}</i>` : ''}</span>`;
-    }).join('') + '</div><small class="note">Bordure colorée : attaque de son rôle.</small>';
+    }).join('') + '</div><small class="note">Bordure colorée : attaque de son rôle. ★ : attaque signature.</small></div>';
     info.innerHTML = html;
+    const showTab = k => {
+      info.querySelectorAll('.ps-tab').forEach(b => b.classList.toggle('on', b.dataset.t === k));
+      info.querySelectorAll('.ps-pane').forEach(p => p.classList.toggle('on', p.dataset.p === k));
+    };
+    showTab(tab);
+    info.querySelectorAll('.ps-tab').forEach(b => b.onclick = () => { s.pickTab = b.dataset.t; G.Audio.sfx('select'); showTab(b.dataset.t); });
     const evoBox = $('pick-evo');
     chain.forEach(([d, lv, more], k) => {
       if (k) evoBox.insertAdjacentHTML('beforeend', `<span class="ps-arrow">→<small>N.${lv}${more ? ' +' + more : ''}</small></span>`);
@@ -187,6 +197,12 @@ G.PickUI = (() => {
     const pend = G.Progress.pending();
     $('pick-goals-n').textContent = pend;
     $('pick-goals-n').classList.toggle('hidden', !pend);
+    // Le bouton Jouer montre qui part au combat (« ? » en aléatoire).
+    const pb = $('pick-play');
+    pb.innerHTML = '';
+    if (s.partnerRandom) pb.insertAdjacentHTML('beforeend', '<b class="pick-q pp-q">?</b>');
+    else pb.appendChild(G.UI.spriteCanvas(mon.dex, 40, 34, { fit: true, shiny }));
+    pb.insertAdjacentHTML('beforeend', '<span>Jouer</span>');
     const dp = G.MenuUI.dexPending();
     $('pick-dex-n').textContent = dp;
     $('pick-dex-n').classList.toggle('hidden', !dp);
@@ -210,6 +226,11 @@ G.PickUI = (() => {
     $('pick-dex').onclick = () => G.MenuUI.openDex();
     $('pick-goals').onclick = () => G.GoalsUI.open('missions');
     $('pick-set').innerHTML = G.Icons.html('gear', 18);
+    // Icônes des boutons du bas (refonte du menu).
+    for (const [id, ico] of [['pick-upg', 'up'], ['pick-gacha', 'ticket'], ['pick-dex', 'book'], ['pick-goals', 'trophy']]) {
+      const b = $(id);
+      if (!b.querySelector('.pa-ico')) b.insertAdjacentHTML('afterbegin', `<span class="pa-ico">${G.Icons.html(ico, 18)}</span>`);
+    }
     $('pick-set').onclick = () => G.SettingsUI.open('sound');
     // « Retour » des écrans Améliorations et Gacha : revient ici.
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
