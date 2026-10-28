@@ -104,6 +104,7 @@ G.Game = (() => {
     G.Power.reset();
     G.Judgment.reset();
     G.Events.reset();
+    G.Rocket.reset();
     G.Weather.reset();
     G.Path.clear();
     G.Hazards.clear();
@@ -746,6 +747,7 @@ G.Game = (() => {
     G.Rift.update(dt, pl, time);
     G.Judgment.update(dt, pl, time);
     G.Events.update(dt, all, time);
+    G.Rocket.update(dt, pl, time);
     G.Weather.update(dt, time, pl);
     G.FX.update(dt);
 

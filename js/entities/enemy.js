@@ -929,7 +929,7 @@
         // El duende del tesoro se escapa si no lo atrapas a tiempo.
         if (e.behavior === 'thief' && (e.life -= dt) <= 0) {
           G.FX.burst(e.x, e.y - 10, '#ffd23f', 16, 140);
-          G.Spawner.say('¡' + e.name + ' se ha escapado!', 2.4);
+          if (e.rocket) G.Rocket.escaped(e); else G.Spawner.say('¡' + e.name + ' se ha escapado!', 2.4);
           list.splice(i, 1); byId.delete(e.id);
           if (G.Coop.isHost) G.Coop.enemyGone(e, false);
           continue;
