@@ -170,6 +170,7 @@ G.League = (() => {
     G.DB.save.tickets.t1 += tickets;
     const balls = 10 + i * 2;                      // version de Nika : Super Bonbons pour le rang
     G.DB.save.balls = (G.DB.save.balls || 0) + balls;
+    G.DB.save.ct = (G.DB.save.ct | 0) + 1;         // version de Nika : une CT par victoire
     L.step = i + 1;
     if (L.step >= STEPS.length) L.done = true;
     G.DB.commit(true);
@@ -177,7 +178,7 @@ G.League = (() => {
     const msg = st.kind === 'gym' ? 'Badge ' + st.badge + ' obtenu !'
       : st.kind === 'elite' ? st.who + ' est battu' + (['Olga', 'Agatha', 'Marion'].includes(st.who) ? 'e' : '') + ' !'
       : 'Tu es le Maître de la Ligue de ' + st.region + ' !' + (STEPS[i + 1] ? ' Direction ' + STEPS[i + 1].region + ' !' : '');
-    G.Spawner.say(msg + ' +' + coins + ' pièces, +' + tickets + ' Poké Balls, +' + balls + ' Super Bonbons', 4.5, true);
+    G.Spawner.say(msg + ' +' + coins + ' pièces, +' + tickets + ' Poké Balls, +' + balls + ' Super Bonbons, +1 CT', 4.5, true);
     G.Audio.sfx('legend');
     if (pl) {
       G.FX.ring(pl.x, pl.y, 10, 180, G.U.TYPE_COLOR[st.type] || '#ffd23f', 1, 7);
