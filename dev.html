@@ -80,6 +80,7 @@
 <!-- seo:end -->
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/nika.css">
+<link rel="stylesheet" href="css/hub.css">
 </head>
 <body>
 
@@ -527,14 +528,45 @@
 </section>
 
 <!-- ====== Choix rapide du Pokémon (version de Nika, js/ui/pick-ui.js) ====== -->
-<section id="scr-pick" class="scr dim hidden">
-  <div class="box pick-box">
-    <div class="row between"><h1 class="pick-title">PokéSurvivor</h1><span class="row" style="gap:10px"><span class="pick-wallet" id="pick-wallet"></span><button id="pick-set" class="btn small ghost" title="Paramètres"></button></span></div>
-    <div class="pick-league" id="pick-league"></div>
-    <div class="pick-main">
-      <div class="pick-hero" id="pick-hero"></div>
-      <div class="pick-info" id="pick-info"></div>
-      <div class="pick-side">
+<section id="scr-pick" class="scr hidden hub">
+  <!-- Version de Nika : menu « Couleur du type » (le fond prend la couleur du type du partenaire). -->
+  <div class="hub-top">
+    <div class="hub-me"><span class="hub-av" id="hub-av"></span><b>Nika</b></div>
+    <div class="hub-league" id="pick-league"></div>
+    <span class="pick-wallet" id="pick-wallet"></span>
+    <button id="pick-set" class="hub-round" aria-label="Paramètres"></button>
+  </div>
+  <div class="hub-body">
+    <!-- Accueil -->
+    <div class="hub-view on" data-v="home">
+      <div class="hub-boxcol">
+        <div class="hub-boxhead"><b>Ta boîte</b><span id="hub-boxn"></span></div>
+        <div class="hub-quick" id="pick-quick"></div>
+      </div>
+      <div class="hub-tiles hub-left">
+        <button id="pick-gift" class="hub-tile"><span class="ht-ico"></span><b>Cadeau</b><small></small><span id="pick-gift-n" class="pick-badge hidden">!</span></button>
+        <button id="pick-goals" class="hub-tile"><span class="ht-ico"></span><b>Missions</b><small></small><span id="pick-goals-n" class="pick-badge hidden"></span></button>
+        <button id="pick-dex" class="hub-tile"><span class="ht-ico"></span><b>Pokédex</b><small></small><span id="pick-dex-n" class="pick-badge hidden"></span></button>
+      </div>
+      <div class="hub-stage">
+        <div class="pick-hero" id="pick-hero"></div>
+      </div>
+      <div class="hub-tiles hub-right">
+        <button id="pick-gacha" class="hub-tile"><span class="ht-ico"></span><b>Boutique</b><small></small><span id="pick-shop-n" class="pick-badge hidden"></span></button>
+        <button id="pick-upg" class="hub-tile"><span class="ht-ico"></span><b>Améliorer</b><small></small></button>
+        <button id="pick-tower" class="hub-tile"><span class="ht-ico"></span><b>Tour</b><small></small></button>
+      </div>
+    </div>
+    <!-- Équipe : la fiche du partenaire -->
+    <div class="hub-view" data-v="team">
+      <div class="hub-panel hub-team">
+        <div class="hub-rankbox" id="pick-rankbox"></div>
+        <div class="pick-info" id="pick-info"></div>
+      </div>
+    </div>
+    <!-- Boîte : tous tes Pokémon -->
+    <div class="hub-view" data-v="box">
+      <div class="hub-panel pick-side">
         <div class="pick-sorthead"><p class="sub" id="pick-count" style="margin:0"></p>
           <label class="pick-sort">Trier <select id="pick-sort">
             <option value="new">Récents</option><option value="dex">N° Pokédex</option>
@@ -544,16 +576,25 @@
         <div class="pick-cards" id="pick-cards"></div>
       </div>
     </div>
-    <div class="pick-actions">
-      <button id="pick-upg" class="btn">Améliorations</button>
-      <button id="pick-gacha" class="btn">Boutique</button>
-      <button id="pick-dex" class="btn">Pokédex<span id="pick-dex-n" class="pick-badge hidden"></span></button>
-      <button id="pick-goals" class="btn">Missions<span id="pick-goals-n" class="pick-badge hidden"></span></button>
-      <button id="pick-tower" class="btn" title="Tour de Combat : des dresseurs de plus en plus forts">Tour</button>
-      <button id="pick-play" class="btn gold" data-sfx="confirm">Jouer</button>
+    <!-- Ligue -->
+    <div class="hub-view" data-v="league">
+      <div class="hub-panel" id="hub-leaguefull"></div>
     </div>
-    <p class="pick-credits">Fan game non commercial d'après PokéSurvivor de JPTER78 · Sprites : PMD SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Creatures / GAME FREAK</p>
   </div>
+  <div class="hub-bottom">
+    <nav class="hub-tabs" id="hub-tabs">
+      <button data-v="team"><span class="ht-ico"></span>Équipe</button>
+      <button data-v="box"><span class="ht-ico"></span>Boîte</button>
+      <button data-v="home" class="on"><span class="ht-ico"></span>Accueil</button>
+      <button data-v="shop"><span class="ht-ico"></span>Boutique</button>
+      <button data-v="league"><span class="ht-ico"></span>Ligue</button>
+    </nav>
+    <div class="hub-playrow">
+      <button id="hub-mode" class="hub-mode"></button>
+      <button id="pick-play" class="hub-play" data-sfx="confirm"></button>
+    </div>
+  </div>
+  <p class="pick-credits">Fan game non commercial d'après PokéSurvivor de JPTER78 · Sprites : PMD SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Creatures / GAME FREAK</p>
 </section>
 
 <!-- ====== Table des types (version de Nika, js/ui/types-ui.js) ====== -->
