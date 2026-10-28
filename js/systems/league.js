@@ -126,6 +126,7 @@ G.League = (() => {
 
   /** Appelé par le spawner à chaque image (le spawner ne tourne pas dans une arène). */
   function update(t) {
+    if (T()) return;                                 // la Tour a ses propres salles (tower.js)
     const st = current();
     if (!st || t < nextAt || tooLate(t) || G.Rift.inArena || G.Judgment.active) return;
     if (G.Coop.active && !G.Coop.isHost) return;

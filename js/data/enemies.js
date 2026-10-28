@@ -246,7 +246,7 @@ G.Enemies = (() => {
   }
 
   return {
-    TIERS, BOSS_SLOTS, rollRun, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs, swarmDefs,
+    TIERS, BOSS_SLOTS, rollRun, defFor, scale, bossScale, bagAt, upcomingDex, candidates, hordeTypes, hordeDefs, swarmDefs,
     get BOSSES() { if (!bosses) rollRun(); return bosses; },
     get cast() { if (!cast) rollRun(); return cast; }
   };
