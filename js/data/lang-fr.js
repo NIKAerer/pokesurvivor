@@ -522,7 +522,7 @@ G.I18n.add({
   '¡{x} se ha asustado y ha huido…!': "{x} a eu peur et s'est enfui… !", '{x} se ha cansado de esperar y se ha ido…': "{x} en a eu marre d'attendre et est parti…",
   '¡Has llevado a {x} a casa! Te lo agradece': 'Tu as ramené {x} chez lui ! Il te remercie', '¡{x} se une a tu equipo!': '{x} rejoint ton équipe !',
   '¡{x} te da las gracias! (+150 monedas, ya lo tenías)': "{x} te remercie ! (+150 pièces, tu l'avais déjà)",
-  '¡Un {x} con un ticket ×10! ¡Atrápalo antes de que huya!': "Un {x} avec 5 Poké Balls ! Attrape-le avant qu'il s'enfuie !",
+  '¡Un {x} con un ticket ×10! ¡Atrápalo antes de que huya!': "Un {x} avec une Poké Ball ! Attrape-le avant qu'il s'enfuie !",
   '¡Un {x} cargado de monedas! ¡Atrápalo antes de que huya!': "Un {x} plein de pièces ! Attrape-le avant qu'il s'enfuie !",
   '¡{x} se ha escapado!': "{x} s'est échappé !", 'HORA DORADA · {x} s': 'HEURE DORÉE · {x} s', 'HORDA {x} · {x} s': 'HORDE {x} · {x} s',
   'Marca · {x} m': 'Repère · {x} m',

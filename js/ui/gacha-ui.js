@@ -61,14 +61,16 @@ G.GachaUI = (() => {
       `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
        <p class="note">· Une Épique ou mieux au plus tard toutes les ${G.Gacha.PITY_4} ouvertures (aussi une par une).<br>
        · Après ${G.Gacha.PITY_5} ouvertures sans Légendaire, la suivante en est une.<br>
-       · Los repetidos dan Pokémonedas. Los shiny no se repiten.<br>
+       · Un doublon donne des Bonbons de son espèce (pour monter son rang). Les shiny ne se répètent pas.<br>
+       · Boîte pleine (${G.Box.cap()} places) : un nouveau Pokémon donne ses Bonbons au lieu d'entrer. Agrandis-la au menu.<br>
        · Les Poké Balls se gagnent en partie ou s'achètent avec des pièces (le prix monte à chaque achat).</p>`;
 
     const t = s.tickets;
     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
     $('cost-10').innerHTML = `${G.Icons.html('ticket', 18)} 10`;
     $('cost-10b').innerHTML = `${G.Icons.html('ticket10', 18)} 1`;
-    $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> Poké Ball${t.t1 > 1 ? 's' : ''} à ouvrir`;
+    $('gacha-tickets').innerHTML = `Tu as ${G.Icons.html('ticket', 18)} <b>${t.t1}</b> Poké Ball${t.t1 > 1 ? 's' : ''} à ouvrir`
+      + ` · Boîte ${s.box.length}/${G.Box.cap()}` + (G.Box.full() ? ' <b class="warn">pleine</b>' : '');
     // Version de Nika : on peut aussi acheter des tickets avec les pièces.
     // Version de Nika : 300 pièces, +50 à chaque ticket acheté (gacha plus rare).
     const PRICE = { t1: 300 + 50 * (s.ticketsBought | 0), t10: 3000 };
@@ -129,7 +131,7 @@ G.GachaUI = (() => {
       c.appendChild(G.UI.spriteCanvas(r.dex, 132, 120, { lively: r.rarity >= 4 || r.shiny, scale: 2, shiny: r.shiny }));
       const tag = r.isNew
         ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : '¡NUEVO!'}</span>`
-        : `Repetido · <span class="coin"></span> +${r.refund}`;
+        : `${r.full ? 'Boîte pleine' : 'Repetido'} · ${G.Icons.html('candy', 12)} +${r.candy} Bonbons`;
       c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
       out.appendChild(c);
       if (!skipped) { G.Audio.sfx('reveal', { rarity: r.rarity }); await wait(n === 10 ? 150 : 0); }

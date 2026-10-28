@@ -223,7 +223,13 @@ G.Rift = (() => {
     let msg;
     if (s) {
       s.box = s.box || [1, 4, 7];
-      if (!s.box.includes(arena.dex)) {
+      if (!s.box.includes(arena.dex) && G.Box.full()) {
+        // Version de Nika : boîte pleine, il part chez le Prof. Chen (Pokédex + Bonbons).
+        G.DB.grant(arena.dex, 'rift');
+        G.Box.addCandy(arena.dex, G.Box.CANDY[5]);
+        msg = name + ' vaincu ! Boîte pleine : +' + G.Box.CANDY[5] + ' Bonbons ' + name;
+        if (G.DB.commit) G.DB.commit(true);
+      } else if (!s.box.includes(arena.dex)) {
         s.box.push(arena.dex);
         G.DB.grant(arena.dex, 'rift');
         msg = name + ' est capturé ! Il rejoint ton menu.';
@@ -231,13 +237,13 @@ G.Rift = (() => {
         if (G.DB.commit) G.DB.commit(true);
         if (G.Sprites.preload) G.Sprites.preload([arena.dex]);
       } else if (pl) {
-        pl.t1 += 5;
-        msg = name + ' vaincu ! +5 Poké Balls';
+        pl.t1 += 2;   // version de Nika : moins de tickets (5 -> 2)
+        msg = name + ' vaincu ! +2 Poké Balls';
       }
     }
     G.Spawner.say(msg || (name + ' vaincu !'), 3.4, true);
     if (pl) {
-      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, msg && msg.includes('Poké Balls') ? '+10 Poké Balls' : 'Capturé !', '#ff8ad8', true);
+      G.FX.dmgText(pl.x, pl.y - pl.bodyH - 10, msg && msg.includes('Poké Balls') ? '+2 Poké Balls' : msg && msg.includes('Boîte pleine') ? 'Boîte pleine' : 'Capturé !', '#ff8ad8', true);
       G.FX.ring(pl.x, pl.y, 8, 90, '#ff8ad8', 0.7, 5);
     }
   }

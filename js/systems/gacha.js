@@ -7,7 +7,8 @@
  *   - la tirada ×10 trae al menos un 4★ o superior
  *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
  * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
- * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
+ * Repetidos: version de Nika : des Bonbons de l'espèce (box.js), le triple pour un shiny.
+ * Boîte pleine : un nouveau Pokémon (pas shiny) donne ses Bonbons au lieu d'entrer.
  *
  * Se tira con TICKETS (se consiguen jugando):
  *   ×1   1 ticket
@@ -104,11 +105,11 @@ G.Gacha = (() => {
         else shiny = false;
       }
 
-      let isNew = false, refund = 0;
+      let isNew = false, refund = 0, candy = 0, full = false;
       if (shiny) {
         isNew = !save.shiny[mon.dex];
         if (isNew) save.shiny[mon.dex] = { at: Date.now(), from: 'gacha' };
-        else refund = REFUND[rarity] * 3;
+        else candy = G.Box.CANDY[rarity] * 3;
         if (!save.owned[mon.dex]) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
         if (!save.box.includes(mon.dex)) save.box.push(mon.dex);
       } else {
@@ -116,11 +117,13 @@ G.Gacha = (() => {
         // recruté en partie mais pas tiré au gacha devient jouable).
         isNew = !save.box.includes(mon.dex);
         if (!save.owned[mon.dex]) save.owned[mon.dex] = { at: Date.now(), from: 'gacha' };
+        if (isNew && G.Box.full()) { isNew = false; full = true; }
         if (isNew) save.box.push(mon.dex);
-        else refund = REFUND[rarity];
+        else candy = G.Box.CANDY[rarity];
       }
       save.coins += refund;
-      out.push({ dex: mon.dex, rarity, shiny, isNew, refund });
+      G.Box.addCandy(mon.dex, candy);
+      out.push({ dex: mon.dex, rarity, shiny, isNew, refund, candy, full });
     }
     save.stats.pulls = (save.stats.pulls || 0) + n;
     return out;

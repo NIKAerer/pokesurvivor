@@ -3,6 +3,9 @@
  * Super Bonbons (ramassés sur les ennemis, les boss, les dresseurs et la Ligue).
  * Chaque rang : +5 % de PV et +5 % de dégâts quand tu joues avec lui (game.js).
  *
+ * Les Bonbons de l'espèce (doublons de la Boutique, box.js) payent d'abord,
+ * les Super Bonbons complètent ce qui manque.
+ *
  * Sauvegarde : save.rank = { dex: rang }, save.balls = nombre de Super Bonbons.
  */
 G.Rank = (() => {
@@ -15,15 +18,24 @@ G.Rank = (() => {
   function of(dex) { const r = S().rank; return r && r[dex] ? Math.min(MAX, r[dex] | 0) : 0; }
   function balls() { return S().balls | 0; }
 
+  /** Ce que coûte le rang suivant : { candy, balls } (Bonbons de l'espèce d'abord). */
+  function pay(dex) {
+    const c = cost(of(dex)), candy = Math.min(c, G.Box.candy(dex));
+    return { candy, balls: c - candy };
+  }
+  function canUp(dex) { return of(dex) < MAX && balls() >= pay(dex).balls; }
+
   function up(dex) {
     const s = S(), r = of(dex);
-    if (r >= MAX || balls() < cost(r)) return false;
-    s.balls -= cost(r);
+    if (!canUp(dex)) return false;
+    const p = pay(dex);
+    G.Box.addCandy(dex, -p.candy);
+    s.balls -= p.balls;
     s.rank = s.rank || {};
     s.rank[dex] = r + 1;
     G.DB.commit(true);
     return true;
   }
 
-  return { MAX, BONUS, cost, of, balls, up };
+  return { MAX, BONUS, cost, of, balls, pay, canUp, up };
 })();

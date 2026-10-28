@@ -121,6 +121,10 @@ G.Icons = (() => {
     pball: { pal: { b: '#5f9bff', d: '#2f5fd0', w: '#e6f0ff', y: '#ffd23f' }, rows: [
       '............', '............', 'kk........kk', 'kykk.kkkkyk.', '.kyykbbbbkyk', '..kkbwbbdkk.',
       '..kkbbbbdkk.', '.kyykbbddkyk', 'kykk.kkkkyk.', 'kk........kk', '............', '............'] },
+    // Version de Nika : Bonbon d'une espèce (doublons de la Boutique).
+    candy: { pal: { b: '#ff8ad8', d: '#d04a9a', w: '#fff0fa', y: '#ffe08a' }, rows: [
+      '............', '............', 'kk........kk', 'kykk.kkkkyk.', '.kyykbbbbkyk', '..kkbwbbdkk.',
+      '..kkbbbbdkk.', '.kyykbbddkyk', 'kykk.kkkkyk.', 'kk........kk', '............', '............'] },
     ticket: { pal: { r: '#ff4b4b', d: '#b81f2a', w: '#f4f4ff', g: '#b9c0d0' }, rows: [
       '....kkkk....', '..kkrrrrkk..', '.krrwrrrrrk.', '.krwrrrrrdk.', 'krrrrkkrrrdk', 'kkkkkwwkkkkk',
       'kwwwwkkwwwgk', '.kwwwwwwwgk.', '.kwwwwwwggk.', '..kkggggkk..', '....kkkk....', '............'] },
