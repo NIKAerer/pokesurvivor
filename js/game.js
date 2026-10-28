@@ -388,6 +388,7 @@ G.Game = (() => {
     // Version de Nika : carnet de chaque Pokémon de l'équipe (fiche du menu).
     save.carnet = save.carnet || {};
     for (const m of G.Team.members()) {
+      if (m.guestT) continue;              // allié sauvage de passage
       const k = G.Team.family(m.dex), c = save.carnet[k] = save.carnet[k] || { runs: 0, time: 0, dmg: 0, lv: 0, lead: 0 };
       c.runs++;
       if (m === pl) c.lead++;

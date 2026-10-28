@@ -107,7 +107,30 @@ G.Team = (() => {
 
   // (Un Pokémon volé par la Team Rocket garde sa place jusqu'à la fin du vol.)
   let held = 0;
-  function full() { return allies.length + 1 + held >= MAX; }
+  function full() { return allies.filter(a => !a.guestT).length + 1 + held >= MAX; }
+
+  /** Version de Nika : un allié sauvage qui t'aide `secs` secondes (Pokémon perdu ramené). */
+  function guest(dex, secs) {
+    if (!leader || !G.DEX_BY[dex]) return null;
+    const a = new G.Ally(G.DEX_BY[dex], leader, allies.length);
+    a.addMove(G.startMoveOf(dex));
+    a.guestT = secs;
+    for (let i = 0; i < 60 && a.level < Math.max(1, leader.level - 1); i++) a.gainXp(Math.max(1, a.xpNext - a.xp));
+    allies.push(a);
+    G.Roles.recompute();
+    G.FX.ring(a.x, a.y, 6, 90, '#7dffb0', 0.6, 5);
+    return a;
+  }
+  function guestTick(dt) {
+    for (const a of allies.slice()) {
+      if (!a.guestT || (a.guestT -= dt) > 0) continue;
+      allies.splice(allies.indexOf(a), 1);
+      allies.forEach((x, i) => { x.slot = i; });
+      G.Roles.recompute();
+      G.FX.burst(a.x, a.y - 10, '#7dffb0', 20, 160);
+      G.Spawner.say(a.mon.name + ' retourne à la nature. Merci !', 2.6, true);
+    }
+  }
 
   function has(dex) { return members().some(m => m.dex === dex || G.Team.family(m.dex) === G.Team.family(dex)); }
 
@@ -334,9 +357,9 @@ G.Team = (() => {
     return out;
   }
 
-  function update(dt) { for (const a of allies) a.update(dt); G.Roles.update(dt); }
+  function update(dt) { guestTick(dt); for (const a of allies) a.update(dt); G.Roles.update(dt); }
   function tick(dt, now) { if (!leader || leader.dead) return; for (const a of allies) G.Combat.tick(dt, a, now); }
 
-  return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, steal, giveBack, release, update, tick, family, evoTick, drawEvo,
+  return { MAX, reset, members, full, recruit, shareXp, learnset, evoLevel, evolve, recruitOffers, steal, giveBack, release, guest, update, tick, family, evoTick, drawEvo,
            get allies() { return allies; }, get leader() { return leader; } };
 })();

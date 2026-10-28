@@ -29,7 +29,7 @@ G.Events = (() => {
     { name: 'Invasion de Chenipan !', dex: [10, 13], evo: [11, 14], behavior: 'chase', color: '#8ad65f' },
     { name: 'Banc de Tentacool !', dex: [72], evo: [72, 73], behavior: 'chase', color: '#5fb8ff' }
   ];
-  const SWARM_EVO = 600;
+  const SWARM_EVO = 600, GUEST_TIME = 120;
   const THIEF_FIRST = [120, 240], THIEF_NEXT = [240, 360], THIEF_LIFE = 15;
   const authority = () => !G.Coop.active || G.Coop.isHost;
 
@@ -238,6 +238,8 @@ G.Events = (() => {
     G.Audio.sfx('legend');
     if (grant && G.onRescue) G.onRescue(dex, name);
     else say('¡Has llevado a ' + name + ' a casa! Te lo agradece', 3.2, '#7dffb0');
+    // Version de Nika : il t'accompagne 2 minutes pour t'aider (pas en coopération).
+    if (!G.Coop.active && pl && !pl.dead && G.Team.guest(dex, GUEST_TIME)) setTimeout(() => say(name + ' t\'accompagne 2 minutes !', 3), 3300);
   }
 
   function gone(msg) {
