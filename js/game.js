@@ -759,6 +759,7 @@ G.Game = (() => {
     G.Events.update(dt, all, time);
     G.Rocket.update(dt, pl, time);
     G.Weather.update(dt, time, pl);
+    G.Tuto.update(time, !!pl.uid);
     G.FX.update(dt);
 
     G.Audio.music(G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? (G.Rift.inGym ? 'boss' : 'rift') : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
