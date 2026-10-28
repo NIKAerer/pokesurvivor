@@ -60,6 +60,22 @@ G.PickUI = (() => {
     G.DailyUI.maybeShow(render);       // version de Nika : cadeau du jour
   }
 
+  /** Version de Nika : le carnet du Pokémon (rareté, depuis quand, ses records). */
+  function carnet(mon) {
+    const s = G.DB.save, c = (s.carnet || {})[mon.dex], own = (s.owned || {})[mon.dex];
+    const since = own && own.at ? new Date(own.at).toLocaleDateString('fr') : null;
+    const cell = (k, v) => `<span><small>${k}</small><b>${v}</b></span>`;
+    return `<h4>Carnet</h4><div class="ps-carnet">`
+      + cell('Rareté', `<span style="color:${G.Gacha.RARITY_COLOR[mon.rarity]}">${G.UI.stars(mon.rarity, 10)}</span>`)
+      + cell('Bonbons', `${G.Icons.html('candy', 12)} ${G.Box.candy(mon.dex)}`)
+      + (since ? cell('Avec toi depuis', since) : '')
+      + cell('Parties', c ? c.runs + (c.lead ? ` (${c.lead} en chef)` : '') : 0)
+      + cell('Meilleur temps', c ? G.U.mmss(c.time) : '–')
+      + cell('Niveau max', c ? c.lv : '–')
+      + cell('Record de dégâts', c ? c.dmg.toLocaleString('fr') : '–')
+      + `</div>`;
+  }
+
   function render() {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
@@ -113,6 +129,7 @@ G.PickUI = (() => {
     const tab = TABS.some(x => x[0] === s.pickTab) ? s.pickTab : 'fiche';
     let html = `<div class="ps-tabs">${TABS.map(([k, n]) => `<button class="ps-tab${k === tab ? ' on' : ''}" data-t="${k}">${n}</button>`).join('')}</div>`
       + `<div class="ps-pane" data-p="fiche"><h4>Rôle</h4><p class="ps-role">${G.Roles.chip(mon.dex)} Bonus d'équipe : ${G.Roles.info(mon.dex).team} (compte double pour ton chef).</p>`
+      + carnet(mon)
       + (G.Talents.name(mon.dex) ? `<h4>Talent</h4><p class="ps-role">${G.Talents.chip(mon.dex)} ${G.Talents.desc(mon.dex)}</p>` : '')
       + `<h4>Statistiques</h4>` +
       statBar('PV', mon.hp, 185, mon.hp, '#5fe08a') +

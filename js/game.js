@@ -385,6 +385,16 @@ G.Game = (() => {
 
     save.coins += coins;
     bankTickets(false);
+    // Version de Nika : carnet de chaque Pokémon de l'équipe (fiche du menu).
+    save.carnet = save.carnet || {};
+    for (const m of G.Team.members()) {
+      const k = G.Team.family(m.dex), c = save.carnet[k] = save.carnet[k] || { runs: 0, time: 0, dmg: 0, lv: 0, lead: 0 };
+      c.runs++;
+      if (m === pl) c.lead++;
+      c.time = Math.max(c.time, Math.floor(time));
+      c.dmg = Math.max(c.dmg, Math.round(m.dmgDealt || 0));
+      c.lv = Math.max(c.lv, m.level || 0);
+    }
     save.stats.runs++;
     save.stats.totalKills += pl.kills;
     save.stats.bestTime = Math.max(save.stats.bestTime, Math.floor(time));

@@ -444,3 +444,7 @@
 #daily-cal .dc-r { line-height: 1.5; font-weight: 800; }
 #daily-cal .dc-ok { position: absolute; top: 2px; right: 5px; color: #5fe08a; }
 @media (max-width: 520px) { #daily-cal .dc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Carnet du Pokémon dans la fiche (version de Nika) */
+.ps-carnet { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 4px 10px; margin-bottom: 6px; }
+.ps-carnet > span { display: flex; flex-direction: column; font-size: 12px; }
+.ps-carnet small { opacity: .7; font-size: 10px; }
