@@ -1028,37 +1028,25 @@ G.Flow = {
     G.PickUI.init();
     // La base de datos (nube o local) recupera la sesión anterior.
     G.DB.ready().then(restored => {
-      document.getElementById('boot').classList.add('hidden');
-      // En otra tarea: crear el sonido para comprobarlo cuesta ~60 ms y no debe bloquear la carga.
-      // Version de Nika : pas de menu, on va droit au choix du Pokémon.
-      setTimeout(() => this.tapToStart(() => {
-        G.PickUI.open();
-        // Version de Nika : la dernière partie s'est coupée sans écran de fin.
-        const got = G.Game.recover();
-        if (got > 0) { G.UI.refreshCoins(); G.UI.toast('Ta dernière partie s\'est arrêtée d\'un coup : ses gains sont sauvés (+' + got + ' pièces)', 6000); }
-      }), 0);
+      // Version de Nika : plus d'écran « Touche pour commencer » (la musique démarre
+      // au premier toucher toute seule). Une barre charge tous les sprites avant le menu.
+      const bar = document.getElementById('boot-bar'), ld = document.querySelector('#boot .boot-ld');
+      const tick = (n, t) => {
+        const pc = t ? Math.round(100 * n / t) : 100;
+        if (bar) bar.style.width = pc + '%';
+        if (ld) ld.textContent = 'Chargement des sprites… ' + pc + ' %';
+      };
+      const box = (G.DB.save && G.DB.save.box || []).slice(0, 40);
+      G.Sprites.warmAll(tick)
+        .then(() => G.Sprites.preload(box, 6000, false, ['Idle']))
+        .then(() => {
+          document.getElementById('boot').classList.add('hidden');
+          G.PickUI.open();
+          // Version de Nika : la dernière partie s'est coupée sans écran de fin.
+          const got = G.Game.recover();
+          if (got > 0) { G.UI.refreshCoins(); G.UI.toast('Ta dernière partie s\'est arrêtée d\'un coup : ses gains sont sauvés (+' + got + ' pièces)', 6000); }
+        });
     });
-  },
-  /**
-   * "Pulsa para empezar": los navegadores no dejan que una web suene hasta
-   * que se toca algo. Con esta pantalla la música empieza en cuanto entras.
-   * (Si el navegador ya deja sonar, no sale.)
-   */
-  tapToStart(then) {
-    G.Audio.unlock();
-    if (G.Audio.canPlay()) { then(); return; }
-    const el = document.getElementById('tap-start');
-    el.classList.remove('hidden');
-    const go = e => {
-      if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(e.key)) return;
-      e.preventDefault(); e.stopPropagation();
-      G.Audio.unlock();
-      el.classList.add('hidden');
-      el.removeEventListener('click', go); removeEventListener('keydown', go, true);
-      then();
-    };
-    el.addEventListener('click', go);
-    addEventListener('keydown', go, true);
   },
   toLogin() { G.Audio.music('village'); G.LoginUI.open(); },
   afterLogin() {
