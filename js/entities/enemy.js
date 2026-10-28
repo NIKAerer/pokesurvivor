@@ -170,7 +170,7 @@
         if (this.shiny) { G.FX.burst(this.x, cy, '#ffe9a0', 30, 220); G.FX.ring(this.x, this.y, this.r, this.r * 7, '#9ae6ff', 0.7, 5); }
         return;
       }
-      // (Los legendarios de la Sentencia de Arceus sólo dan experiencia.)
+      // (Los legendarios de la Sentencia de Arceus no dan objetos ni monedas.)
       if (this.boss && !this.judge) {
         G.Camera.kick(0.9);
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
@@ -180,6 +180,8 @@
         if (this.legend || Math.random() < G.Tutor.BOSS_CT) G.Tutor.found(this.x, this.y);
       }
       G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend, !!this.judge);
+      // Version de Nika : les légendaires de l'épreuve d'Arceus lâchent des Super Bonbons.
+      if (this.judge && !this.judgeArceus) for (let i = 0; i < 3; i++) G.Pickups.drop('ball', this.x + G.U.rand(-30, 30), this.y + G.U.rand(-20, 20), 1);
       if (this.golden && Math.random() < 0.35) G.Pickups.drop('coin', this.x + 6, this.y - 4, 3);
       // Duende del tesoro: Meowth suelta monedas; Gholdengo, un ticket ×10.
       if (this.behavior === 'thief') {

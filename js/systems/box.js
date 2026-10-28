@@ -1,8 +1,7 @@
 /* ============ box.js — boîte limitée et Bonbons (version de Nika) ============
  * La boîte (le PC) a 8 places au départ. On l'agrandit de 2 places avec des
- * pièces (le prix monte à chaque fois). Boîte pleine : un nouveau Pokémon de la
- * Boutique est transféré au Prof. Chen et donne ses Bonbons à la place
- * (le Pokédex le compte quand même). Un shiny entre toujours.
+ * pièces (le prix monte à chaque fois). La Boutique demande une place libre
+ * par Poké Ball ouverte (gacha.js).
  *
  * Bonbons : chaque espèce a les siens (save.candy = { dex: n }). Un doublon de
  * la Boutique donne des Bonbons de son espèce ; ils servent à monter son rang
@@ -30,8 +29,8 @@ G.Box = (() => {
   function cap() { const s = S(); fix(); return Math.min(MAX, START + STEP * (s.boxExtra | 0) + (s.boxBonus | 0)); }
   function free() { return Math.max(0, cap() - box().length); }
   function full() { return free() <= 0; }
-  /** Prix des 2 places suivantes : 400, 600, 800... */
-  function price() { return 400 + 200 * (S().boxExtra | 0); }
+  /** Prix des 2 places suivantes : 300, 450, 600... jusqu'à 1500 au plus. */
+  function price() { return Math.min(1500, 300 + 150 * (S().boxExtra | 0)); }
   function canExpand() { return cap() < MAX && (S().coins | 0) >= price(); }
   function expand() {
     const s = S();

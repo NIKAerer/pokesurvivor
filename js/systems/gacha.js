@@ -8,7 +8,7 @@
  *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
  * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
  * Repetidos: version de Nika : des Bonbons de l'espèce (box.js), le triple pour un shiny.
- * Boîte pleine : un nouveau Pokémon (pas shiny) donne ses Bonbons au lieu d'entrer.
+ * Boîte : on ne peut ouvrir que s'il reste assez de places (×1 : 1 place, ×10 : 10 places).
  *
  * Se tira con TICKETS (se consiguen jugando):
  *   ×1   1 ticket
@@ -21,6 +21,8 @@ G.Gacha = (() => {
     const t = save.tickets || { t1: 0, t10: 0 };
     return t.t1 >= n ? { t1: n, t10: 0 } : null;
   }
+  /** Version de Nika : il faut une place libre par Poké Ball ouverte. */
+  function roomFor(n) { return G.Box.free() >= n; }
   const RATES = [[1, 45], [2, 30], [3, 17], [4, 6.5], [5, 1.5]];
   // Version de Nika (Boutique plus juste) : Légendaire garanti à 50 (au lieu de 70),
   // et une Épica ou mieux au plus tard toutes les 10 ouvertures, même une par une.
@@ -76,7 +78,7 @@ G.Gacha = (() => {
   function pull(save, n, gen = 1, use = 't1') {
     save.box = save.box || [1, 4, 7];
     const cost = costOf(save, n, use);
-    if (!cost) return null;
+    if (!cost || !roomFor(n)) return null;
     save.tickets.t1 -= cost.t1;
     save.tickets.t10 -= cost.t10;
     save.pity = save.pity || {};
@@ -130,6 +132,6 @@ G.Gacha = (() => {
   }
 
   return { debugForceShiny(n = 1) { forceShiny = n; },
-           costOf, RATES, PITY_5, PITY_4, SHINY_RATE, REFUND, RARITY_NAME, RARITY_COLOR, BANNERS,
+           costOf, roomFor, RATES, PITY_5, PITY_4, SHINY_RATE, REFUND, RARITY_NAME, RARITY_COLOR, BANNERS,
            pool, featured, pull };
 })();
