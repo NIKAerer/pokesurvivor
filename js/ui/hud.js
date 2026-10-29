@@ -43,7 +43,7 @@ G.HUD = (() => {
       ctx.font = F(800, 11); ctx.fillStyle = '#ffcb3d';
       ctx.fillText('AVENTURE · CHAPITRE ' + A.n, x0 + 8, y0 + 14);
       ctx.fillStyle = '#8fa3c4';
-      ctx.fillText(A.place + (A.caught ? ' · ' + A.caught + ' capturé' + (A.caught > 1 ? 's' : '') : ''), x0 + 8, y0 + 32);
+      ctx.fillText(A.place + ' · N. max ' + A.cap + (A.caught ? ' · ' + A.caught + ' capturé' + (A.caught > 1 ? 's' : '') : ''), x0 + 8, y0 + 32);
       ctx.fillStyle = A.phase === 'boss' ? '#ff6b6b' : '#eaf2ff';
       ctx.fillText(A.phase === 'boss' ? 'Bats ' + A.who + ' !' : A.phase === 'won' ? 'Chapitre réussi !' : A.who + ' · ' + A.dist + ' m', x0 + 8, y0 + 54);
       return;

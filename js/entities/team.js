@@ -223,7 +223,7 @@ G.Team = (() => {
 
   /** XP partagée : les alliés reçoivent la même XP (le chef la reçoit dans game.js). */
   function shareXp(amount) {
-    for (const a of allies) a.gainXp(amount);
+    for (const a of allies) a.gainXp(G.Adventure.active ? G.Adventure.xpFor(a, amount) : amount);   // (Aventure : réduite, niveau max)
     for (const m of members()) {
       // Charger le sprite de l'évolution un peu avant, pour qu'il soit prêt.
       const lv = evoLevel(m.dex);

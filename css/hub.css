@@ -238,12 +238,19 @@
 .adv-t small { opacity: .7; font-size: 11px; }
 .adv-s { font-weight: 800; font-size: 12px; }
 .adv-ch.next .adv-s { background: var(--tc); color: #fff; padding: 4px 10px; border-radius: 99px; }
-.adv-talk { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); cursor: pointer; }
+.adv-talk { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(8,10,20,.45); cursor: pointer; }
 .adv-talk.hidden { display: none; }
-.adv-talk-box { width: min(720px, 100%); background: #fffaf2; color: #2a1d14; border: 4px solid #3a2a1c; border-radius: 16px; padding: 14px 18px 10px;
-  box-shadow: 0 6px 0 rgba(0,0,0,.35); text-shadow: none; }
-.adv-talk-box b { display: inline-block; background: #3a2a1c; color: #ffe14d; padding: 2px 10px; border-radius: 8px; font-size: 13px; margin-bottom: 6px; }
+.adv-talk-box { width: min(860px, 100%); background: #fffaf2; color: #2a1d14; border: 5px solid #3a2a1c; border-radius: 20px; padding: 20px 26px 14px;
+  box-shadow: 0 8px 0 rgba(0,0,0,.35), 0 20px 60px rgba(0,0,0,.4); text-shadow: none; animation: advPop .18s ease-out; }
+@keyframes advPop { from { transform: scale(.94); opacity: 0; } }
+.adv-talk-box b { display: inline-block; background: #3a2a1c; color: #ffe14d; padding: 4px 14px; border-radius: 10px; font-size: 18px; margin-bottom: 10px; }
 .adv-talk-box b.hidden { display: none; }
-.adv-talk-box p { margin: 0 0 6px; font-size: 16px; line-height: 1.35; }
-.adv-talk-box small { display: block; text-align: right; opacity: .55; font-size: 11px; }
+.adv-talk-box p { margin: 0 0 10px; font-size: 24px; line-height: 1.4; }
+.adv-talk-box small { display: block; text-align: right; opacity: .55; font-size: 13px; }
+@media (max-width: 600px) { .adv-talk-box { padding: 16px 18px 12px; } .adv-talk-box p { font-size: 19px; } .adv-talk-box b { font-size: 15px; } }
+.adv-rewards .adv-starter small { font-size: 12px; opacity: .8; text-align: center; }
+.adv-rewards .adv-starter b { text-align: center; }
+.adv-rico { display: grid; place-items: center; height: 100px; }
+@media (max-width: 600px) { .adv-starters.adv-rewards { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .adv-starters { gap: 6px; } .adv-starter canvas { width: 84px; } }
