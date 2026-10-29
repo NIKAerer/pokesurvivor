@@ -10,7 +10,7 @@
  * Tomber termine la partie. Le meilleur étage est gardé.
  *
  * Récompenses : pièces de partie à chaque salle ; au dresseur, pièces et
- * Super Bonbons, une CT tous les 10 étages.
+ * Super Bonbons.
  * Sauvegarde : save.tower = { best, runs }.
  */
 G.Tower = (() => {
@@ -152,10 +152,8 @@ G.Tower = (() => {
     const coins = 150 + f * 40, balls = 2 + Math.floor(f / 5);
     s.coins += coins;
     s.balls = (s.balls | 0) + balls;
-    const ct = f % 10 === 0;
-    if (ct) s.ct = (s.ct | 0) + 1;
     G.DB.commit(true);
-    G.Spawner.say(st.who + ' battu ! +' + coins + ' pièces, +' + balls + ' Super Bonbons' + (ct ? ', +1 CT' : ''), 4.2, true);
+    G.Spawner.say(st.who + ' battu ! +' + coins + ' pièces, +' + balls + ' Super Bonbons', 4.2, true);
     G.Audio.sfx('legend');
     G.Game.flash('#ffe14d', 0.5);
   }

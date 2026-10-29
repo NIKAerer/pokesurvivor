@@ -78,25 +78,6 @@ G.PickUI = (() => {
       + `</div>`;
   }
 
-  /** Version de Nika : Maître des capacités — remplacer l'attaque n° k avec une CT. */
-  function tutor(mon, k) {
-    const B = G.Moves.BY_ID, old = B[G.Team.learnset(mon.dex)[k]];
-    let el = document.getElementById('tutor-pick');
-    if (!el) { el = document.createElement('div'); el.id = 'tutor-pick'; document.body.appendChild(el); }
-    const n = G.Tutor.ct();
-    el.innerHTML = `<div class="tp-box"><h2>Maître des capacités</h2>
-      <p class="sub">${n ? `Remplacer <b>${old.name}</b> de ${mon.name} (et de sa famille). Ça coûte 1 CT, tu en as ${n}.`
-        : 'Il te faut une CT : les boss en lâchent parfois, le légendaire de faille et la Ligue en donnent toujours.'}</p>
-      <div class="tp-list">${n ? G.Tutor.options(mon.dex).map(id => { const d = B[id]; return `<button class="ps-mv" data-id="${id}" style="--m:${G.U.TYPE_COLOR[d.type]}" title="${G.Roles.MOVE_ROLE[d.role] || ''}">${G.Icons.html('move:' + id, 18)}<small>${d.name}</small>${d.kind !== 'buff' ? `<i class="cat ${d.cat}">${d.cat === 'P' ? 'Phy' : 'Spé'}</i>` : ''}</button>`; }).join('') : ''}</div>
-      <button class="btn ghost" id="tp-close">Retour</button></div>`;
-    el.querySelector('#tp-close').onclick = () => el.remove();
-    el.querySelectorAll('.tp-list [data-id]').forEach(b => b.onclick = () => {
-      const d = B[b.dataset.id];
-      if (!confirm(mon.name + ' oublie ' + old.name + ' et peut apprendre ' + d.name + ' ? (1 CT)')) return;
-      if (G.Tutor.teach(mon.dex, k, b.dataset.id)) { G.Audio.sfx('buy'); el.remove(); render(); }
-    });
-  }
-
   /** Version de Nika : toucher son Pokémon au menu. La 1re caresse du jour donne 1 Bonbon. */
   const PET_TXT = ['{n} est tout content !', '{n} se frotte contre toi.', '{n} a hâte de partir à l\'aventure !',
     '{n} fait un petit saut de joie !', '{n} te regarde avec confiance.', '{n} pousse un petit cri joyeux !'];
@@ -243,12 +224,11 @@ G.PickUI = (() => {
     // Les attaques qu'il peut apprendre (la première est sa signature).
     const learn = G.Team.learnset(mon.dex);
     const myRole = G.Roles.moveRole(mon.dex);
-    const taught = G.Tutor.of(G.Team.family(mon.dex)) || {};
-    html += `<div class="ps-pane" data-p="moves"><h4>Attaques (garde 4 sur ${learn.length}) <span class="ps-ct">${G.Icons.html('ticket10', 12)} ${G.Tutor.ct()} CT</span></h4><div class="ps-moves">` + learn.map((id, k) => {
+    html += `<div class="ps-pane" data-p="moves"><h4>Attaques (garde 4 sur ${learn.length})</h4><div class="ps-moves">` + learn.map((id, k) => {
       const d = G.Moves.BY_ID[id];
-      const tip = (G.Roles.MOVE_ROLE[d.role] || '') + (d.kind !== 'buff' ? ' · ' + G.Roles.CAT_NAME[d.cat] : '') + (k ? ' · toucher : changer avec une CT' : '');
-      return `<span class="ps-mv${k ? ' tut' : ' sig'}${d.role === myRole ? ' role' : ''}${taught[k] === id ? ' ct' : ''}" data-k="${k}" title="${tip}" style="--m:${G.U.TYPE_COLOR[d.type]}">${G.Icons.html('move:' + id, 18)}<small>${d.name}${k ? '' : ' ★'}${taught[k] === id ? ' (CT)' : ''}</small>${d.kind !== 'buff' ? `<i class="cat ${d.cat}">${d.cat === 'P' ? 'Phy' : 'Spé'}</i>` : ''}</span>`;
-    }).join('') + '</div><small class="note">Bordure colorée : attaque de son rôle. ★ : attaque signature. Touche une autre attaque pour la remplacer avec une CT (Maître des capacités).</small></div>';
+      const tip = (G.Roles.MOVE_ROLE[d.role] || '') + (d.kind !== 'buff' ? ' · ' + G.Roles.CAT_NAME[d.cat] : '');
+      return `<span class="ps-mv${k ? '' : ' sig'}${d.role === myRole ? ' role' : ''}" data-k="${k}" title="${tip}" style="--m:${G.U.TYPE_COLOR[d.type]}">${G.Icons.html('move:' + id, 18)}<small>${d.name}${k ? '' : ' ★'}</small>${d.kind !== 'buff' ? `<i class="cat ${d.cat}">${d.cat === 'P' ? 'Phy' : 'Spé'}</i>` : ''}</span>`;
+    }).join('') + '</div><small class="note">Bordure colorée : attaque de son rôle. ★ : attaque signature.</small></div>';
     info.innerHTML = html;
     const showTab = k => {
       info.querySelectorAll('.ps-tab').forEach(b => b.classList.toggle('on', b.dataset.t === k));
@@ -256,7 +236,6 @@ G.PickUI = (() => {
     };
     showTab(tab);
     info.querySelectorAll('.ps-tab').forEach(b => b.onclick = () => { s.pickTab = b.dataset.t; G.Audio.sfx('select'); showTab(b.dataset.t); });
-    info.querySelectorAll('.ps-mv.tut').forEach(el => el.onclick = () => tutor(mon, +el.dataset.k));
     const evoBox = $('pick-evo');
     chain.forEach(([d, lv, more], k) => {
       if (k) evoBox.insertAdjacentHTML('beforeend', `<span class="ps-arrow">→<small>N.${lv}${more ? ' +' + more : ''}</small></span>`);

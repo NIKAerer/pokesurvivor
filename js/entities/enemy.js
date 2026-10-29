@@ -176,8 +176,6 @@
         for (let i = 0; i < 10; i++) G.Pickups.drop('coin', this.x + G.U.rand(-40, 40), this.y + G.U.rand(-30, 30), 5);
         // Los jefes siempre sueltan un objeto equipable.
         G.Pickups.drop('item', this.x - 26, this.y - 10, G.Items.roll());
-        // Version de Nika : une CT (le légendaire de faille en donne toujours une).
-        if (this.legend || Math.random() < G.Tutor.BOSS_CT) G.Tutor.found(this.x, this.y);
       }
       G.Pickups.dropXp(this.x, this.y, this.xp, this.boss, !!this.legend, !!this.judge);
       // Version de Nika : les légendaires de l'épreuve d'Arceus lâchent des Super Bonbons.
