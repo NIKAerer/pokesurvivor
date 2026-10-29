@@ -20,11 +20,18 @@ OUT = os.path.join(ROOT, 'js', 'adv', 'kanto-art.js')
 
 MAPS = {  # clé du jeu de Nika : nom pret
     'bourg': 'PalletTown', 'route1': 'Route1', 'jadielle': 'ViridianCity',
-    'route2': 'Route2', 'foret': 'ViridianForest', 'argenta': 'PewterCity'
+    'route2': 'Route2', 'foret': 'ViridianForest', 'argenta': 'PewterCity',
+    # Les intérieurs (on y entre par les portes).
+    'bourg_maison': 'PalletTown_PlayersHouse_1F', 'bourg_regis': 'PalletTown_RivalsHouse', 'bourg_labo': 'PalletTown_ProfessorOaksLab',
+    'jadielle_centre': 'ViridianCity_PokemonCenter_1F', 'jadielle_boutique': 'ViridianCity_Mart', 'jadielle_maison': 'ViridianCity_House',
+    'jadielle_ecole': 'ViridianCity_School', 'argenta_centre': 'PewterCity_PokemonCenter_1F', 'argenta_boutique': 'PewterCity_Mart',
+    'argenta_arene': 'PewterCity_Gym', 'argenta_maison1': 'PewterCity_House1', 'argenta_maison2': 'PewterCity_House2',
+    'argenta_musee': 'PewterCity_Museum_1F'
 }
 PEOPLE = ['red_normal', 'prof_oak', 'blue', 'mom', 'nurse', 'brock', 'bug_catcher', 'black_belt', 'clerk',
           'old_man_1', 'boy', 'little_boy', 'youngster', 'camper', 'woman_1', 'fat_man', 'lass', 'gym_guy',
-          'little_girl', 'woman_2', 'old_woman', 'scientist', 'gentleman', 'cool_trainer_m', 'woman_3']
+          'little_girl', 'woman_2', 'old_woman', 'scientist', 'gentleman', 'woman_3', 'worker_f', 'worker_m', 'man',
+          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'misc/item_ball']
 
 NUM_PRI_TILES, NUM_PRI_MT, NUM_PRI_PALS = 640, 640, 7
 
@@ -39,20 +46,28 @@ def fetch(path):
     return open(dst, 'rb').read()
 
 
-def tileset_dir(sym):
-    # gTileset_PalletTown -> pallet_town ; gTileset_General -> general
-    name = sym[len('gTileset_'):]
-    out = ''
-    for i, ch in enumerate(name):
-        if ch.isupper() and i:
-            out += '_'
-        out += ch.lower()
-    return out
+_TS = None
+def tileset_paths(sym):
+    """Chemins des fichiers d'un tileset, lus dans src/data/tilesets/*.h (ils ne suivent pas toujours le nom)."""
+    global _TS
+    if _TS is None:
+        import re
+        hd = fetch('src/data/tilesets/headers.h').decode()
+        gr = fetch('src/data/tilesets/graphics.h').decode() + fetch('src/graphics.c').decode() + fetch('src/data/tilesets/metatiles.h').decode()
+        inc = {}
+        for m in re.finditer(r'(\w+)\[\](?:\[16\])?\s*=\s*(INCBIN_U(?:16|32)\("[^"]+"\)|\{[^}]*\})', gr):
+            inc[m.group(1)] = re.findall(r'"([^"]+)"', m.group(2))
+        _TS = {}
+        for m in re.finditer(r'struct Tileset (\w+) =\s*\{(.*?)\};', hd, re.S):
+            f = dict(re.findall(r'\.(\w+) = (\w+)', m.group(2)))
+            _TS[m.group(1)] = {k: inc.get(f.get(k), []) for k in ('tiles', 'palettes', 'metatiles', 'metatileAttributes')}
+    return _TS[sym]
 
 
 def load_tileset(sym, primary):
-    d = 'data/tilesets/' + ('primary/' if primary else 'secondary/') + tileset_dir(sym) + '/'
-    im = Image.open(io.BytesIO(fetch(d + 'tiles.png')))
+    P = tileset_paths(sym)
+    tiles_png = P['tiles'][0].replace('.4bpp.lz', '.png').replace('.4bpp', '.png')
+    im = Image.open(io.BytesIO(fetch(tiles_png)))
     if im.mode != 'P':
         im = im.convert('P')
     w, h = im.size
@@ -64,14 +79,14 @@ def load_tileset(sym, primary):
     pals = []
     for i in range(16):
         try:
-            txt = fetch(d + 'palettes/%02d.pal' % i).decode().split()
+            txt = fetch(P['palettes'][i].replace('.gbapal', '.pal')).decode().split()
             cols = [tuple(int(v) for v in txt[3 + j * 3:6 + j * 3]) for j in range(16)]
         except Exception:
             cols = [(255, 0, 255)] * 16
         pals.append(cols)
-    mt = fetch(d + 'metatiles.bin')
+    mt = fetch(P['metatiles'][0])
     metatiles = [struct.unpack_from('<8H', mt, i * 16) for i in range(len(mt) // 16)]
-    at = fetch(d + 'metatile_attributes.bin')
+    at = fetch(P['metatileAttributes'][0])
     attrs = [struct.unpack_from('<I', at, i * 4)[0] for i in range(len(at) // 4)]
     return {'tiles': tiles, 'pals': pals, 'mt': metatiles, 'attr': attrs}
 
@@ -139,6 +154,9 @@ def main():
     ts = {}
     out = {'maps': {}, 'people': {}}
     names = {v: k for k, v in MAPS.items()}
+    ids = {}
+    for key, name in MAPS.items():
+        ids[json.loads(fetch('data/maps/%s/map.json' % name))['id'][4:]] = key
     for key, name in MAPS.items():
         mj = json.loads(fetch('data/maps/%s/map.json' % name))
         lay = layouts[mj['layout']]
@@ -152,17 +170,18 @@ def main():
             raw = next(x['map'] for x in mj['connections'] if x['direction'] == c['dir'])
             pn = ''.join(w.title() for w in raw[4:].split('_'))
             c['map'] = names.get(pn, pn)
-        warps = [{'x': w['x'], 'y': w['y'], 'to': w['dest_map'][4:], 'id': w['dest_warp_id']} for w in mj.get('warp_events', [])]
+        warps = [{'x': w['x'], 'y': w['y'], 'to': w['dest_map'][4:], 'id': int(w['dest_warp_id']), 'dest': ids.get(w['dest_map'][4:])}
+                 for w in mj.get('warp_events', [])]
         objs = [{'x': o['x'], 'y': o['y'], 'gfx': o['graphics_id'][len('OBJ_EVENT_GFX_'):].lower(), 'mv': o['movement_type'][len('MOVEMENT_TYPE_'):].lower(),
                  'trainer': o.get('trainer_type') not in (None, 'TRAINER_TYPE_NONE'), 'sight': o.get('trainer_sight_or_berry_tree_id'),
                  'script': o.get('script')} for o in mj.get('object_events', []) if o.get('type', 'object') == 'object']
         signs = [{'x': b['x'], 'y': b['y'], 'script': b.get('script')} for b in mj.get('bg_events', []) if b.get('type') == 'sign']
-        out['maps'][key] = {'name': name, 'w': lay['width'], 'h': lay['height'], 'base': uri(base), 'top': uri(top),
+        out['maps'][key] = {'name': name, 'inside': mj.get('map_type') == 'MAP_TYPE_INDOOR', 'w': lay['width'], 'h': lay['height'], 'base': uri(base), 'top': uri(top),
                             'grid': grid, 'conns': conns, 'warps': warps, 'objs': objs, 'signs': signs}
         print(key, lay['width'], 'x', lay['height'], len(out['maps'][key]['base']) // 1024, 'Ko')
     for p in PEOPLE:
         try:
-            im = Image.open(io.BytesIO(fetch('graphics/object_events/pics/people/%s.png' % p)))
+            im = Image.open(io.BytesIO(fetch('graphics/object_events/pics/%s.png' % (p if '/' in p else 'people/' + p))))
         except Exception as e:
             print('pas de sprite', p, e)
             continue
@@ -176,7 +195,7 @@ def main():
                     i = src[x, y]
                     dst[x, y] = (0, 0, 0, 0) if i == 0 else (pal[i * 3], pal[i * 3 + 1], pal[i * 3 + 2], 255)
             im = rgba
-        out['people'][p] = uri(im)
+        out['people'][p.split('/')[-1]] = uri(im)
     js = ('/* kanto-art.js — généré par tools/fr_kanto.py (ne pas modifier à la main).\n'
           ' * Cartes et personnages de Pokémon Rouge Feu (décompilation pret/pokefirered), usage personnel.\n'
           ' * grid : . sol  # bloqué  g hautes herbes  w eau  v rebord (on saute vers le bas)  < > rebords de côté */\n'

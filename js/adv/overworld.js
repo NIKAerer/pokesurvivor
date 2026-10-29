@@ -14,7 +14,7 @@ G.Overworld = (() => {
   const M = () => G.AdvMon;
   const TS = 32;
   const SOLID = new Set(['#', 'w']);
-  const SPEED = TS * 4.5;
+  const SPEED = TS * 4;      // 4 cases par seconde en marchant, le double en courant
   const STARTERS = [1, 4, 7];
   // Les Pokémon proposés à la fin de chaque chapitre (ceux de l'animé à cet endroit).
   const CATCH = {
@@ -38,7 +38,7 @@ G.Overworld = (() => {
   // ---------------- sauvegarde ----------------
   function save() {
     const s = G.DB.save;
-    if (!s.adv2) s.adv2 = { team: [], box: [], map: 'bourg', x: 6, y: 8, dir: 'down', flags: {}, ch: 1, potions: 0, money: 500, heal: { map: 'bourg', x: 6, y: 8 } };
+    if (!s.adv2) s.adv2 = { team: [], box: [], map: 'bourg_maison', x: 4, y: 6, dir: 'up', flags: {}, ch: 1, potions: 0, money: 500, heal: { map: 'bourg_maison', x: 7, y: 4 } };
     return s.adv2;
   }
   function commit() {
@@ -46,7 +46,7 @@ G.Overworld = (() => {
     S.map = mapKey; S.x = Math.floor(pl.x / TS); S.y = Math.floor((pl.y - 4) / TS); S.dir = pl.dir;
     G.DB.commit();
   }
-  function heal() { for (const m of S.team) m.hp = M().maxHp(m); }
+  function heal() { for (const m of S.team) M().restore(m); }
 
   // ---------------- la carte ----------------
   // Version de Nika : les vraies cartes de Rouge Feu (kanto-art.js) : une image du dessous,
@@ -59,37 +59,63 @@ G.Overworld = (() => {
   function warpAt(x, y) {
     const w = art.warps.find(w => w.x === x && w.y === y);
     if (!w) return null;
+    // Les vrais intérieurs : on entre / on sort (les escaliers vers l'étage restent fermés).
+    if (w.dest && G.KantoArt.maps[w.dest]) return { ...w, ev: art.inside ? 'exit' : 'enter' };
+    if (art.inside) return { ...w, ev: 'stairs' };
     const k = Object.keys(def.doors || {}).find(k => w.to.includes(k));
     return k ? { ...w, ev: def.doors[k] } : { ...w, ev: 'closed' };
   }
 
   // ---------------- personnages ----------------
-  const SKIP = new Set(['item_ball', 'cut_tree', 'var_0', 'push_boulder', 'prof_oak']);
+  const SKIP = new Set(['item_ball', 'cut_tree', 'var_0', 'push_boulder', 'prof_oak', 'blue', 'pokedex', 'town_map', 'old_amber']);
+  // Les Pokémon posés sur la carte (le Piafabec de Jadielle, le Rondoudou du Centre…) : dessinés avec nos sprites.
+  const MONS = { spearow: 21, nidoran_m: 32, jigglypuff: 39, pikachu: 25, clefairy: 35, meowth: 52 };
   const FACE = { face_left: 'left', face_right: 'right', face_up: 'up', face_down_and_up: 'down' };
   function loadNpcs() {
     const story = (K().NPCS[mapKey] || []).filter(n => !n.when || n.when(S.flags));
     const amb = art.objs.filter(o => !SKIP.has(o.gfx)).map((o, i) => {
       const t = o.trainer && K().TRAINERS[o.script];
-      return { id: mapKey + '_' + i, look: G.People.has(o.gfx) ? o.gfx : 'boy', x: o.x, y: o.y, dir: FACE[o.mv] || 'down',
+      return { id: mapKey + '_' + i, look: G.People.has(o.gfx) ? o.gfx : 'boy', mon: MONS[o.gfx], x: o.x, y: o.y, dir: FACE[o.mv] || 'down',
         trainer: t ? { ...t, sees: Math.max(2, +o.sight || 3) } : null,
         talk: () => [['', K().TALK[o.script] || 'Bonjour ! Belle journée pour une balade avec ses Pokémon.']] };
     }).filter(n => !story.some(s2 => s2.x === n.x && s2.y === n.y));
-    npcs = story.concat(amb).map(n => ({ ...n, px: n.x * TS + 16, py: n.y * TS + 30, d: n.dir, walkT: 0, moving: false, bubble: 0 }));
+    npcs = story.concat(amb).map(n => {
+      const o = { ...n, px: n.x * TS + 16, py: n.y * TS + 30, d: n.dir, walkT: 0, moving: false, bubble: 0 };
+      if (n.mon) { o.anim = new G.Sprites.Animator(n.mon, 1, false); o.anim.loop('Idle'); o.anim.dir = 0; }
+      return o;
+    });
   }
 
-  /** dx, dy : sens du mouvement (les rebords ne se passent que dans un sens). */
-  function solidAt(wx, wy, dx, dy) {
-    const tx = Math.floor(wx / TS), ty = Math.floor(wy / TS);
-    if (ty < 0 || ty >= art.h || tx < 0 || tx >= art.w) return !connAt(tx, ty);
-    const ch = at(tx, ty);
-    if (SOLID.has(ch)) return true;
-    if (ch === 'v' && !(dy > 0)) return true;
-    if (ch === '<' && !(dx < 0)) return true;
-    if (ch === '>' && !(dx > 0)) return true;
-    return npcs.some(n => Math.abs(n.px - wx) < 14 && wy > n.py - 14 && wy < n.py + 2);
+  // Version de Nika : on se déplace case par case, comme dans les jeux.
+  const tileOf = (x = pl.x, y = pl.y) => [Math.floor(x / TS), Math.floor((y - 4) / TS)];
+  const inMap = (x, y) => x >= 0 && y >= 0 && x < art.w && y < art.h;
+  const npcAt = (x, y) => npcs.some(n => Math.floor(n.px / TS) === x && Math.floor((n.py - 4) / TS) === y);
+  const LEDGE = { v: [0, 1], '<': [-1, 0], '>': [1, 0] };
+  /** Essaie de faire un pas (ou un saut de rebord) dans la direction dir. */
+  function tryStep(dir, running) {
+    const [dx, dy] = DIRV[dir], [x, y] = tileOf(), nx = x + dx, ny = y + dy;
+    const dur = TS / (SPEED * (running ? 2 : 1));
+    if (!inMap(nx, ny)) {
+      const e = connAt(nx, ny);
+      if (e) run(() => leave(e)); else bumpWall();
+      return;
+    }
+    const ch = at(nx, ny), lg = LEDGE[ch];
+    if (lg) {
+      // Rebord : on saute par-dessus, seulement dans son sens.
+      if (lg[0] === dx && lg[1] === dy && inMap(nx + dx, ny + dy) && !SOLID.has(at(nx + dx, ny + dy)) && !npcAt(nx + dx, ny + dy)) {
+        G.Audio.sfx('click');
+        pl.step = { x0: pl.x, y0: pl.y, x1: (nx + dx) * TS + 16, y1: (ny + dy) * TS + 30, t: 0, dur: 0.5, jump: true };
+      } else bumpWall();
+      return;
+    }
+    if (SOLID.has(ch) || npcAt(nx, ny)) { bumpWall(); return; }
+    pl.step = { x0: pl.x, y0: pl.y, x1: nx * TS + 16, y1: ny * TS + 30, t: 0, dur };
   }
-  function blocked(x, y, dx = 0, dy = 0) {
-    return solidAt(x - 9, y - 1, dx, dy) || solidAt(x + 9, y - 1, dx, dy) || solidAt(x - 9, y - 9, dx, dy) || solidAt(x + 9, y - 9, dx, dy);
+  function bumpWall() {
+    if (bumpT) return;
+    bumpT = 0.35;
+    bump();
   }
   /** La connexion vers une autre carte quand on sort par un bord, ou null. */
   function connAt(tx, ty) {
@@ -113,7 +139,7 @@ G.Overworld = (() => {
     if (!art._bg) { art._bg = img(art.base); art._top = img(art.top); }
     bg = art._bg; top = art._top;
     loadNpcs();
-    pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir;
+    pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir; pl.step = null; pl.hop = 0;
     pl.tile = tx + ',' + ty;
     trail = [];
     for (let i = 0; i < 200; i++) trail.push({ x: pl.x, y: pl.y });
@@ -179,17 +205,29 @@ G.Overworld = (() => {
     G.AdvBattle.update(dt);
     bumpT = Math.max(0, bumpT - dt);
     const [ax, ay] = busy ? [0, 0] : axis();
-    pl.moving = !!(ax || ay);
-    if (pl.moving) {
-      pl.dir = Math.abs(ax) > Math.abs(ay) ? (ax < 0 ? 'left' : 'right') : (ay < 0 ? 'up' : 'down');
-      pl.walkT += dt;
-      const nx = pl.x + ax * SPEED * dt, ny = pl.y + ay * SPEED * dt;
-      let moved = false;
-      if (!blocked(nx, pl.y, ax, 0)) { pl.x = nx; moved = true; }
-      if (!blocked(pl.x, ny, 0, ay)) { pl.y = ny; moved = true; }
-      if (!moved && !bumpT) { bumpT = 0.35; bump(); }
-      afterMove();
+    const running = keys.has('shiftleft') || keys.has('shiftright') || keys.has('keyx') || (stick && Math.hypot(stick.x - stick.x0, stick.y - stick.y0) > 45);
+    let left = dt;
+    while (left > 0) {
+      if (!pl.step) {
+        if (busy || !(ax || ay)) break;
+        pl.dir = Math.abs(ax) > Math.abs(ay) ? (ax < 0 ? 'left' : 'right') : (ay < 0 ? 'up' : 'down');
+        tryStep(pl.dir, running);
+        if (!pl.step) break;
+      }
+      const st = pl.step, use = Math.min(left, st.dur - st.t);
+      st.t += use; left -= use;
+      pl.walkT += use * (running && !st.jump ? 1.6 : 1);
+      const k = st.t / st.dur;
+      pl.x = st.x0 + (st.x1 - st.x0) * k; pl.y = st.y0 + (st.y1 - st.y0) * k;
+      pl.hop = st.jump ? Math.sin(k * Math.PI) * 18 : 0;
+      if (st.t >= st.dur) {
+        pl.step = null; pl.hop = 0;
+        pl.x = st.x1; pl.y = st.y1;
+        afterMove();
+        if (busy) break;
+      }
     }
+    pl.moving = !!pl.step;
     // La file des Pokémon qui suivent.
     const h = trail[0];
     if (!h || Math.hypot(h.x - pl.x, h.y - pl.y) > 2) { trail.unshift({ x: pl.x, y: pl.y }); if (trail.length > 400) trail.pop(); }
@@ -197,7 +235,7 @@ G.Overworld = (() => {
     for (const f of followers) {
       if (f.m === hiddenMon || f.m.hp <= 0) continue;
       k++;
-      const p = trailAt(k * 40);
+      const p = trailAt(k * TS);
       const dx = p.x - f.x, dy = p.y - f.y, d = Math.hypot(dx, dy);
       if (d > 0.5) {
         f.x += dx * Math.min(1, dt * 12); f.y += dy * Math.min(1, dt * 12);
@@ -206,7 +244,7 @@ G.Overworld = (() => {
       } else f.anim.loop('Idle');
       f.anim.update(dt);
     }
-    for (const n of npcs) if (n.bubble) n.bubble = Math.max(0, n.bubble - dt);
+    for (const n of npcs) { if (n.bubble) n.bubble = Math.max(0, n.bubble - dt); if (n.anim) n.anim.update(dt); }
     for (let i = fxs.length - 1; i >= 0; i--) { fxs[i].t += dt; if (fxs[i].t > 0.9) fxs.splice(i, 1); }
     // Caméra douce.
     const c0 = { ...cam };
@@ -227,20 +265,25 @@ G.Overworld = (() => {
   function draw() {
     const c = ctx;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.fillStyle = '#183018'; c.fillRect(0, 0, vw, vh);
+    c.fillStyle = art.inside ? '#000' : '#183018'; c.fillRect(0, 0, vw, vh);
     c.setTransform(dpr * zoom, 0, 0, dpr * zoom, Math.round(dpr * (vw / 2 - cam.x * zoom)), Math.round(dpr * (vh / 2 - cam.y * zoom)));
     c.imageSmoothingEnabled = false;
     if (bg.complete) c.drawImage(bg, 0, 0, art.w * TS, art.h * TS);
     const list = [];
     for (const n of npcs) list.push({ y: n.py, draw: x => {
-      G.People.draw(x, n.look, n.px, n.py, n.d, n.walkT, n.moving);
+      if (n.anim) { G.Sprites.drawShadow(x, n.mon, n.px, n.py - 6, 1); n.anim.draw(x, n.px, n.py - 6); }
+      else G.People.draw(x, n.look, n.px, n.py, n.d, n.walkT, n.moving);
       if (n.bubble) { x.fillStyle = '#fff'; x.fillRect(n.px - 7, n.py - 66, 14, 16); x.fillStyle = '#e03030'; x.fillRect(n.px - 2, n.py - 63, 4, 7); x.fillRect(n.px - 2, n.py - 54, 4, 3); }
     } });
     for (const f of followers) {
       if (f.m === hiddenMon || f.m.hp <= 0) continue;
-      list.push({ y: f.y, draw: x => { G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, 1); f.anim.draw(x, f.x, f.y); } });
+      list.push({ y: f.y, draw: x => { G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, 1); f.anim.draw(x, f.x, f.y); grass(x, f.x, f.y); } });
     }
-    list.push({ y: pl.y + 0.1, draw: x => G.People.draw(x, 'hero', pl.x, pl.y, pl.dir, pl.walkT, pl.moving) });
+    list.push({ y: pl.y + 0.1, draw: x => {
+      if (pl.hop) { x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(pl.x, pl.y - 2, 11, 4, 0, 0, 6.2832); x.fill(); }
+      G.People.draw(x, 'hero', pl.x, pl.y - pl.hop, pl.dir, pl.walkT, pl.moving);
+      if (!pl.hop) grass(x, pl.x, pl.y);
+    } });
     for (const d of G.AdvBattle.drawables()) list.push(d);
     list.sort((a, b) => a.y - b.y);
     for (const d of list) d.draw(c);
@@ -260,19 +303,29 @@ G.Overworld = (() => {
       c.globalAlpha = 1;
     }
   }
+  /** Les hautes herbes cachent les pieds (on redessine le bas de la case par-dessus). */
+  function grass(c, x, y) {
+    const [tx, ty] = tileOf(x, y);
+    if (at(tx, ty) !== 'g' || !bg.complete) return;
+    c.drawImage(bg, tx * 16, ty * 16 + 8, 16, 8, tx * TS, ty * TS + 16, TS, 16);
+  }
   function fx(x, y, color, dmg) { fxs.push({ x, y, color, dmg, t: 0 }); }
 
   // ---------------- interactions ----------------
   const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
   function front() {
-    const [dx, dy] = DIRV[pl.dir];
-    return { x: Math.floor((pl.x + dx * 24) / TS), y: Math.floor((pl.y - 5 + dy * 26) / TS) };
+    const [dx, dy] = DIRV[pl.dir], [x, y] = tileOf();
+    return { x: x + dx, y: y + dy };
   }
   function bump() { interact(true); }
   function interact(fromBump) {
     if (busy) return;
     const f = front();
-    const n = npcs.find(n => Math.hypot(n.px - (pl.x + DIRV[pl.dir][0] * 28), n.py - (pl.y + DIRV[pl.dir][1] * 28)) < 22);
+    const [ddx, ddy] = DIRV[pl.dir];
+    const at2 = (x, y) => npcs.find(n => Math.floor(n.px / TS) === x && Math.floor((n.py - 4) / TS) === y);
+    let n = at2(f.x, f.y);
+    // Par-dessus un comptoir (Infirmière Joëlle, vendeur) : on parle à la personne derrière.
+    if (!n && at(f.x, f.y) === '#') { n = at2(f.x + ddx, f.y + ddy); if (n && !n.event) n = null; }
     if (n) { run(() => talkNpc(n)); return; }
     const w = warpAt(f.x, f.y);
     if (w) { run(() => door(w)); return; }
@@ -303,8 +356,13 @@ G.Overworld = (() => {
       await trainerFight(n);
       return;
     }
+    if (n.ball) { await ball(n); return; }
     if (n.event === 'chen') { await chen(); return; }
     if (n.event === 'rival1') { await rival1(n); return; }
+    if (n.event === 'mom') { await mom(); return; }
+    if (n.event === 'center') { await center(); return; }
+    if (n.event === 'mart') { await talk([['Vendeur', 'Bienvenue ! Que puis-je pour toi ?']]); await mart(); return; }
+    if (n.event === 'pierre') { await pierre(n); return; }
     if (n.talk) await talk(n.talk(S.flags));
   }
 
@@ -329,11 +387,11 @@ G.Overworld = (() => {
     G.Audio.sfx('select');
     await new Promise(r => setTimeout(r, 700));
     // Il marche jusqu'à toi.
-    const tx = pl.x - DIRV[n.d][0] * 30, ty = pl.y - DIRV[n.d][1] * 30;
+    const tx = pl.x - DIRV[n.d][0] * TS, ty = pl.y - DIRV[n.d][1] * TS;
     await new Promise(res => {
       const step = () => {
         const dx = tx - n.px, dy = ty - n.py, d = Math.hypot(dx, dy);
-        if (d < 4 || !open_) { n.moving = false; res(); return; }
+        if (d < 1 || !open_) { n.px = Math.round(tx); n.py = Math.round(ty); n.moving = false; res(); return; }
         n.moving = true; n.walkT += 1 / 60;
         const v = Math.min(d, 3);
         if (Math.abs(dx) > 1) n.px += dx / d * v;
@@ -382,37 +440,36 @@ G.Overworld = (() => {
   async function blackout() {
     await talk([['', 'Tu n\'as plus de Pokémon en forme… Tu cours au Centre Pokémon le plus proche.']]);
     heal();
-    const h = S.heal || { map: 'bourg', x: 6, y: 8 };
-    setMap(h.map, h.x, h.y, 'down');
-    await talk([[h.map === 'bourg' ? 'Maman' : 'Infirmière Joëlle', 'Tes Pokémon sont en pleine forme. Fais attention à toi !']]);
+    let h = S.heal || {};
+    if (!G.KantoArt.maps[h.map]) h = { map: 'bourg_maison', x: 7, y: 4 };
+    setMap(h.map, h.x, h.y, h.map === 'bourg_maison' ? 'right' : 'up');
+    await talk([[h.map.startsWith('bourg') ? 'Maman' : 'Infirmière Joëlle', 'Tes Pokémon sont en pleine forme. Fais attention à toi !']]);
   }
 
   function afterMove() {
-    const tx = Math.floor(pl.x / TS), ty = Math.floor((pl.y - 4) / TS);
-    // Sortie de la carte.
-    if (pl.y - 4 < 0 || pl.y > art.h * TS || pl.x < 0 || pl.x > art.w * TS) {
-      const e = connAt(pl.x < 0 ? -1 : pl.x > art.w * TS ? art.w : tx, pl.y - 4 < 0 ? -1 : pl.y > art.h * TS ? art.h : ty);
-      if (e) { run(() => leave(e)); return; }
-    }
+    const [tx, ty] = tileOf();
     const key = tx + ',' + ty;
     if (key === pl.tile) return;
     pl.tile = key;
     const w = warpAt(tx, ty);
     if (w) { run(() => door(w)); return; }
     if (checkSight()) return;
-    if (at(tx, ty) === 'g' && def.wild && canFight() && Math.random() < 1 / 9) {
-      const [dex, a, b] = G.U.pick(def.wild);
-      run(() => battle({ wild: [dex, a + Math.floor(Math.random() * (b - a + 1))] }));
+    if (at(tx, ty) === 'g') {
+      G.AdvFX.burst('grass', pl.x, pl.y - 8, 5, 0.35);
+      if (def.wild && canFight() && Math.random() < 1 / 10) {
+        const [dex, a, b] = G.U.pick(def.wild);
+        run(() => battle({ wild: [dex, a + Math.floor(Math.random() * (b - a + 1))] }));
+      }
     }
   }
 
   async function leave(e) {
     // Les passages bloqués par l'histoire.
-    const back = () => { pl.x -= DIRV[{ up: 'up', down: 'down', left: 'left', right: 'right' }[e.dir]][0] * 24; pl.y -= DIRV[e.dir][1] * 24; };
+    const back = () => {};   // (on n'a pas encore bougé : le pas se fait case par case)
     if (e.todo) { back(); await talk([['', 'Cette route n\'est pas encore ouverte. La suite de l\'aventure arrive bientôt !']]); return; }
     if (mapKey === 'bourg' && !S.flags.starter) {
       back();
-      await talk([['Prof. Chen', 'Hé ! Attends ! Il est dangereux de partir sans Pokémon ! Viens me voir devant mon labo, au sud.']]);
+      await talk([['Prof. Chen', 'Hé ! Attends ! Il est dangereux de partir sans Pokémon ! Viens me voir dans mon labo, au sud.']]);
       return;
     }
     if (mapKey === 'jadielle' && e.map === 'route2' && !S.flags.ch1done) {
@@ -449,10 +506,22 @@ G.Overworld = (() => {
       await talk([['Prof. Chen', S.flags.ch1done ? 'Ton Pokédex se remplit ? Continue comme ça !' : 'Va jusqu\'à Jadielle par la Route 1, au nord. Les hautes herbes sont pleines de Pokémon sauvages !']]);
       return;
     }
-    await talk([['Prof. Chen', 'Ah, te voilà ! Tu es en retard, les autres sont déjà partis…'],
-                ['Prof. Chen', 'Il me reste trois Pokémon. Choisis bien : il sera ton premier compagnon !']]);
+    await talk([['Prof. Chen', 'Ah, te voilà ! Tu es en retard, Régis est déjà là…'],
+                ['Prof. Chen', 'Il reste trois Pokémon dans les Poké Balls sur la table. Choisis bien : il sera ton premier compagnon !']]);
     const i = await G.AdvUI.choose('Choisis ton premier Pokémon', STARTERS.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types })));
-    const dex = STARTERS[i];
+    await pickStarter(STARTERS[i]);
+  }
+  /** Une Poké Ball de la table du labo : on regarde le Pokémon et on le prend (ou pas). */
+  async function ball(n) {
+    if (S.flags.starter) return;
+    const p = G.DEX_BY[n.ball];
+    const i = await G.AdvUI.choose('Prof. Chen : tu veux ' + p.name + ' ?', [
+      { dex: n.ball, title: 'Oui, je prends ' + p.name, types: p.types },
+      { title: 'Non, je réfléchis', desc: '' }
+    ]);
+    if (i === 0) await pickStarter(n.ball);
+  }
+  async function pickStarter(dex) {
     S.team = [M().make(dex, 5)];
     S.flags.starter = dex;
     G.DB.grant(dex, 'adv');
@@ -460,13 +529,17 @@ G.Overworld = (() => {
     G.Audio.sfx('legend');
     S.potions += 2;
     await talk([['', 'Tu as choisi ' + G.DEX_BY[dex].name + ' !'],
-                ['Prof. Chen', 'Prends aussi ces 2 Potions. Et à la fin de chaque étape de ton voyage, un nouveau Pokémon pourra rejoindre ton équipe !']]);
+                ['Prof. Chen', 'Prends aussi ces 2 Potions. Et à la fin de chaque étape de ton voyage, tu pourras capturer un Pokémon, lui apprendre une attaque ou entraîner ton équipe !']]);
     loadNpcs();
+    // Régis prend la Poké Ball qui bat la tienne et te défie aussitôt, comme dans le jeu.
+    const r = npcs.find(x => x.event === 'rival1');
+    if (r) await rival1(r);
   }
   async function rival1(n) {
+    if (!S.flags.starter) { await talk([['Régis', 'Pff, le Prof. Chen m\'a dit d\'attendre. Choisis vite, toi aussi !']]); return; }
     const counter = { 1: 4, 4: 7, 7: 1 }[S.flags.starter] || 4;
-    await talk([['Régis', 'Tiens, tiens… Le retardataire ! Moi j\'ai déjà mon Pokémon. Voyons ce que vaut le tien !']]);
-    const res = await battle({ trainer: { name: 'Régis', team: [[counter, 5]] } }, n);
+    await talk([['Régis', 'Alors je prends ' + G.DEX_BY[counter].name + ' ! Tiens, voyons ce que vaut le tien !']]);
+    const res = await battle({ trainer: { name: 'Régis', team: [[counter, 5]], smart: true, potions: 0 } }, n);
     S.flags.rival1 = 1;
     heal();
     await talk(res === 'win'
@@ -474,44 +547,54 @@ G.Overworld = (() => {
       : [['Régis', 'Ha ! Trop facile ! Bye bye, le nul !'], ['Prof. Chen', 'Ne t\'en fais pas, je soigne tes Pokémon. Entraîne-toi sur la Route 1 !']]);
     npcs = npcs.filter(x => x !== n);
   }
+  async function mom() {
+    heal();
+    if (S.flags.starter) G.Audio.sfx('levelup');
+    await talk([['Maman', S.flags.starter ? 'Tu as l\'air épuisé ! Repose-toi un peu… Voilà, tes Pokémon sont en forme !' : 'Le grand jour ! Le Prof. Chen t\'attend dans son labo, au sud du village.']]);
+    S.heal = { map: 'bourg_maison', x: 7, y: 4 };
+  }
+  async function center() {
+    await talk([['Infirmière Joëlle', 'Bienvenue au Centre Pokémon ! Je soigne tes Pokémon…']]);
+    heal();
+    S.heal = { map: mapKey, x: 7, y: 4 };
+    G.Audio.sfx('levelup');
+    await talk([['Infirmière Joëlle', 'Voilà ! Tes Pokémon sont en pleine forme. À bientôt !']]);
+    if (mapKey === 'jadielle_centre' && S.ch === 1) { S.flags.ch1done = 1; await chapterEnd(); }
+  }
+  async function pierre(n) {
+    if (S.flags.pierre) { await talk([['Pierre', 'Tu as mon Badge Roche. Continue ta route, tu iras loin !']]); return; }
+    await talk([['Pierre', 'Je suis Pierre, le champion d\'Argenta. Ma défense est solide comme le roc !'], ['Pierre', 'Montre-moi ta détermination !']]);
+    const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]], smart: true } }, n);
+    if (res === 'win') {
+      S.flags.pierre = 1; S.money += 500;
+      G.Audio.sfx('legend');
+      await talk([['Pierre', 'Tu m\'as battu… Tu mérites ceci : le Badge Roche !'], ['', 'Tu obtiens le Badge Roche et 500 pièces !']]);
+      if (S.ch === 3) await chapterEnd();
+    }
+  }
+
+  /** Entrer dans un bâtiment (sa vraie carte) ou en sortir. */
+  async function enter(w) {
+    const to = G.KantoArt.maps[w.dest], t = to.warps[w.id] || to.warps[0];
+    await fade(() => setMap(w.dest, t.x, t.y - 1, 'up'));
+  }
+  async function exit(w) {
+    const to = G.KantoArt.maps[w.dest];
+    // La porte du dehors qui mène ici (la plus proche du numéro donné par le jeu).
+    const t = to.warps[w.id] && to.warps[w.id].dest === mapKey ? to.warps[w.id] : to.warps.find(x => x.dest === mapKey) || to.warps[w.id];
+    await fade(() => setMap(w.dest, t.x, t.y + 1, 'down'));
+  }
 
   async function door(w) {
-    const ev = w.ev, back = { map: mapKey, x: w.x, y: w.y + 1 };
+    const ev = w.ev;
+    if (ev === 'enter') { await enter(w); return; }
+    if (ev === 'exit') { await exit(w); return; }
+    if (ev === 'stairs') { await talk([['', 'L\'étage est privé.']]); return; }
     if (ev === 'link') { await link(w); return; }
-    if (ev === 'school') { await talk([['Élève', 'À l\'école des dresseurs, on apprend que l\'Eau bat le Feu, le Feu bat la Plante et la Plante bat l\'Eau !']]); return; }
-    if (ev === 'museum') { await talk([['Gardien', 'Le Musée d\'Argenta expose des fossiles de Pokémon préhistoriques. Il ouvre bientôt !']]); return; }
     if (ev === 'cave') { await talk([['', 'La Cave Taupiqueur est sombre et pleine de Taupiqueur… Pas maintenant !']]); return; }
-    if (ev === 'closed') { await talk([['', 'C\'est fermé.']]); return; }
-    if (ev === 'home') {
-      heal();
-      await talk([['Maman', S.flags.starter ? 'Tu as l\'air épuisé ! Repose-toi un peu… Voilà, tes Pokémon sont en forme !' : 'Le Prof. Chen t\'attend devant son labo !']]);
-      return;
-    }
-    if (ev === 'rivalHome') { await talk([['Sœur de Régis', S.flags.starter ? 'Régis est déjà parti à l\'aventure. Il dit qu\'il deviendra le meilleur !' : 'Régis est parti voir le Prof. Chen.']]); return; }
-    if (ev === 'lab') { await talk([['Assistant', 'Le Prof. Chen est dehors, juste devant la porte.']]); return; }
     if (ev === 'house') { await talk([['Habitant', 'On dit qu\'un Pikachu dresseur traîne dans le coin… Bizarre, non ?']]); return; }
     if (ev === 'gymJadielle') { await talk([['', 'L\'arène de Jadielle est fermée. Son champion est absent…']]); return; }
-    if (ev === 'mart') { await mart(); return; }
-    if (ev === 'center') {
-      await talk([['Infirmière Joëlle', 'Bienvenue au Centre Pokémon ! Je soigne tes Pokémon…']]);
-      heal();
-      S.heal = back;
-      G.Audio.sfx('levelup');
-      await talk([['Infirmière Joëlle', 'Voilà ! Tes Pokémon sont en pleine forme. À bientôt !']]);
-      if (mapKey === 'jadielle' && S.ch === 1) { S.flags.ch1done = 1; await chapterEnd(); }
-      return;
-    }
-    if (ev === 'gymArgenta') {
-      if (S.flags.pierre) { await talk([['Pierre', 'Tu as mon Badge Roche. Continue ta route, tu iras loin !']]); return; }
-      await talk([['Pierre', 'Je suis Pierre, le champion d\'Argenta. Ma défense est solide comme le roc !'], ['Pierre', 'Montre-moi ta détermination !']]);
-      const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]] } }, { px: pl.x, py: pl.y + 170, d: 'up' });
-      if (res === 'win') {
-        S.flags.pierre = 1; S.money += 500;
-        G.Audio.sfx('legend');
-        await talk([['Pierre', 'Tu m\'as battu… Tu mérites ceci : le Badge Roche !'], ['', 'Tu obtiens le Badge Roche et 500 pièces !']]);
-        if (S.ch === 3) await chapterEnd();
-      }
-    }
+    await talk([['', 'C\'est fermé.']]);
   }
 
   async function mart() {
@@ -528,29 +611,68 @@ G.Overworld = (() => {
     }
   }
 
-  /** Fin de chapitre : une récompense, puis le chapitre suivant commence tout de suite. */
+  /** Fin de chapitre : on choisit sa récompense, puis le chapitre suivant commence tout de suite. */
   async function chapterEnd() {
     const ch = S.ch;
     G.Audio.sfx('legend');
     await talk([['', 'Chapitre ' + ch + ' terminé : ' + K().CHAPTERS[ch].title + ' !']]);
-    // Version de Nika : pas de capture en combat ; à la fin d'un chapitre, on choisit un Pokémon parmi 3 cartes.
+    for (;;) {
+      const i = await G.AdvUI.choose('Choisis ta récompense', [
+        { icon: 'pball', title: 'Capturer un Pokémon', desc: 'Un Pokémon de la région parmi 3' },
+        { icon: 'book', title: 'Apprendre une capacité', desc: 'Le Maître des capacités enseigne une attaque en avance' },
+        { icon: 'candy', title: 'Entraîner l\'équipe', desc: '+2 niveaux pour toute l\'équipe' },
+        { icon: 'gift', title: 'Le sac du voyageur', desc: '5 Potions, 2 Total Soin et 500 pièces' }
+      ]);
+      if (i === 0) { await capture(ch); break; }
+      if (i === 1) { if (await tutor()) break; continue; }
+      if (i === 2) { await train(2); break; }
+      S.potions += 5; S.cures = (S.cures || 0) + 2; S.money += 500;
+      G.Audio.sfx('confirm');
+      await talk([['', 'Tu reçois 5 Potions, 2 Total Soin et 500 pièces !']]);
+      break;
+    }
+    S.ch = Math.min(K().CHAPTERS.length - 1, ch + 1);
+    commit();
+    await intro();
+  }
+  /** Capturer : 3 cartes de Pokémon de la région (ceux de l'animé à cet endroit). */
+  async function capture(ch) {
     const avg = Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
     const all = CATCH[ch] || CATCH[1];
     const fresh = all.filter(d => G.DEX_BY[d] && !S.team.some(m => m.dex === d) && !S.box.some(m => m.dex === d));
     const pool = (fresh.length >= 3 ? fresh : all.slice()).sort(() => Math.random() - 0.5);
     const picks = pool.slice(0, 3);
     const i = await G.AdvUI.choose('Un Pokémon veut te rejoindre ! Lequel captures-tu ?',
-      picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + avg })));
+      picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + avg + ' · ' + M().movesAt(d, avg).map(M().moveName).join(', ') })));
     const dex = picks[i];
     const m = M().make(dex, avg);
     if (S.team.length < 6) S.team.push(m); else S.box.push(m);
     G.DB.grant(dex, 'adv');
     refreshFollowers();
-    await talk([['', 'Et hop ! ' + G.DEX_BY[dex].name + ' est capturé' + (S.team.includes(m) ? ' et te suit !' : ' et part dans ta boîte.')]]);
     G.Audio.sfx('confirm');
-    S.ch = Math.min(K().CHAPTERS.length - 1, ch + 1);
-    commit();
-    await intro();
+    await talk([['', 'Et hop ! ' + G.DEX_BY[dex].name + ' est capturé' + (S.team.includes(m) ? ' et te suit !' : ' et part dans ta boîte.')]]);
+  }
+  /** Le Maître des capacités : une des prochaines attaques du Pokémon, apprise tout de suite. Rend true si appris. */
+  async function tutor() {
+    for (;;) {
+      const j = await G.AdvUI.choose('Quel Pokémon apprend une capacité ?', S.team.map(m => ({ dex: m.dex, title: M().name(m), desc: 'N. ' + m.lv + ' · ' + m.moves.map(M().moveName).join(', ') }))
+        .concat([{ title: 'Retour', desc: '' }]));
+      if (j >= S.team.length) return false;
+      const m = S.team[j], ids = M().nextMoves(m, 3);
+      if (!ids.length) { await talk([['Maître des capacités', M().name(m) + ' connaît déjà toutes ses attaques !']]); continue; }
+      const k = await G.AdvUI.choose('Quelle capacité pour ' + M().name(m) + ' ?', ids.map(id => ({ icon: 'move:' + id, title: M().moveName(id), desc: M().moveInfo(id) }))
+        .concat([{ title: 'Retour', desc: '' }]));
+      if (k >= ids.length) continue;
+      if (await G.AdvBattle.learn(m, ids[k], false)) return true;
+    }
+  }
+  /** Entraîner : des niveaux pour toute l'équipe (attaques et évolutions comprises). */
+  async function train(n) {
+    G.Audio.sfx('levelup');
+    await talk([['', 'Ton équipe s\'entraîne dur… Tous tes Pokémon gagnent ' + n + ' niveaux !']]);
+    for (const m of S.team) for (let i = 0; i < n && m.lv < 100; i++) await G.AdvBattle.levelUp(m, false, true);
+    await G.AdvBattle.evolutions();
+    refreshFollowers();
   }
   async function intro() {
     const c = K().CHAPTERS[S.ch];
@@ -584,7 +706,7 @@ G.Overworld = (() => {
         if (i === 0) {
           if (!S.team.length) continue;
           const j = await G.AdvUI.choose('Touche un Pokémon pour qu\'il mène l\'équipe', S.team.map((m, k) => ({ dex: m.dex,
-            title: M().name(m) + (k === 0 ? ' (tête)' : ''), desc: 'N. ' + m.lv + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV · ' + m.moves.map(M().moveName).join(', ') })));
+            title: M().name(m) + (k === 0 ? ' (tête)' : ''), desc: 'N. ' + m.lv + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV' + (m.st ? ' · ' + G.AdvBattle.ST_NAME[m.st] : '') + ' · ' + m.moves.map(M().moveName).join(', ') })));
           if (j > 0) { const [m] = S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
         else if (i === 2) { quit(); return; }
@@ -598,6 +720,7 @@ G.Overworld = (() => {
     G.UI.chrome(false);
     S = save();
     S.flags = S.flags || {};
+    S.team.concat(S.box).forEach(M().migrate);
     G.UI.show('scr-world');
     open_ = true;
     resize();

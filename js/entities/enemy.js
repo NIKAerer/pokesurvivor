@@ -125,7 +125,7 @@
         this.ky += ny * knock;
       }
       if (G.Coop.isHost) G.Coop.hurtShown(this, d, color);
-      if (this.hp <= 0) { if (this.catchable && G.Adventure.stun(this)) return; this.die(); }
+      if (this.hp <= 0) { this.die(); }
     }
 
     /** Lo que se VE al recibir un golpe. */
