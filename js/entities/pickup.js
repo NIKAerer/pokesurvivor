@@ -28,7 +28,7 @@ G.Pickups = (() => {
   const BOSS_T10 = 1 / 3;               // version de Nika : Poké Ball d'un boss (1 sur 3)
   const LEGEND_T10 = 1;                 // version de Nika : le légendaire de la grieta en donne toujours une
   const TICKET_RATE = 1 / 1200;         // version de Nika : environ une Poké Ball par partie de 15 min
-  const BALL_RATE = 1 / 35;             // version de Nika : Super Bonbon sur un ennemi normal
+  const BALL_RATE = 1 / 90;             // version de Nika : Super Bonbon sur un ennemi normal (1/35 → 1/90 le 2026-10-29 : trop par partie)
 
   function clear() { list = []; }
   function all() { return list; }
@@ -86,7 +86,8 @@ G.Pickups = (() => {
       // (Hasta el 12-10-2026 el legendario de la grieta daba siempre 2: salían demasiados.)
       // Version de Nika (moins de tickets) : un seul ticket au lieu d'un ×10.
       if (Math.random() < (legend ? LEGEND_T10 : BOSS_T10)) push(orb('ticket', x, y - 20, 1));
-      for (let i = 0; i < 4; i++) push(orb('ball', x + G.U.rand(-40, 40), y + G.U.rand(-30, 30), 1));
+      // Version de Nika : 2 Super Bonbons par boss (4 avant le 2026-10-29).
+      for (let i = 0; i < 2; i++) push(orb('ball', x + G.U.rand(-40, 40), y + G.U.rand(-30, 30), 1));
       return;
     }
     push(orb(value >= 20 ? 'xpBig' : 'xp', x, y, value));
