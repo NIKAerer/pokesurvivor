@@ -14,14 +14,16 @@ G.Overworld = (() => {
   const M = () => G.AdvMon;
   const TS = 32;
   const SOLID = new Set(['#', 'w']);
-  const SPEED = TS * 4;      // 4 cases par seconde en marchant, le double en courant
+  const SPEED = TS * 4.5;    // en courant : ×1,7
   const STARTERS = [1, 4, 7];
-  // Les Pokémon proposés à la fin de chaque chapitre (ceux de l'animé à cet endroit).
+  // Les Pokémon proposés à la fin de chaque chapitre : des Pokémon recherchés (rares,
+  // fossiles, évolutions) liés aux lieux de l'animé, pas les Roucool et Rattata des herbes.
+  // Version de Nika : on suit l'histoire, mais sans Pikachu.
   const CATCH = {
-    1: [16, 19, 21, 25, 29, 32, 56, 52],
-    2: [10, 13, 25, 11, 14, 123, 127, 46],
-    3: [74, 95, 27, 50, 41, 66, 104, 111],
-    4: [35, 41, 46, 74, 39, 54, 60, 118]
+    1: [133, 58, 63, 147, 66, 37, 77, 92],
+    2: [123, 127, 15, 12, 102, 114, 83, 2],
+    3: [95, 111, 104, 138, 140, 142, 27, 75],
+    4: [131, 120, 54, 61, 118, 35, 39, 116]
   };
 
   let S = null;              // la sauvegarde de l'Aventure
@@ -91,26 +93,26 @@ G.Overworld = (() => {
   const inMap = (x, y) => x >= 0 && y >= 0 && x < art.w && y < art.h;
   const npcAt = (x, y) => npcs.some(n => Math.floor(n.px / TS) === x && Math.floor((n.py - 4) / TS) === y);
   const LEDGE = { v: [0, 1], '<': [-1, 0], '>': [1, 0] };
-  /** Essaie de faire un pas (ou un saut de rebord) dans la direction dir. */
-  function tryStep(dir, running) {
-    const [dx, dy] = DIRV[dir], [x, y] = tileOf(), nx = x + dx, ny = y + dy;
-    const dur = TS / (SPEED * (running ? 2 : 1));
-    if (!inMap(nx, ny)) {
-      const e = connAt(nx, ny);
-      if (e) run(() => leave(e)); else bumpWall();
-      return;
-    }
-    const ch = at(nx, ny), lg = LEDGE[ch];
-    if (lg) {
-      // Rebord : on saute par-dessus, seulement dans son sens.
-      if (lg[0] === dx && lg[1] === dy && inMap(nx + dx, ny + dy) && !SOLID.has(at(nx + dx, ny + dy)) && !npcAt(nx + dx, ny + dy)) {
-        G.Audio.sfx('click');
-        pl.step = { x0: pl.x, y0: pl.y, x1: (nx + dx) * TS + 16, y1: (ny + dy) * TS + 30, t: 0, dur: 0.5, jump: true };
-      } else bumpWall();
-      return;
-    }
-    if (SOLID.has(ch) || npcAt(nx, ny)) { bumpWall(); return; }
-    pl.step = { x0: pl.x, y0: pl.y, x1: nx * TS + 16, y1: ny * TS + 30, t: 0, dur };
+  /** dx, dy : sens du mouvement (les rebords ne se passent que dans un sens). */
+  function solidAt(wx, wy, dx, dy) {
+    const tx = Math.floor(wx / TS), ty = Math.floor(wy / TS);
+    if (!inMap(tx, ty)) return !connAt(tx, ty);
+    const ch = at(tx, ty), lg = LEDGE[ch];
+    if (SOLID.has(ch)) return true;
+    if (lg && !(lg[0] === Math.sign(dx) && lg[1] === Math.sign(dy) && (dx || dy))) return true;
+    return npcs.some(n => Math.abs(n.px - wx) < 14 && wy > n.py - 14 && wy < n.py + 2);
+  }
+  function blocked(x, y, dx = 0, dy = 0) {
+    return solidAt(x - 9, y - 1, dx, dy) || solidAt(x + 9, y - 1, dx, dy) || solidAt(x - 9, y - 9, dx, dy) || solidAt(x + 9, y - 9, dx, dy);
+  }
+  /** Un rebord sous les pieds : petit saut par-dessus, jusqu'à la case d'après. */
+  function ledgeJump() {
+    const [x, y] = tileOf(), lg = LEDGE[at(x, y)];
+    if (!lg) return false;
+    const nx = x + lg[0], ny = y + lg[1];
+    pl.jump = { x0: pl.x, y0: pl.y, x1: lg[0] ? nx * TS + 16 : pl.x, y1: lg[1] ? ny * TS + 30 : pl.y, t: 0 };
+    G.Audio.sfx('click');
+    return true;
   }
   function bumpWall() {
     if (bumpT) return;
@@ -139,7 +141,7 @@ G.Overworld = (() => {
     if (!art._bg) { art._bg = img(art.base); art._top = img(art.top); }
     bg = art._bg; top = art._top;
     loadNpcs();
-    pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir; pl.step = null; pl.hop = 0;
+    pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir; pl.jump = null; pl.hop = 0;
     pl.tile = tx + ',' + ty;
     trail = [];
     for (let i = 0; i < 200; i++) trail.push({ x: pl.x, y: pl.y });
@@ -206,28 +208,27 @@ G.Overworld = (() => {
     bumpT = Math.max(0, bumpT - dt);
     const [ax, ay] = busy ? [0, 0] : axis();
     const running = keys.has('shiftleft') || keys.has('shiftright') || keys.has('keyx') || (stick && Math.hypot(stick.x - stick.x0, stick.y - stick.y0) > 45);
-    let left = dt;
-    while (left > 0) {
-      if (!pl.step) {
-        if (busy || !(ax || ay)) break;
-        pl.dir = Math.abs(ax) > Math.abs(ay) ? (ax < 0 ? 'left' : 'right') : (ay < 0 ? 'up' : 'down');
-        tryStep(pl.dir, running);
-        if (!pl.step) break;
-      }
-      const st = pl.step, use = Math.min(left, st.dur - st.t);
-      st.t += use; left -= use;
-      pl.walkT += use * (running && !st.jump ? 1.6 : 1);
-      const k = st.t / st.dur;
-      pl.x = st.x0 + (st.x1 - st.x0) * k; pl.y = st.y0 + (st.y1 - st.y0) * k;
-      pl.hop = st.jump ? Math.sin(k * Math.PI) * 18 : 0;
-      if (st.t >= st.dur) {
-        pl.step = null; pl.hop = 0;
-        pl.x = st.x1; pl.y = st.y1;
-        afterMove();
-        if (busy) break;
-      }
+    pl.moving = false;
+    if (pl.jump) {
+      // Saut de rebord.
+      const j = pl.jump;
+      j.t = Math.min(1, j.t + dt / 0.45);
+      pl.x = j.x0 + (j.x1 - j.x0) * j.t; pl.y = j.y0 + (j.y1 - j.y0) * j.t;
+      pl.hop = Math.sin(j.t * Math.PI) * 18;
+      pl.moving = true; pl.walkT += dt;
+      if (j.t >= 1) { pl.jump = null; pl.hop = 0; afterMove(); }
+    } else if (ax || ay) {
+      pl.moving = true;
+      pl.dir = Math.abs(ax) > Math.abs(ay) ? (ax < 0 ? 'left' : 'right') : (ay < 0 ? 'up' : 'down');
+      const v = SPEED * (running ? 1.7 : 1);
+      pl.walkT += dt * (running ? 1.6 : 1);
+      const nx = pl.x + ax * v * dt, ny = pl.y + ay * v * dt;
+      let moved = false;
+      if (ax && !blocked(nx, pl.y, ax, 0)) { pl.x = nx; moved = true; }
+      if (ay && !blocked(pl.x, ny, 0, ay)) { pl.y = ny; moved = true; }
+      if (!moved) bumpWall();
+      afterMove();
     }
-    pl.moving = !!pl.step;
     // La file des Pokémon qui suivent.
     const h = trail[0];
     if (!h || Math.hypot(h.x - pl.x, h.y - pl.y) > 2) { trail.unshift({ x: pl.x, y: pl.y }); if (trail.length > 400) trail.pop(); }
@@ -323,7 +324,7 @@ G.Overworld = (() => {
     const f = front();
     const [ddx, ddy] = DIRV[pl.dir];
     const at2 = (x, y) => npcs.find(n => Math.floor(n.px / TS) === x && Math.floor((n.py - 4) / TS) === y);
-    let n = at2(f.x, f.y);
+    let n = npcs.find(n => Math.hypot(n.px - (pl.x + ddx * 28), n.py - (pl.y + ddy * 28)) < 22) || at2(f.x, f.y);
     // Par-dessus un comptoir (Infirmière Joëlle, vendeur) : on parle à la personne derrière.
     if (!n && at(f.x, f.y) === '#') { n = at2(f.x + ddx, f.y + ddy); if (n && !n.event) n = null; }
     if (n) { run(() => talkNpc(n)); return; }
@@ -447,10 +448,17 @@ G.Overworld = (() => {
   }
 
   function afterMove() {
+    // Sortie de la carte par un bord.
+    if (pl.y - 4 < 0 || pl.y > art.h * TS || pl.x < 0 || pl.x > art.w * TS) {
+      const [cx, cy] = tileOf();
+      const e = connAt(pl.x < 0 ? -1 : pl.x > art.w * TS ? art.w : cx, pl.y - 4 < 0 ? -1 : pl.y > art.h * TS ? art.h : cy);
+      if (e) { run(() => leave(e)); return; }
+    }
     const [tx, ty] = tileOf();
     const key = tx + ',' + ty;
     if (key === pl.tile) return;
     pl.tile = key;
+    if (!pl.jump && ledgeJump()) return;
     const w = warpAt(tx, ty);
     if (w) { run(() => door(w)); return; }
     if (checkSight()) return;
@@ -465,7 +473,7 @@ G.Overworld = (() => {
 
   async function leave(e) {
     // Les passages bloqués par l'histoire.
-    const back = () => {};   // (on n'a pas encore bougé : le pas se fait case par case)
+    const back = () => { pl.x -= DIRV[e.dir][0] * 24; pl.y -= DIRV[e.dir][1] * 24; };
     if (e.todo) { back(); await talk([['', 'Cette route n\'est pas encore ouverte. La suite de l\'aventure arrive bientôt !']]); return; }
     if (mapKey === 'bourg' && !S.flags.starter) {
       back();
