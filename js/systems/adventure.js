@@ -20,6 +20,9 @@ G.Adventure = (() => {
   const LEARN = [4, 8, 13, 19, 26, 34];           // niveaux où l'on apprend une attaque (jusqu'à 4)
   const ATK_LV = 1.03;                             // +3 % de dégâts par niveau
   const CATCH = { 1: 0.75, 2: 0.6, 3: 0.45, 4: 0.3, 5: 0.15 };
+  // Version de Nika (2026-10-29) : beaucoup moins d'expérience, et un niveau max par chapitre.
+  const XP_K = 0.25;
+  const capOf = i => 10 + i * 4;                  // chapitre 1 : N. 10 … chapitre 15 : N. 66
   const STUN = 6;                                  // secondes pour lancer la Poké Ball
   const GOAL = 2300;                               // distance de l'objectif (px)
   const WILD_N = 11;
@@ -340,6 +343,7 @@ G.Adventure = (() => {
       coins = 120 + ci * 60;
       s.coins += coins;
       A.done = Math.max(A.done, ci + 1);
+      A.reward = ci;                 // un choix de récompense à faire sur la carte (adv-ui.js)
     }
     G.DB.commit(true);
     const res = { won, dead, ch: ci, place: ch.place, coins, caught: caught.slice() };
@@ -390,13 +394,59 @@ G.Adventure = (() => {
   }
 
   /** Pour le HUD. */
+  /** L'expérience d'un Pokémon de l'équipe (game.js, team.js) : réduite, et rien au-delà du niveau max. */
+  function xpFor(p, xp) { return p.level >= capOf(ci) ? 0 : xp * XP_K; }
+
+  /** Les 3 récompenses de fin de chapitre : capturer, apprendre une attaque, s'entraîner. */
+  function rewards() {
+    const A = S(), i = A.reward;
+    if (i == null || !CH[i] || !A.team.length) return [];
+    const c = CH[i], out = [], B = G.Moves.BY_ID;
+    const lead = A.team[0];
+    const seed = (i + 1) * 7919 + A.team.length * 31;          // même tirage tant que le choix n'est pas fait
+    const pick = (list, k = 0) => list[(seed + k) % list.length];
+    // 1. Capturer un Pokémon du chapitre (ou de son boss) qu'on n'a pas encore.
+    const pool = [...new Set(c.wild.concat(c.boss))].filter(d => G.DEX_BY[d] && G.SPRITE_META[d] && !owns(d));
+    if (pool.length) {
+      const dex = pick(pool), lv = Math.max(2, Math.round(lead.lv * 0.8));
+      out.push({ kind: 'catch', dex, title: 'Capturer ' + G.DEX_BY[dex].name, desc: 'Il rejoint ton équipe au niveau ' + lv + '.',
+        apply: () => { A.team.push({ dex, lv, xp: 0, moves: [] }); G.DB.grant(dex, 'adv'); } });
+    }
+    // 2. Apprendre (ou renforcer) une attaque.
+    const known = m => (m.moves && m.moves.length ? m.moves : [[G.startMoveOf(m.dex), 1]]).filter(([id]) => B[id]);
+    const travel = A.team.slice(0, TRAVEL);
+    const learners = travel.filter(m => known(m).length < 4 && G.Team.learnset(m.dex).some(id => B[id] && !known(m).some(k => k[0] === id)));
+    if (learners.length) {
+      const m = pick(learners, 1), ks = known(m);
+      const opts = [...new Set(G.Team.learnset(m.dex))].filter(id => B[id] && !ks.some(k => k[0] === id));
+      const id = pick(opts, 2);
+      out.push({ kind: 'move', dex: m.dex, move: id, title: G.DEX_BY[m.dex].name + ' apprend ' + B[id].name, desc: B[id].desc || '',
+        apply: () => { m.moves = ks.concat([[id, 1]]); } });
+    } else {
+      const m = pick(travel, 1), ks = known(m), k = pick(ks, 2);
+      out.push({ kind: 'move', dex: m.dex, move: k[0], title: G.DEX_BY[m.dex].name + ' renforce ' + B[k[0]].name, desc: 'Son attaque gagne 2 niveaux.',
+        apply: () => { k[1] += 2; m.moves = ks; } });
+    }
+    // 3. S'entraîner : +2 niveaux pour toute l'équipe qui part.
+    out.push({ kind: 'train', title: 'Entraînement', desc: '+2 niveaux pour les ' + travel.length + ' Pokémon de ton équipe.',
+      apply: () => { for (const m of travel) { m.lv += 2; m.xp = 0; } } });
+    return out;
+  }
+  function takeReward(r) {
+    const A = S();
+    if (A.reward == null) return;
+    r.apply();
+    A.reward = null;
+    G.DB.commit(true);
+  }
+
   function info() {
     if (!active || !ch) return null;
     const pl = G.Game.player;
     const d = pl && goal ? Math.hypot(goal.x - pl.x, goal.y - pl.y) : 0;
-    return { n: ci + 1, place: ch.place, who: ch.who, phase, dist: Math.round(d / 10), caught: caught.length };
+    return { n: ci + 1, place: ch.place, who: ch.who, phase, dist: Math.round(d / 10), caught: caught.length, cap: capOf(ci) };
   }
 
-  return { CH, STARTERS, TRAVEL, start, setup, update, finish, stun, drawables, info, leaderDex, pickStarter, setLeader,
+  return { CH, STARTERS, TRAVEL, xpFor, rewards, takeReward, capOf, start, setup, update, finish, stun, drawables, info, leaderDex, pickStarter, setLeader,
            state: S, get active() { return active; }, get won() { return won; } };
 })();

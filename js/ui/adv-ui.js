@@ -19,6 +19,7 @@ G.AdvUI = (() => {
     const st = A().state(), box = $('adv-body');
     box.innerHTML = '';
     if (!st.team.length) { starters(box); return; }
+    if (st.reward != null) { reward(box); return; }
 
     // L'équipe : les 6 premiers partent, les autres attendent en réserve.
     const team = document.createElement('div');
@@ -58,6 +59,30 @@ G.AdvUI = (() => {
     });
     map.appendChild(list);
     box.appendChild(map);
+  }
+
+  /** Version de Nika : un choix à la fin de chaque chapitre gagné. */
+  function reward(box) {
+    const list = A().rewards();
+    if (!list.length) { A().state().reward = null; render(); return; }
+    const c = document.createElement('div');
+    c.className = 'ts-card adv-start';
+    c.innerHTML = `<h3>Chapitre ${A().state().reward + 1} terminé !</h3><p>Choisis ta récompense :</p>`;
+    const row = document.createElement('div');
+    row.className = 'adv-starters adv-rewards';
+    for (const r of list) {
+      const b = document.createElement('button');
+      b.className = 'adv-starter';
+      const p = r.dex && G.DEX_BY[r.dex];
+      b.style.setProperty('--tc', r.kind === 'train' ? '#e0a020' : r.kind === 'move' ? G.U.TYPE_COLOR[G.Moves.BY_ID[r.move].type] : G.U.TYPE_COLOR[p.types[0]]);
+      if (r.kind === 'catch') b.appendChild(G.UI.spriteCanvas(r.dex, 120, 100, { scale: 3, hero: true, lively: true, shiny: G.DB.ownsShiny(r.dex) }));
+      else b.insertAdjacentHTML('beforeend', `<span class="adv-rico">${G.Icons.html(r.kind === 'move' ? 'move:' + r.move : 'up', 64)}</span>`);
+      b.insertAdjacentHTML('beforeend', `<b>${r.title}</b><small>${r.desc}</small>`);
+      b.onclick = () => { A().takeReward(r); G.Audio.sfx('confirm'); render(); };
+      row.appendChild(b);
+    }
+    c.appendChild(row);
+    box.appendChild(c);
   }
 
   function starters(box) {
