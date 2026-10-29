@@ -131,12 +131,13 @@ G.LevelUp = (() => {
     // --- nouveau Pokémon dans l'équipe (jusqu'à 6) ---
     if (G.Team.leader === pl && !G.Team.full() && !(G.Tower.active && G.Tower.SOLO)) {
       for (const mon of G.Team.recruitOffers(2)) {
-        G.Sprites.preload([mon.dex]);   // prêt s'il rejoint l'équipe
+        const shiny = G.DB.ownsShiny(mon.dex);
+        G.Sprites.preload([mon.dex], undefined, shiny);   // prêt s'il rejoint l'équipe
         out.push({
-          w: 9, type: 'mon', key: 'mon:' + mon.dex, dex: mon.dex,
+          w: 9, type: 'mon', key: 'mon:' + mon.dex, dex: mon.dex, shiny,
           icon: 'heart', color: G.U.TYPE_COLOR[mon.types[0]],
           tag: 'Équipe ' + (members.length + 1) + '/6',
-          title: mon.name, desc: 'Rejoint ton équipe au niveau 1. Bonus d\'équipe : ' + G.Roles.info(mon.dex).team + '.',
+          title: (shiny ? G.Icons.html('shiny', 14) + ' ' : '') + mon.name, desc: 'Rejoint ton équipe au niveau 1. Bonus d\'équipe : ' + G.Roles.info(mon.dex).team + '.',
           types: mon.types, evo: G.Team.evoLevel(mon.dex),
           apply: () => G.Team.recruit(mon.dex)
         });
