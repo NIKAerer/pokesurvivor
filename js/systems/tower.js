@@ -61,11 +61,12 @@ G.Tower = (() => {
 
   /** Les Pokémon sauvages d'une salle : du type de l'étage, plus nombreux et plus forts en montant. */
   function wild(st) {
-    const f = st.floor, T = G.Enemies.TIERS, ti = Math.min(T.length - 1, Math.floor((f - 1) / 4));
+    // Version de Nika (2026-10-29, « trop simple ») : plus nombreux, plus solides, paliers plus rapides.
+    const f = st.floor, T = G.Enemies.TIERS, ti = Math.min(T.length - 1, Math.floor((f - 1) / 3));
     let pool = G.Enemies.candidates(T[ti]).filter(p => p.types.includes(st.type));
     if (pool.length < 2) pool = G.Enemies.candidates(T[ti]);
-    const n = Math.min(12, 3 + Math.floor(f * 0.7));
-    const sc = G.Enemies.scale(f * 35);
+    const n = Math.min(16, 4 + Math.floor(f * 0.9));
+    const sc = G.Enemies.scale(f * 60);
     return Array.from({ length: n }, () => {
       const def = G.Enemies.defFor(G.U.pick(pool), T[ti], ti);
       return { def, sc };
@@ -107,7 +108,7 @@ G.Tower = (() => {
 
   /** Le dresseur suit la courbe des salles (sinon ~500 fois les PV d'un sauvage et un coup presque mortel) :
    *  son équipe a en tout BOSS_HP fois les PV d'un sauvage de l'étage, et BOSS_DMG fois ses dégâts. */
-  const BOSS_HP = 12, BOSS_DMG = 1.8;
+  const BOSS_HP = 18, BOSS_DMG = 2.2;
   function tame(st, ids) {
     const ref = wild(st), n = Math.max(1, ids.length);
     const hp = ref.reduce((a, w) => a + w.def.hp * w.sc.hp, 0) / ref.length;

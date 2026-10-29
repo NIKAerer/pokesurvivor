@@ -556,7 +556,8 @@ G.Game = (() => {
     if (mine || p.kind === 'bomb') G.Audio.sfx(PICK_SFX[p.kind]);
     if (p.kind === 'xp' || p.kind === 'xpBig') {
       const xp = p.value * (G.Coop.active ? G.Coop.xpFactor() : 1);
-      pendingLevels += pl.gainXp(xp);
+      const up = pl.gainXp(xp);
+      if (!G.Tower.active) pendingLevels += up;     // version de Nika : dans la Tour, une seule carte par étage
       G.Team.shareXp(xp);              // version de Nika : XP partagée avec toute l'équipe
       return;
     }
