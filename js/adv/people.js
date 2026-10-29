@@ -112,6 +112,13 @@ G.People = (() => {
         x.fillRect(i, y + dy + 1, 1, 1);
       }
     });
+    // Contour sombre d'1 pixel, comme les sprites et le décor du Survivor.
+    const img = x.getImageData(0, 0, 16, 22), d = img.data, out = [];
+    const op = (i, j) => i >= 0 && j >= 0 && i < 16 && j < 22 && d[(j * 16 + i) * 4 + 3] > 0;
+    for (let j = 0; j < 22; j++) for (let i = 0; i < 16; i++)
+      if (!op(i, j) && (op(i + 1, j) || op(i - 1, j) || op(i, j + 1) || op(i, j - 1))) out.push([i, j]);
+    x.fillStyle = '#16120e';
+    for (const [i, j] of out) x.fillRect(i, j, 1, 1);
     cache.set(key, c);
     return c;
   }
