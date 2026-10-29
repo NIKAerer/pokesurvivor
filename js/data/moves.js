@@ -571,6 +571,11 @@
   const PHYS = ['rock-throw', 'poison-sting', 'rock-slide', 'meteor-mash', 'spikes', 'bonemerang'];
   function roleOfDef(m) { return m.role || ROLE_FIX[m.id] || (m.kind === 'buff' ? BUFF_ROLE[m.stat] : KIND_ROLE[m.kind]); }
   function catOfDef(m) { return m.cat || (PHYS.includes(m.id) || ['melee', 'dash', 'boomerang'].includes(m.kind) ? 'P' : 'S'); }
+  // Version de Nika (2026-10-29) : attaques en double retirées (même type, même forme, même effet).
+  //   Hurlement, Rugissement → Mégaphone ; Écho → Étoile Filante ; Plaquage → Charge ;
+  //   Dard-Venin → Détritus ; E-Coque, Glas de Soin → Vœu.
+  const DUPES = ['roar', 'growl', 'echoed-voice', 'body-slam', 'poison-sting', 'soft-boiled', 'heal-bell'];
+  for (let i = RAW.length; i--;) if (DUPES.includes(RAW[i].id)) RAW.splice(i, 1);
   for (const m of RAW) { m.role = roleOfDef(m); m.cat = catOfDef(m); }
 
   // Pool de movimientos por tipo. El pool `normal` lo tienen todos.

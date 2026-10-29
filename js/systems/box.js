@@ -30,8 +30,9 @@ G.Box = (() => {
   function cap() { const s = S(); fix(); return Math.min(MAX, START + STEP * (s.boxExtra | 0) + (s.boxBonus | 0)); }
   function free() { return Math.max(0, cap() - box().length); }
   function full() { return free() <= 0; }
-  /** Prix des 2 places suivantes : 200, 300, 400... jusqu'à 1000 au plus (Nika, 2026-10-29 : un peu moins cher). */
-  function price() { return Math.min(1000, 200 + 100 * (S().boxExtra | 0)); }
+  /** Prix des 2 places suivantes, par paliers de 5 achats (Nika, 2026-10-29) :
+   *  200 pour les 5 premiers, puis 400, 600, 800, et 1000 au plus. */
+  function price() { return Math.min(1000, 200 * (1 + Math.floor((S().boxExtra | 0) / 5))); }
   function canExpand() { return cap() < MAX && (S().coins | 0) >= price(); }
   function expand() {
     const s = S();
