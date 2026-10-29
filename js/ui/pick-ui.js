@@ -313,7 +313,12 @@ G.PickUI = (() => {
           else { G.UI.toast('Garde au moins un Pokémon.'); return; }
           G.Audio.sfx('select'); render();
         }
-        : () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select'); render(); };
+        : () => {
+          // Version de Nika : toucher un Pokémon de la boîte le prend comme partenaire et ouvre sa fiche.
+          if (s.partner !== dex) s.partnerShiny = false;
+          s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select');
+          view = 'team'; fromBox = true; showView(); render();
+        };
       list.appendChild(b);
     }
     // Version de Nika : boîte limitée, on l'agrandit avec des pièces.
@@ -406,9 +411,10 @@ G.PickUI = (() => {
   }
 
   // Onglets du bas : Accueil, Équipe, Boîte, Ligue (Boutique ouvre son écran).
-  let view = 'home';
+  let view = 'home', fromBox = false;     // fromBox : la fiche a été ouverte depuis la Boîte (« Retour » y revient)
   function go(v) {
     if (v === 'shop') { G.GachaUI.open(); return; }
+    fromBox = false;
     view = v;
     G.Audio.sfx('select');
     showView();
@@ -458,7 +464,7 @@ G.PickUI = (() => {
     const VIEW_NAME = { team: 'Équipe', box: 'Boîte', league: 'Ligue' };
     document.querySelectorAll('#scr-pick .hub-view:not([data-v="home"])').forEach(v => {
       v.insertAdjacentHTML('afterbegin', `<div class="hub-backrow"><button class="ts-back" data-sfx="back" aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button><h2>${VIEW_NAME[v.dataset.v] || ''}</h2></div>`);
-      v.querySelector('.ts-back').onclick = () => { view = 'home'; showView(); };
+      v.querySelector('.ts-back').onclick = () => { view = v.dataset.v === 'team' && fromBox ? 'box' : 'home'; fromBox = false; showView(); };
     });
     // « Retour » des écrans Améliorations et Gacha : revient ici.
     document.querySelectorAll('[data-back]').forEach(b => { b.onclick = open; });
