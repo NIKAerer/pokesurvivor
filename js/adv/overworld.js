@@ -42,7 +42,7 @@ G.Overworld = (() => {
   // ---------------- sauvegarde ----------------
   function save() {
     const s = G.DB.save;
-    if (!s.adv2) s.adv2 = { team: [], box: [], map: 'bourg_maison', x: 4, y: 6, dir: 'up', flags: {}, ch: 1, potions: 0, money: 500, heal: { map: 'bourg_maison', x: 7, y: 4 } };
+    if (!s.adv2) s.adv2 = { team: [], box: [], map: 'bourg_maison', x: 4, y: 6, dir: 'up', flags: {}, ch: 1, potions: 0, money: 500, heal: { map: 'bourg_maison', x: 8, y: 5 } };
     return s.adv2;
   }
   function commit() {
@@ -136,6 +136,15 @@ G.Overworld = (() => {
          : dir === 'left' ? { dir, map: c.map, x: to.w - 1, y: v } : { dir, map: c.map, x: 0, y: v };
   }
 
+  /** La case libre la plus proche (jamais coincé dans un meuble, un mur ou un personnage). */
+  function freeNear(tx, ty) {
+    const ok = (x, y) => inMap(x, y) && !SOLID.has(at(x, y)) && !LEDGE[at(x, y)] && !npcAt(x, y);
+    for (let r = 0; r < 6; r++)
+      for (let dy = -r; dy <= r; dy++)
+        for (let dx = -r; dx <= r; dx++)
+          if (Math.max(Math.abs(dx), Math.abs(dy)) === r && ok(tx + dx, ty + dy)) return [tx + dx, ty + dy];
+    return [tx, ty];
+  }
   function setMap(key, tx, ty, dir) {
     mapKey = key;
     art = G.KantoArt.maps[key];
@@ -143,6 +152,7 @@ G.Overworld = (() => {
     if (!art._bg) { art._bg = img(art.base); art._top = img(art.top); }
     bg = art._bg; top = art._top;
     loadNpcs();
+    [tx, ty] = freeNear(tx, ty);
     pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir; pl.jump = null; pl.hop = 0;
     pl.tile = tx + ',' + ty;
     trail = [];
@@ -444,8 +454,8 @@ G.Overworld = (() => {
     await talk([['', 'Tu n\'as plus de Pokémon en forme… Tu cours au Centre Pokémon le plus proche.']]);
     heal();
     let h = S.heal || {};
-    if (!G.KantoArt.maps[h.map]) h = { map: 'bourg_maison', x: 7, y: 4 };
-    setMap(h.map, h.x, h.y, h.map === 'bourg_maison' ? 'right' : 'up');
+    if (!G.KantoArt.maps[h.map]) h = { map: 'bourg_maison', x: 8, y: 5 };
+    setMap(h.map, h.x, h.y, 'up');
     await talk([[h.map.startsWith('bourg') ? 'Maman' : 'Infirmière Joëlle', 'Tes Pokémon sont en pleine forme. Fais attention à toi !']]);
   }
 
@@ -558,7 +568,7 @@ G.Overworld = (() => {
     heal();
     if (S.flags.starter) G.Audio.sfx('levelup');
     await talk([['Maman', S.flags.starter ? 'Tu as l\'air épuisé ! Repose-toi un peu… Voilà, tes Pokémon sont en forme !' : 'Le grand jour ! Le Prof. Chen t\'attend dans son labo, au sud du village.']]);
-    S.heal = { map: 'bourg_maison', x: 7, y: 4 };
+    S.heal = { map: 'bourg_maison', x: 8, y: 5 };
   }
   async function center() {
     await talk([['Infirmière Joëlle', 'Bienvenue au Centre Pokémon ! Je soigne tes Pokémon…']]);
