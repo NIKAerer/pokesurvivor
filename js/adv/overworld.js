@@ -52,117 +52,120 @@ G.Overworld = (() => {
   const at = (x, y) => (map.rows[y] || '')[x] || 'T';
   function rnd(x, y, k = 0) { const v = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453; return v - Math.floor(v); }
 
-  function grass(c, x, y, px, py, dark) {
-    c.fillStyle = dark ? '#3f9a48' : '#62bf58';
-    c.fillRect(px, py, TS, TS);
-    c.fillStyle = dark ? '#357f3c' : '#52a94b';
-    for (let i = 0; i < 5; i++) c.fillRect(px + Math.floor(rnd(x, y, i) * 28), py + Math.floor(rnd(x, y, i + 9) * 28), 2, 4);
+  // Version de Nika : le sol, l'eau, les arbres, les rochers et les hautes herbes
+  // sont ceux du Survivor (world/tiles.js) ; les bâtiments, barrières et panneaux
+  // sont peints ici au même pixel (16 px d'art par tuile, ×2 à l'écran).
+  const A = 16;
+  let props = [];
+  const px = (c, col, x, y, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+
+  function fence(c, x, y) {
+    const ox = x * A, oy = y * A, L = at(x - 1, y) === 'F', R = at(x + 1, y) === 'F';
+    px(c, '#2a1a10', ox + (L ? 0 : 2), oy + 5, A - (L ? 0 : 2) - (R ? 0 : 2), 4);
+    px(c, '#c89a62', ox + (L ? 0 : 2), oy + 6, A - (L ? 0 : 2) - (R ? 0 : 2), 2);
+    for (const fx of [2, 11]) {
+      px(c, '#2a1a10', ox + fx, oy + 2, 4, 12);
+      px(c, '#a87442', ox + fx + 1, oy + 3, 2, 10);
+      px(c, '#e0b27a', ox + fx + 1, oy + 3, 2, 1);
+    }
   }
-  function tile(c, ch, x, y) {
-    const px = x * TS, py = y * TS;
-    if (ch === '=') {
-      c.fillStyle = '#e2c98e'; c.fillRect(px, py, TS, TS);
-      c.fillStyle = '#c9ad72';
-      for (let i = 0; i < 4; i++) c.fillRect(px + Math.floor(rnd(x, y, i) * 28), py + Math.floor(rnd(x, y, i + 5) * 28), 3, 2);
-      return;
-    }
-    if (ch === '~') {
-      c.fillStyle = '#3a8ae0'; c.fillRect(px, py, TS, TS);
-      c.fillStyle = '#7ab8f4';
-      for (let i = 0; i < 2; i++) { const yy = py + 8 + i * 14 + Math.floor(rnd(x, y, i) * 4); c.fillRect(px + 4 + Math.floor(rnd(x, y, i + 3) * 10), yy, 10, 2); }
-      return;
-    }
-    grass(c, x, y, px, py, false);
-    if (ch === ',') {
-      for (let i = 0; i < 3; i++) {
-        const fx = px + 4 + Math.floor(rnd(x, y, i) * 22), fy = py + 4 + Math.floor(rnd(x, y, i + 4) * 22);
-        c.fillStyle = i % 2 ? '#ffffff' : '#f05a7a'; c.fillRect(fx, fy, 4, 4);
-        c.fillStyle = '#f8e040'; c.fillRect(fx + 1, fy + 1, 2, 2);
-      }
-    } else if (ch === 'g') {
-      c.fillStyle = '#2f8a3c'; c.fillRect(px, py + 6, TS, TS - 6);
-      c.fillStyle = '#4fb04a';
-      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
-        const bx = px + i * 8, by = py + 6 + j * 13;
-        c.fillRect(bx + 1, by + 4, 2, 8); c.fillRect(bx + 3, by, 2, 12); c.fillRect(bx + 5, by + 3, 2, 9);
-      }
-    } else if (ch === 'T') {
-      c.fillStyle = '#6a4a2a'; c.fillRect(px + 12, py + 20, 8, 12);
-      c.fillStyle = '#1f6a34'; c.beginPath(); c.arc(px + 16, py + 14, 15, 0, 6.2832); c.fill();
-      c.fillStyle = '#2f8a44'; c.beginPath(); c.arc(px + 13, py + 11, 9, 0, 6.2832); c.fill();
-      c.fillStyle = '#4aa858'; c.fillRect(px + 9, py + 6, 5, 3);
-    } else if (ch === 'F') {
-      c.fillStyle = '#a8784a'; c.fillRect(px, py + 12, TS, 4); c.fillRect(px, py + 22, TS, 4);
-      c.fillStyle = '#7a5230'; c.fillRect(px + 2, py + 6, 5, 24); c.fillRect(px + 25, py + 6, 5, 24);
-    } else if (ch === 'r') {
-      c.fillStyle = '#7a7a86'; c.beginPath(); c.ellipse(px + 16, py + 19, 14, 11, 0, 0, 6.2832); c.fill();
-      c.fillStyle = '#a0a0ac'; c.beginPath(); c.ellipse(px + 12, py + 15, 7, 5, 0, 0, 6.2832); c.fill();
-    } else if (ch === 'S') {
-      c.fillStyle = '#6a4a2a'; c.fillRect(px + 14, py + 18, 4, 12);
-      c.fillStyle = '#b8864a'; c.fillRect(px + 5, py + 6, 22, 14);
-      c.fillStyle = '#8a5e30'; c.fillRect(px + 8, py + 10, 16, 2); c.fillRect(px + 8, py + 14, 12, 2);
+  function sign(c, x, y) {
+    const ox = x * A, oy = y * A;
+    px(c, 'rgba(0,0,0,.3)', ox + 4, oy + 13, 9, 2);
+    px(c, '#2a1a10', ox + 7, oy + 8, 3, 7); px(c, '#7a5230', ox + 8, oy + 8, 1, 6);
+    px(c, '#2a1a10', ox + 2, oy + 2, 13, 8); px(c, '#d8a868', ox + 3, oy + 3, 11, 6);
+    px(c, '#b07c42', ox + 3, oy + 8, 11, 1); px(c, '#8a5a2a', ox + 5, oy + 5, 7, 1);
+  }
+  function flowers(c, x, y) {
+    const cols = ['#f4d65c', '#f39ac0', '#eef2ff', '#ff6f7a'];
+    for (let i = 0; i < 4; i++) {
+      const fx = x * A + 2 + Math.floor(rnd(x, y, i) * 11), fy = y * A + 2 + Math.floor(rnd(x, y, i + 7) * 11), col = cols[(x + y + i) % 4];
+      px(c, '#2f5f2b', fx, fy + 2, 1, 2);
+      px(c, col, fx, fy - 1); px(c, col, fx - 1, fy); px(c, col, fx + 1, fy); px(c, col, fx, fy + 1); px(c, '#ffe14d', fx, fy);
     }
   }
 
   const BUILD = {
-    H: { roof: '#d0483a', dark: '#a03028', wall: '#f4e6c8' },
-    L: { roof: '#8a96a8', dark: '#66728a', wall: '#f4f4f0' },
-    C: { roof: '#e0484a', dark: '#b03034', wall: '#fff4f4' },
-    M: { roof: '#3a6ad0', dark: '#2a4ea8', wall: '#f0f4ff' },
-    G: { roof: '#8a6a4a', dark: '#6a4e34', wall: '#d8c8a8' }
+    H: { roof: ['#e86450', '#c8443a', '#9a2e28'], wall: ['#fbefd6', '#e2cfae'], trim: '#8a5a3a' },
+    L: { roof: ['#b8c2d0', '#8e9aae', '#6a7690'], wall: ['#ffffff', '#dfe3ea'], trim: '#6a7690' },
+    C: { roof: ['#ff6a6a', '#e0484a', '#a82a30'], wall: ['#ffffff', '#f0dede'], trim: '#a82a30' },
+    M: { roof: ['#6a9aff', '#3a6ad0', '#24489a'], wall: ['#ffffff', '#dfe6f6'], trim: '#24489a' },
+    G: { roof: ['#b89468', '#8a6a4a', '#5e4630'], wall: ['#d8c8a8', '#b8a684'], trim: '#5e4630' }
   };
   function buildings(c) {
-    const W = map.rows[0].length, H = map.rows.length, seen = new Set();
+    const W = map.rows[0].length, H = map.rows.length, seen = new Set(), K = '#1a1410';
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const ch = at(x, y);
       if (!BUILD[ch] || seen.has(x + ',' + y)) continue;
-      // Le rectangle du bâtiment (ses portes D comprises).
       let x1 = x, y1 = y;
-      while (BUILD[at(x1 + 1, y)] === BUILD[ch] || at(x1 + 1, y) === 'D') x1++;
+      while (at(x1 + 1, y) === ch || at(x1 + 1, y) === 'D') x1++;
       while (at(x, y1 + 1) === ch || at(x, y1 + 1) === 'D') y1++;
       const doors = [];
-      for (let yy = y; yy <= y1; yy++) for (let xx = x; xx <= x1; xx++) { seen.add(xx + ',' + yy); if (at(xx, yy) === 'D') doors.push([xx, yy]); }
-      const b = BUILD[ch], px = x * TS, py = y * TS, w = (x1 - x + 1) * TS, h = (y1 - y + 1) * TS;
-      const roofH = Math.round(h * 0.55);
-      c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(px + 4, py + 6, w, h);
-      c.fillStyle = b.wall; c.fillRect(px + 2, py + roofH - 4, w - 4, h - roofH + 4);
-      c.fillStyle = b.roof; c.fillRect(px, py, w, roofH);
-      c.fillStyle = b.dark;
-      for (let i = 6; i < roofH; i += 8) c.fillRect(px, py + i, w, 2);
-      c.fillRect(px - 2, py + roofH - 4, w + 4, 5);
-      // Fenêtres.
-      c.fillStyle = '#7ac0f0';
-      for (let wx = px + 12; wx + 14 < px + w - 8; wx += 34) {
-        if (doors.some(([dx]) => Math.abs(dx * TS + 16 - (wx + 7)) < 20)) continue;
-        c.fillRect(wx, py + roofH + 6, 14, 10);
-        c.fillStyle = '#ffffff'; c.fillRect(wx + 2, py + roofH + 8, 3, 3); c.fillStyle = '#7ac0f0';
+      for (let yy = y; yy <= y1; yy++) for (let xx = x; xx <= x1; xx++) { seen.add(xx + ',' + yy); if (at(xx, yy) === 'D') doors.push(xx); }
+      const b = BUILD[ch], X = x * A, Y = y * A, w = (x1 - x + 1) * A, h = (y1 - y + 1) * A;
+      const roofH = Math.round(h * 0.56), wallY = Y + roofH - 2;
+      // Ombre portée, murs, toit.
+      px(c, 'rgba(0,0,0,.28)', X + 3, Y + 4, w, h);
+      px(c, K, X + 1, wallY, w - 2, Y + h - wallY);
+      px(c, b.wall[0], X + 2, wallY + 1, w - 4, Y + h - wallY - 2);
+      px(c, b.wall[1], X + 2, Y + h - 4, w - 4, 3);
+      for (let i = X + 6; i < X + w - 4; i += 8) px(c, b.wall[1], i, wallY + 2, 1, Y + h - wallY - 6);
+      px(c, K, X - 1, Y, w + 2, roofH + 1);
+      px(c, b.roof[1], X, Y + 1, w, roofH - 1);
+      px(c, b.roof[0], X, Y + 1, w, 3);
+      for (let i = Y + 6; i < Y + roofH - 2; i += 4) px(c, b.roof[2], X, i, w, 1);
+      px(c, b.roof[2], X, Y + roofH - 2, w, 2);
+      px(c, K, X - 2, Y + roofH - 1, w + 4, 2);
+      // Fenêtres (pas devant les portes).
+      for (let wx = X + 5; wx + 9 < X + w - 3; wx += 13) {
+        if (doors.some(dx => Math.abs(dx * A + 8 - (wx + 4)) < 12)) continue;
+        px(c, K, wx, wallY + 4, 9, 7); px(c, '#7ac6f4', wx + 1, wallY + 5, 7, 5);
+        px(c, '#d6f0ff', wx + 1, wallY + 5, 3, 2); px(c, b.trim, wx + 4, wallY + 5, 1, 5);
       }
-      for (const [dx, dy] of doors) {
-        c.fillStyle = '#5a3a20'; c.fillRect(dx * TS + 8, dy * TS + 8, 16, 24);
-        c.fillStyle = '#f0c040'; c.fillRect(dx * TS + 19, dy * TS + 20, 2, 2);
+      for (const dx of doors) {
+        const DX = dx * A + 4;
+        px(c, K, DX - 1, Y + h - 12, 10, 12); px(c, '#6a4024', DX, Y + h - 11, 8, 11);
+        px(c, '#8a5a34', DX + 1, Y + h - 10, 6, 1); px(c, '#ffd23f', DX + 6, Y + h - 6, 1, 1);
+        px(c, '#c8b8a0', DX - 2, Y + h, 12, 2);
       }
-      // Enseigne : Poké Ball (Centre), M (Boutique), badge (Arène).
-      const cx = px + w / 2, sy = py + roofH - 18;
-      if (ch === 'C' || ch === 'G' || ch === 'M') {
-        c.fillStyle = '#ffffff'; c.beginPath(); c.arc(cx, sy, 9, 0, 6.2832); c.fill();
-        c.fillStyle = ch === 'C' ? '#e0484a' : ch === 'M' ? '#3a6ad0' : '#8a6a4a';
-        c.beginPath(); c.arc(cx, sy, 9, Math.PI, 0); c.fill();
-        c.fillStyle = '#222'; c.fillRect(cx - 9, sy - 1, 18, 2);
-        c.fillStyle = '#fff'; c.beginPath(); c.arc(cx, sy, 3, 0, 6.2832); c.fill();
+      // Enseigne : Poké Ball (Centre), Boutique, Arène.
+      if (ch === 'C' || ch === 'M' || ch === 'G') {
+        const cx = Math.round(X + w / 2), cy = Y + Math.round(roofH / 2);
+        px(c, K, cx - 6, cy - 6, 13, 13);
+        px(c, ch === 'C' ? '#e0484a' : ch === 'M' ? '#3a6ad0' : '#8a6a4a', cx - 5, cy - 5, 11, 5);
+        px(c, '#ffffff', cx - 5, cy + 1, 11, 4); px(c, K, cx - 5, cy, 11, 1);
+        px(c, K, cx - 2, cy - 2, 5, 5); px(c, '#ffffff', cx - 1, cy - 1, 3, 3);
       }
     }
   }
 
   function bake() {
-    const W = map.rows[0].length, H = map.rows.length;
+    const W = map.rows[0].length, H = map.rows.length, n = Math.max(W, H);
+    const kind = (x, y) => at(x, y) === '~' ? 'liquid' : 'floor';
+    const path = (gx, gy) => at(Math.floor(gx / A), Math.floor(gy / A)) === '=' ? 1 : 0;
+    const chunk = G.Tiles.paintChunk(0, 0, n, kind, path, 0, mapKey.length * 7);
     bg = document.createElement('canvas');
-    bg.width = W * TS; bg.height = H * TS;
+    bg.width = W * A; bg.height = H * A;
     const c = bg.getContext('2d');
+    c.drawImage(chunk, 0, 0);
+    props = [];
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const ch = at(x, y);
-      tile(c, BUILD[ch] || ch === 'D' ? '.' : ch, x, y);
+      if (ch === 'F') fence(c, x, y);
+      else if (ch === 'S') sign(c, x, y);
+      else if (ch === ',') flowers(c, x, y);
+      else if (ch === 'T') props.push({ type: 'tree', x: x * TS + 16 + (rnd(x, y, 3) - 0.5) * 6, y: y * TS + 30 });
+      else if (ch === 'r') props.push({ type: 'rock', x: x * TS + 16, y: y * TS + 28 });
+      else if (ch === 'g') props.push({ type: 'grass', x: x * TS + 16, y: y * TS + 31, wig: rnd(x, y, 5) * 6 });
     }
     buildings(c);
+  }
+  function drawProp(c, p) {
+    const v = p.type === 'grass' && Math.sin(time * 2.4 + p.wig) > 0.55 ? 1 : 0;
+    const img = G.Tiles.propSprite(0, p.type, v);
+    const w = img.width * 2, h = img.height * 2;
+    if (p.type !== 'grass') { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(p.x, p.y, p.type === 'tree' ? 16 : 18, 6, 0, 0, 6.2832); c.fill(); }
+    c.drawImage(img, Math.round(p.x - w / 2), Math.round(p.y - h + (p.type === 'grass' ? 4 : 2)), w, h);
   }
 
   // ---------------- personnages ----------------
@@ -312,9 +315,11 @@ G.Overworld = (() => {
     c.fillStyle = '#1f6a34'; c.fillRect(0, 0, vw, vh);
     c.setTransform(dpr * zoom, 0, 0, dpr * zoom, Math.round(dpr * (vw / 2 - cam.x * zoom)), Math.round(dpr * (vh / 2 - cam.y * zoom)));
     c.imageSmoothingEnabled = false;
-    c.drawImage(bg, 0, 0);
+    c.drawImage(bg, 0, 0, bg.width * 2, bg.height * 2);
+    const vx0 = cam.x - vw / zoom / 2 - 40, vx1 = cam.x + vw / zoom / 2 + 40, vy0 = cam.y - vh / zoom / 2 - 10, vy1 = cam.y + vh / zoom / 2 + 90;
     // Eau qui scintille.
     const list = [];
+    for (const p of props) if (p.x > vx0 && p.x < vx1 && p.y > vy0 && p.y < vy1) list.push({ y: p.y, draw: x => drawProp(x, p) });
     for (const n of npcs) list.push({ y: n.py, draw: x => {
       G.People.draw(x, n.look, n.px, n.py, n.d, n.walkT, n.moving);
       if (n.bubble) { x.fillStyle = '#fff'; x.fillRect(n.px - 7, n.py - 66, 14, 16); x.fillStyle = '#e03030'; x.fillRect(n.px - 2, n.py - 63, 4, 7); x.fillRect(n.px - 2, n.py - 54, 4, 3); }
@@ -327,9 +332,6 @@ G.Overworld = (() => {
     for (const d of G.AdvBattle.drawables()) list.push(d);
     list.sort((a, b) => a.y - b.y);
     for (const d of list) d.draw(c);
-    // Les herbes hautes cachent le bas des jambes.
-    const tx = Math.floor(pl.x / TS), ty = Math.floor((pl.y - 4) / TS);
-    if (at(tx, ty) === 'g') { c.fillStyle = '#2f8a3c'; c.fillRect(pl.x - 14, pl.y - 8, 28, 9); c.fillStyle = '#4fb04a'; for (let i = -12; i < 12; i += 5) c.fillRect(pl.x + i, pl.y - 11, 2, 9); }
     G.AdvBattle.drawBall(c);
     for (const f of fxs) {
       const k = f.t / 0.9;
@@ -567,7 +569,7 @@ G.Overworld = (() => {
     if (ev === 'gymArgenta') {
       if (S.flags.pierre) { await talk([['Pierre', 'Tu as mon Badge Roche. Continue ta route, tu iras loin !']]); return; }
       await talk([['Pierre', 'Je suis Pierre, le champion d\'Argenta. Ma défense est solide comme le roc !'], ['Pierre', 'Montre-moi ta détermination !']]);
-      const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]] } }, { px: pl.x, py: pl.y - 150, d: 'down' });
+      const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]] } }, { px: pl.x, py: pl.y + 170, d: 'up' });
       if (res === 'win') {
         S.flags.pierre = 1; S.money += 500;
         G.Audio.sfx('legend');
