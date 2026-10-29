@@ -120,7 +120,8 @@ G.I18n.add({
   // ---------------- objets ----------------
   'Restos': 'Restes', 'Cinta Elección': 'Bandeau Choix', 'Garra Rápida': 'Vive Griffe', 'Banda Focus': 'Ceinture Force',
   'Cascabel Concha': 'Grelot Coque', 'Moneda Amuleto': 'Pièce Rune', 'Huevo Suerte': 'Œuf Chance', 'Vidasfera': 'Orbe Vie',
-  'Pañuelo Elección': 'Mouchoir Choix', 'Casco Dentado': 'Casque Brut', 'Chaleco Asalto': 'Veste de Combat',
+  'Pañuelo Elección': 'Mouchoir Choix', 'Casco Dentado': 'Casque Brut', 'Chaleco Asalto': 'Veste de Combat', 'Anticura': 'Anti-Soin',
+  'Tus ataques (y los de tu equipo) aplican anticura: los enemigos golpeados se curan un 60% menos durante 5 s.': 'Tes attaques (et celles de ton équipe) donnent de l\'anti-soin : les ennemis touchés se soignent 60 % de moins pendant 5 s.',
   'Recuperas un 1,5% de tu vida por segundo.': 'Tu récupères 1,5 % de tes PV par seconde.',
   '+40% de daño, pero no puedes cambiar de movimiento.': '+40 % de dégâts, mais tu ne peux pas changer de capacité.',
   '+40% de daño, pero -15% de velocidad.': '+40 % de dégâts, mais -15 % de vitesse.',

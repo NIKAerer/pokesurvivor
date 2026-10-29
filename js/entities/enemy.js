@@ -625,10 +625,12 @@
       // mucho ×2,5. (Como los enemigos que tienen más vida si haces más daño.)
       const pow = Math.max(1, ...G.Game.everyone().map(p => (p.atk > 0 && p.baseAtk > 0 ? p.atk / p.baseAtk : 1)));
       const k = 0.07 * Math.min(2.5, Math.pow(pow, 0.35));
+      // Version de Nika : Anticura (items.js) : un ennemi touché se soigne 60 % de moins pendant 5 s.
+      const now = performance.now();
       let n = 0;
       for (const e of G.EnemyMgr.queryCircle(this.x, this.y, 150)) {
         if (e.dead || e.hp >= e.maxHp) continue;
-        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * k);
+        e.hp = Math.min(e.maxHp, e.hp + e.maxHp * k * (e.noHealT > now ? 0.4 : 1));
         G.FX.burst(e.x, e.y - e.bodyH * 0.6, '#7dffb0', 5, 60);
         n++;
       }

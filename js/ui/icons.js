@@ -168,6 +168,9 @@ G.Icons = (() => {
     focussash: { pal: { o: '#ff9a3d', d: '#c0601a', w: '#ffd0a0' }, rows: [
       '.kk.........', 'kook........', 'kwook.......', '.kwook......', '..kwook.....', '...kwook....',
       '....kwook...', '.....kwook..', '......kwook.', '.......koodk', '........kddk', '.........kk.'] },
+    healblock: { pal: { r: '#ff5f6d', d: '#b02a3a', w: '#ffffff', g: '#3a3a4a' }, rows: [
+      '...kkkkkk...', '..kggggggk..', '.kggkkkkkgk.', 'kgkggrrk.kgk', 'kgkkggrkkkgk', 'kgkrrggrrkgk',
+      'kgkrrrggrkgk', 'kgkkkrrggkgk', 'kgk.krrkgggk', '.kgkkkkkkgg.', '..kggggggk..', '...kkkkkk...'] },
     shellbell: { pal: { p: '#ff9ec4', q: '#c05a88', w: '#ffe0ee', y: '#ffd23f' }, rows: [
       '.....kk.....', '....kyyk....', '...kkkkkk...', '..kwppppqk..', '.kwppppppqk.', '.kpppppppqk.',
       'kpppppppppqk', 'kppqpqpqppqk', 'kkkkkkkkkkkk', '....kyyk....', '.....kk.....', '............'] },

@@ -32,7 +32,10 @@ G.Items = (() => {
     { id: 'rockyhelmet', name: 'Casco Dentado', desc: 'Los que te golpean cuerpo a cuerpo reciben daño.',
       on: () => {}, off: () => {} },
     { id: 'assaultvest', name: 'Chaleco Asalto', desc: '+20% de reducción de daño recibido.',
-      on: p => { p.dmgReduce += 0.2; }, off: p => { p.dmgReduce -= 0.2; } }
+      on: p => { p.dmgReduce += 0.2; }, off: p => { p.dmgReduce -= 0.2; } },
+    // Version de Nika : anti-soin (combat.js marque les ennemis touchés, enemy.js healAround les saute).
+    { id: 'healblock', name: 'Anticura', desc: 'Tus ataques (y los de tu equipo) aplican anticura: los enemigos golpeados se curan un 60% menos durante 5 s.',
+      on: () => {}, off: () => {} }
   ];
   const BY = {};
   for (const it of LIST) BY[it.id] = it;
