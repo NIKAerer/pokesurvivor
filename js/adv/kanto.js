@@ -8,21 +8,21 @@
 G.Kanto = (() => {
   const MAPS = {
     bourg: {
-      name: 'Bourg Palette', music: 'village', wild: null,
+      name: 'Bourg Palette', music: 'village', wild: null, ch: 1,
       doors: { PLAYERS_HOUSE: 'home', RIVALS_HOUSE: 'rivalHome', OAKS_LAB: 'lab' },
       start: { x: 6, y: 8 }
     },
-    route1: { name: 'Route 1', music: 'forest', wild: [[16, 2, 4], [19, 2, 4], [19, 3, 5], [16, 3, 5]], doors: {} },
+    route1: { name: 'Route 1', ch: 1, music: 'forest', wild: [[16, 2, 4], [19, 2, 4], [19, 3, 5], [16, 3, 5], [21, 3, 5]], doors: {} },   // Piafabec, comme dans l'animé
     jadielle: {
       name: 'Jadielle', music: 'village', wild: null,
       doors: { POKEMON_CENTER: 'center', GYM: 'gymJadielle', MART: 'mart', SCHOOL: 'school', HOUSE: 'house' }
     },
     route2: {
-      name: 'Route 2', music: 'forest', wild: [[16, 3, 5], [19, 3, 5], [10, 4, 5], [13, 4, 5], [29, 4, 6], [32, 4, 6]],
+      name: 'Route 2', ch: 2, music: 'forest', wild: [[16, 3, 5], [19, 3, 5], [10, 4, 5], [13, 4, 5], [29, 4, 6], [32, 4, 6]],
       doors: { FOREST_SOUTH_ENTRANCE: 'link', FOREST_NORTH_ENTRANCE: 'link', DIGLETTS_CAVE: 'cave', ROUTE2_HOUSE: 'house', EAST_BUILDING: 'house' }
     },
     foret: {
-      name: 'Forêt de Jade', music: 'forest', wild: [[10, 3, 5], [13, 3, 5], [11, 4, 6], [14, 4, 6], [25, 3, 5], [10, 5, 6]],
+      name: 'Forêt de Jade', ch: 2, music: 'forest', wild: [[10, 3, 5], [13, 3, 5], [11, 4, 6], [14, 4, 6], [25, 3, 5], [10, 5, 6]],
       doors: { FOREST_SOUTH_ENTRANCE: 'link', FOREST_NORTH_ENTRANCE: 'link' }
     },
     argenta: {
