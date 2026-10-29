@@ -474,3 +474,17 @@
   .scr > .box { max-height: 100%; overflow-y: auto; }
 }
 #scr-menu { display: none !important; }
+
+/* Téléphone debout : les choix en liste (une carte par ligne) au lieu de 2 + 1. */
+@media (max-width: 600px) and (orientation: portrait) {
+  #scr-levelup .cards { flex-direction: column; flex-wrap: nowrap; gap: 10px; }
+  #scr-levelup .card { flex: 0 0 auto; min-width: 0; min-height: 0; height: auto; flex-direction: row; align-items: center;
+    text-align: left; gap: 12px; padding: 10px 12px; }
+  #scr-levelup .card:hover { transform: none; }
+  #scr-levelup .card .ico { width: 72px; height: 72px; border-radius: 14px; }
+  #scr-levelup .card.mon .ico { width: 84px; height: 72px; }
+  #scr-levelup .card .txt { gap: 4px; min-width: 0; }
+  #scr-levelup .card .nm { font-size: 17px; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 6px; }
+  #scr-levelup .card .ds { font-size: 13px; }
+  #scr-levelup .card.forget { min-height: 0; }
+}
