@@ -123,8 +123,37 @@ G.People = (() => {
     return c;
   }
 
+  // Version de Nika : les vrais sprites de Pokémon Rouge Feu (kanto-art.js, people/*.png).
+  // Planche de 16 × 32 px par image : 0 face, 1 dos, 2 profil gauche, puis 3-4 / 5-6 / 7-8
+  // les pas (face, dos, profil) ; certains n'ont que les 3 premières.
+  const ALIAS = { hero: 'red_normal', chen: 'prof_oak', rival: 'blue', joy: 'nurse', scout: 'bug_catcher', samurai: 'black_belt', villager: 'boy', man: 'gentleman' };
+  const imgs = {};
+  function sheet(look) {
+    const k = ALIAS[look] || look, src = G.KantoArt && G.KantoArt.people[k];
+    if (!src) return null;
+    if (!imgs[k]) { imgs[k] = new Image(); imgs[k].src = src; }
+    return imgs[k].complete && imgs[k].naturalWidth ? imgs[k] : null;
+  }
+  const has = look => !!(G.KantoArt && G.KantoArt.people[ALIAS[look] || look]);
+
   /** Dessine un personnage, pieds en (x, y) (pixels du monde). dir : 'up' | 'down' | 'left' | 'right'. */
   function draw(ctx, look, x, y, dir = 'down', walkT = 0, moving = false) {
+    const sh = sheet(look);
+    if (sh) {
+      const n = Math.floor(sh.naturalWidth / 16);
+      const base = dir === 'up' ? 1 : dir === 'down' ? 0 : 2;
+      const step = Math.floor(walkT * 6) % 2;
+      let f = base;
+      if (moving && n >= 9) f = 3 + base * 2 + step;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = 'rgba(0,0,0,.22)';
+      ctx.beginPath(); ctx.ellipse(x, y - 2, 11, 4, 0, 0, 6.2832); ctx.fill();
+      if (dir === 'right') { ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(sh, f * 16, 0, 16, 32, -16, y - 64 + 2, 32, 64); }
+      else ctx.drawImage(sh, f * 16, 0, 16, 32, x - 16, y - 64 + 2, 32, 64);
+      ctx.restore();
+      return;
+    }
     const step = moving ? (Math.floor(walkT * 8) % 4 === 1 ? 1 : Math.floor(walkT * 8) % 4 === 3 ? 2 : 0) : 0;
     const view = dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'side';
     const img = frame(look, view, step);
@@ -138,5 +167,5 @@ G.People = (() => {
     ctx.restore();
   }
 
-  return { LOOKS, draw, frame };
+  return { LOOKS, draw, frame, has };
 })();

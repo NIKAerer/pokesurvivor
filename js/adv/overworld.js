@@ -13,7 +13,7 @@ G.Overworld = (() => {
   const K = () => G.Kanto;
   const M = () => G.AdvMon;
   const TS = 32;
-  const SOLID = new Set(['T', '~', 'F', 'r', 'S', 'H', 'L', 'C', 'M', 'G', 'D']);
+  const SOLID = new Set(['#', 'w']);
   const SPEED = TS * 4.5;
   const STARTERS = [1, 4, 7];
   // Les Pokémon proposés à la fin de chaque chapitre (ceux de l'animé à cet endroit).
@@ -38,7 +38,7 @@ G.Overworld = (() => {
   // ---------------- sauvegarde ----------------
   function save() {
     const s = G.DB.save;
-    if (!s.adv2) s.adv2 = { team: [], box: [], map: 'bourg', x: 4, y: 5, dir: 'down', flags: {}, ch: 1, balls: 0, potions: 0, money: 500, heal: { map: 'bourg', x: 4, y: 5 } };
+    if (!s.adv2) s.adv2 = { team: [], box: [], map: 'bourg', x: 6, y: 8, dir: 'down', flags: {}, ch: 1, potions: 0, money: 500, heal: { map: 'bourg', x: 6, y: 8 } };
     return s.adv2;
   }
   function commit() {
@@ -48,163 +48,78 @@ G.Overworld = (() => {
   }
   function heal() { for (const m of S.team) m.hp = M().maxHp(m); }
 
-  // ---------------- tuiles ----------------
-  const at = (x, y) => (map.rows[y] || '')[x] || 'T';
-  function rnd(x, y, k = 0) { const v = Math.sin(x * 127.1 + y * 311.7 + k * 74.7) * 43758.5453; return v - Math.floor(v); }
+  // ---------------- la carte ----------------
+  // Version de Nika : les vraies cartes de Rouge Feu (kanto-art.js) : une image du dessous,
+  // une image du dessus (toits, cimes) qui passe devant les personnages, et la grille.
+  let art = null, def = null, top = null;
+  const at = (x, y) => (art.grid[y] || '')[x] || '#';
+  function img(src) { const i = new Image(); i.src = src; return i; }
 
-  // Version de Nika : le sol, l'eau, les arbres, les rochers et les hautes herbes
-  // sont ceux du Survivor (world/tiles.js) ; les bâtiments, barrières et panneaux
-  // sont peints ici au même pixel (16 px d'art par tuile, ×2 à l'écran).
-  const A = 16;
-  let props = [];
-  const px = (c, col, x, y, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
-
-  function fence(c, x, y) {
-    const ox = x * A, oy = y * A, L = at(x - 1, y) === 'F', R = at(x + 1, y) === 'F';
-    px(c, '#2a1a10', ox + (L ? 0 : 2), oy + 5, A - (L ? 0 : 2) - (R ? 0 : 2), 4);
-    px(c, '#c89a62', ox + (L ? 0 : 2), oy + 6, A - (L ? 0 : 2) - (R ? 0 : 2), 2);
-    for (const fx of [2, 11]) {
-      px(c, '#2a1a10', ox + fx, oy + 2, 4, 12);
-      px(c, '#a87442', ox + fx + 1, oy + 3, 2, 10);
-      px(c, '#e0b27a', ox + fx + 1, oy + 3, 2, 1);
-    }
-  }
-  function sign(c, x, y) {
-    const ox = x * A, oy = y * A;
-    px(c, 'rgba(0,0,0,.3)', ox + 4, oy + 13, 9, 2);
-    px(c, '#2a1a10', ox + 7, oy + 8, 3, 7); px(c, '#7a5230', ox + 8, oy + 8, 1, 6);
-    px(c, '#2a1a10', ox + 2, oy + 2, 13, 8); px(c, '#d8a868', ox + 3, oy + 3, 11, 6);
-    px(c, '#b07c42', ox + 3, oy + 8, 11, 1); px(c, '#8a5a2a', ox + 5, oy + 5, 7, 1);
-  }
-  function flowers(c, x, y) {
-    const cols = ['#f4d65c', '#f39ac0', '#eef2ff', '#ff6f7a'];
-    for (let i = 0; i < 4; i++) {
-      const fx = x * A + 2 + Math.floor(rnd(x, y, i) * 11), fy = y * A + 2 + Math.floor(rnd(x, y, i + 7) * 11), col = cols[(x + y + i) % 4];
-      px(c, '#2f5f2b', fx, fy + 2, 1, 2);
-      px(c, col, fx, fy - 1); px(c, col, fx - 1, fy); px(c, col, fx + 1, fy); px(c, col, fx, fy + 1); px(c, '#ffe14d', fx, fy);
-    }
-  }
-
-  const BUILD = {
-    H: { roof: ['#e86450', '#c8443a', '#9a2e28'], wall: ['#fbefd6', '#e2cfae'], trim: '#8a5a3a' },
-    L: { roof: ['#b8c2d0', '#8e9aae', '#6a7690'], wall: ['#ffffff', '#dfe3ea'], trim: '#6a7690' },
-    C: { roof: ['#ff6a6a', '#e0484a', '#a82a30'], wall: ['#ffffff', '#f0dede'], trim: '#a82a30' },
-    M: { roof: ['#6a9aff', '#3a6ad0', '#24489a'], wall: ['#ffffff', '#dfe6f6'], trim: '#24489a' },
-    G: { roof: ['#b89468', '#8a6a4a', '#5e4630'], wall: ['#d8c8a8', '#b8a684'], trim: '#5e4630' }
-  };
-  function buildings(c) {
-    const W = map.rows[0].length, H = map.rows.length, seen = new Set(), K = '#1a1410';
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const ch = at(x, y);
-      if (!BUILD[ch] || seen.has(x + ',' + y)) continue;
-      let x1 = x, y1 = y;
-      while (at(x1 + 1, y) === ch || at(x1 + 1, y) === 'D') x1++;
-      while (at(x, y1 + 1) === ch || at(x, y1 + 1) === 'D') y1++;
-      const doors = [];
-      for (let yy = y; yy <= y1; yy++) for (let xx = x; xx <= x1; xx++) { seen.add(xx + ',' + yy); if (at(xx, yy) === 'D') doors.push(xx); }
-      const b = BUILD[ch], X = x * A, Y = y * A, w = (x1 - x + 1) * A, h = (y1 - y + 1) * A;
-      const roofH = Math.round(h * 0.56), wallY = Y + roofH - 2;
-      // Ombre portée, murs, toit.
-      px(c, 'rgba(0,0,0,.28)', X + 3, Y + 4, w, h);
-      px(c, K, X + 1, wallY, w - 2, Y + h - wallY);
-      px(c, b.wall[0], X + 2, wallY + 1, w - 4, Y + h - wallY - 2);
-      px(c, b.wall[1], X + 2, Y + h - 4, w - 4, 3);
-      for (let i = X + 6; i < X + w - 4; i += 8) px(c, b.wall[1], i, wallY + 2, 1, Y + h - wallY - 6);
-      px(c, K, X - 1, Y, w + 2, roofH + 1);
-      px(c, b.roof[1], X, Y + 1, w, roofH - 1);
-      px(c, b.roof[0], X, Y + 1, w, 3);
-      for (let i = Y + 6; i < Y + roofH - 2; i += 4) px(c, b.roof[2], X, i, w, 1);
-      px(c, b.roof[2], X, Y + roofH - 2, w, 2);
-      px(c, K, X - 2, Y + roofH - 1, w + 4, 2);
-      // Fenêtres (pas devant les portes).
-      for (let wx = X + 5; wx + 9 < X + w - 3; wx += 13) {
-        if (doors.some(dx => Math.abs(dx * A + 8 - (wx + 4)) < 12)) continue;
-        px(c, K, wx, wallY + 4, 9, 7); px(c, '#7ac6f4', wx + 1, wallY + 5, 7, 5);
-        px(c, '#d6f0ff', wx + 1, wallY + 5, 3, 2); px(c, b.trim, wx + 4, wallY + 5, 1, 5);
-      }
-      for (const dx of doors) {
-        const DX = dx * A + 4;
-        px(c, K, DX - 1, Y + h - 12, 10, 12); px(c, '#6a4024', DX, Y + h - 11, 8, 11);
-        px(c, '#8a5a34', DX + 1, Y + h - 10, 6, 1); px(c, '#ffd23f', DX + 6, Y + h - 6, 1, 1);
-        px(c, '#c8b8a0', DX - 2, Y + h, 12, 2);
-      }
-      // Enseigne : Poké Ball (Centre), Boutique, Arène.
-      if (ch === 'C' || ch === 'M' || ch === 'G') {
-        const cx = Math.round(X + w / 2), cy = Y + Math.round(roofH / 2);
-        px(c, K, cx - 6, cy - 6, 13, 13);
-        px(c, ch === 'C' ? '#e0484a' : ch === 'M' ? '#3a6ad0' : '#8a6a4a', cx - 5, cy - 5, 11, 5);
-        px(c, '#ffffff', cx - 5, cy + 1, 11, 4); px(c, K, cx - 5, cy, 11, 1);
-        px(c, K, cx - 2, cy - 2, 5, 5); px(c, '#ffffff', cx - 1, cy - 1, 3, 3);
-      }
-    }
-  }
-
-  function bake() {
-    const W = map.rows[0].length, H = map.rows.length, n = Math.max(W, H);
-    const kind = (x, y) => at(x, y) === '~' ? 'liquid' : 'floor';
-    const path = (gx, gy) => at(Math.floor(gx / A), Math.floor(gy / A)) === '=' ? 1 : 0;
-    const chunk = G.Tiles.paintChunk(0, 0, n, kind, path, 0, mapKey.length * 7);
-    bg = document.createElement('canvas');
-    bg.width = W * A; bg.height = H * A;
-    const c = bg.getContext('2d');
-    c.drawImage(chunk, 0, 0);
-    props = [];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const ch = at(x, y);
-      if (ch === 'F') fence(c, x, y);
-      else if (ch === 'S') sign(c, x, y);
-      else if (ch === ',') flowers(c, x, y);
-      else if (ch === 'T') props.push({ type: 'tree', x: x * TS + 16 + (rnd(x, y, 3) - 0.5) * 6, y: y * TS + 30 });
-      else if (ch === 'r') props.push({ type: 'rock', x: x * TS + 16, y: y * TS + 28 });
-      else if (ch === 'g') props.push({ type: 'grass', x: x * TS + 16, y: y * TS + 31, wig: rnd(x, y, 5) * 6 });
-    }
-    buildings(c);
-  }
-  function drawProp(c, p) {
-    const v = p.type === 'grass' && Math.sin(time * 2.4 + p.wig) > 0.55 ? 1 : 0;
-    const img = G.Tiles.propSprite(0, p.type, v);
-    const w = img.width * 2, h = img.height * 2;
-    if (p.type !== 'grass') { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(p.x, p.y, p.type === 'tree' ? 16 : 18, 6, 0, 0, 6.2832); c.fill(); }
-    c.drawImage(img, Math.round(p.x - w / 2), Math.round(p.y - h + (p.type === 'grass' ? 4 : 2)), w, h);
+  /** La porte (warp) en (x, y) et ce qu'elle fait ici, ou null. */
+  function warpAt(x, y) {
+    const w = art.warps.find(w => w.x === x && w.y === y);
+    if (!w) return null;
+    const k = Object.keys(def.doors || {}).find(k => w.to.includes(k));
+    return k ? { ...w, ev: def.doors[k] } : { ...w, ev: 'closed' };
   }
 
   // ---------------- personnages ----------------
+  const SKIP = new Set(['item_ball', 'cut_tree', 'var_0', 'push_boulder', 'prof_oak']);
+  const FACE = { face_left: 'left', face_right: 'right', face_up: 'up', face_down_and_up: 'down' };
   function loadNpcs() {
-    npcs = (K().NPCS[mapKey] || []).filter(n => !n.when || n.when(S.flags)).map(n => ({
-      ...n, px: n.x * TS + 16, py: n.y * TS + 28, d: n.dir, walkT: 0, moving: false, bubble: 0
-    }));
+    const story = (K().NPCS[mapKey] || []).filter(n => !n.when || n.when(S.flags));
+    const amb = art.objs.filter(o => !SKIP.has(o.gfx)).map((o, i) => {
+      const t = o.trainer && K().TRAINERS[o.script];
+      return { id: mapKey + '_' + i, look: G.People.has(o.gfx) ? o.gfx : 'boy', x: o.x, y: o.y, dir: FACE[o.mv] || 'down',
+        trainer: t ? { ...t, sees: Math.max(2, +o.sight || 3) } : null,
+        talk: () => [['', K().TALK[o.script] || 'Bonjour ! Belle journée pour une balade avec ses Pokémon.']] };
+    }).filter(n => !story.some(s2 => s2.x === n.x && s2.y === n.y));
+    npcs = story.concat(amb).map(n => ({ ...n, px: n.x * TS + 16, py: n.y * TS + 30, d: n.dir, walkT: 0, moving: false, bubble: 0 }));
   }
-  function npcAt(tx, ty) { return npcs.find(n => Math.floor(n.px / TS) === tx && Math.floor((n.py - 4) / TS) === ty); }
 
-  function solidAt(wx, wy) {
+  /** dx, dy : sens du mouvement (les rebords ne se passent que dans un sens). */
+  function solidAt(wx, wy, dx, dy) {
     const tx = Math.floor(wx / TS), ty = Math.floor(wy / TS);
-    if (ty < 0 || ty >= map.rows.length || tx < 0 || tx >= map.rows[0].length) return !exitAt(tx, ty);
-    if (SOLID.has(at(tx, ty))) return true;
+    if (ty < 0 || ty >= art.h || tx < 0 || tx >= art.w) return !connAt(tx, ty);
+    const ch = at(tx, ty);
+    if (SOLID.has(ch)) return true;
+    if (ch === 'v' && !(dy > 0)) return true;
+    if (ch === '<' && !(dx < 0)) return true;
+    if (ch === '>' && !(dx > 0)) return true;
     return npcs.some(n => Math.abs(n.px - wx) < 14 && wy > n.py - 14 && wy < n.py + 2);
   }
-  function blocked(x, y) {
-    return solidAt(x - 9, y - 1) || solidAt(x + 9, y - 1) || solidAt(x - 9, y - 9) || solidAt(x + 9, y - 9);
+  function blocked(x, y, dx = 0, dy = 0) {
+    return solidAt(x - 9, y - 1, dx, dy) || solidAt(x + 9, y - 1, dx, dy) || solidAt(x - 9, y - 9, dx, dy) || solidAt(x + 9, y - 9, dx, dy);
   }
-  function exitAt(tx, ty) {
-    const W = map.rows[0].length, H = map.rows.length;
-    const edge = ty < 0 ? 'n' : ty >= H ? 's' : tx < 0 ? 'w' : tx >= W ? 'e' : null;
-    if (!edge) return null;
-    const v = edge === 'n' || edge === 's' ? tx : ty;
-    return (map.exits || []).find(e => e.edge === edge && v >= e.from && v <= e.to) || null;
+  /** La connexion vers une autre carte quand on sort par un bord, ou null. */
+  function connAt(tx, ty) {
+    const dir = ty < 0 ? 'up' : ty >= art.h ? 'down' : tx < 0 ? 'left' : tx >= art.w ? 'right' : null;
+    if (!dir) return null;
+    const c = art.conns.find(c => c.dir === dir);
+    if (!c) return null;
+    const to = G.KantoArt.maps[c.map];
+    // Au-delà de la carte voisine (ou une carte pas encore faite) : bloqué.
+    const v = (dir === 'up' || dir === 'down' ? tx : ty) - c.offset;
+    if (!to) return { dir, map: c.map, todo: true };
+    if (v < 0 || v >= (dir === 'up' || dir === 'down' ? to.w : to.h)) return null;
+    return dir === 'up' ? { dir, map: c.map, x: v, y: to.h - 1 } : dir === 'down' ? { dir, map: c.map, x: v, y: 0 }
+         : dir === 'left' ? { dir, map: c.map, x: to.w - 1, y: v } : { dir, map: c.map, x: 0, y: v };
   }
 
   function setMap(key, tx, ty, dir) {
     mapKey = key;
-    map = K().MAPS[key];
-    bake();
+    art = G.KantoArt.maps[key];
+    def = K().MAPS[key];
+    if (!art._bg) { art._bg = img(art.base); art._top = img(art.top); }
+    bg = art._bg; top = art._top;
     loadNpcs();
-    pl.x = tx * TS + 16; pl.y = ty * TS + 28; pl.dir = dir || pl.dir;
+    pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir;
     pl.tile = tx + ',' + ty;
     trail = [];
     for (let i = 0; i < 200; i++) trail.push({ x: pl.x, y: pl.y });
     followers.forEach(f => { f.x = pl.x; f.y = pl.y; });
-    G.Audio.music(map.music === 'route' ? 'forest' : map.music);
-    $('world-place').textContent = map.name;
+    G.Audio.music(def.music);
+    $('world-place').textContent = def.name;
     snapCam();
   }
 
@@ -231,7 +146,7 @@ G.Overworld = (() => {
   }
   function snapCam() {
     const f = G.AdvBattle.active && G.AdvBattle.focus || { x: pl.x, y: pl.y - 16 };
-    const W = map.rows[0].length * TS, H = map.rows.length * TS, hw = vw / zoom / 2, hh = vh / zoom / 2;
+    const W = art.w * TS, H = art.h * TS, hw = vw / zoom / 2, hh = vh / zoom / 2;
     cam.x = W < hw * 2 ? W / 2 : Math.max(hw, Math.min(W - hw, f.x));
     cam.y = H < hh * 2 ? H / 2 : Math.max(hh, Math.min(H - hh, f.y));
   }
@@ -270,8 +185,8 @@ G.Overworld = (() => {
       pl.walkT += dt;
       const nx = pl.x + ax * SPEED * dt, ny = pl.y + ay * SPEED * dt;
       let moved = false;
-      if (!blocked(nx, pl.y)) { pl.x = nx; moved = true; }
-      if (!blocked(pl.x, ny)) { pl.y = ny; moved = true; }
+      if (!blocked(nx, pl.y, ax, 0)) { pl.x = nx; moved = true; }
+      if (!blocked(pl.x, ny, 0, ay)) { pl.y = ny; moved = true; }
       if (!moved && !bumpT) { bumpT = 0.35; bump(); }
       afterMove();
     }
@@ -312,14 +227,11 @@ G.Overworld = (() => {
   function draw() {
     const c = ctx;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    c.fillStyle = '#1f6a34'; c.fillRect(0, 0, vw, vh);
+    c.fillStyle = '#183018'; c.fillRect(0, 0, vw, vh);
     c.setTransform(dpr * zoom, 0, 0, dpr * zoom, Math.round(dpr * (vw / 2 - cam.x * zoom)), Math.round(dpr * (vh / 2 - cam.y * zoom)));
     c.imageSmoothingEnabled = false;
-    c.drawImage(bg, 0, 0, bg.width * 2, bg.height * 2);
-    const vx0 = cam.x - vw / zoom / 2 - 40, vx1 = cam.x + vw / zoom / 2 + 40, vy0 = cam.y - vh / zoom / 2 - 10, vy1 = cam.y + vh / zoom / 2 + 90;
-    // Eau qui scintille.
+    if (bg.complete) c.drawImage(bg, 0, 0, art.w * TS, art.h * TS);
     const list = [];
-    for (const p of props) if (p.x > vx0 && p.x < vx1 && p.y > vy0 && p.y < vy1) list.push({ y: p.y, draw: x => drawProp(x, p) });
     for (const n of npcs) list.push({ y: n.py, draw: x => {
       G.People.draw(x, n.look, n.px, n.py, n.d, n.walkT, n.moving);
       if (n.bubble) { x.fillStyle = '#fff'; x.fillRect(n.px - 7, n.py - 66, 14, 16); x.fillStyle = '#e03030'; x.fillRect(n.px - 2, n.py - 63, 4, 7); x.fillRect(n.px - 2, n.py - 54, 4, 3); }
@@ -332,6 +244,8 @@ G.Overworld = (() => {
     for (const d of G.AdvBattle.drawables()) list.push(d);
     list.sort((a, b) => a.y - b.y);
     for (const d of list) d.draw(c);
+    // Toits et cimes des arbres : devant les personnages.
+    if (top.complete) c.drawImage(top, 0, 0, art.w * TS, art.h * TS);
     G.AdvBattle.drawBall(c);
     for (const f of fxs) {
       const k = f.t / 0.9;
@@ -360,10 +274,10 @@ G.Overworld = (() => {
     const f = front();
     const n = npcs.find(n => Math.hypot(n.px - (pl.x + DIRV[pl.dir][0] * 28), n.py - (pl.y + DIRV[pl.dir][1] * 28)) < 22);
     if (n) { run(() => talkNpc(n)); return; }
-    const ch = at(f.x, f.y);
-    if (ch === 'D' && (map.doors || {})[f.x + ',' + f.y]) { if (pl.dir === 'up') run(() => door(map.doors[f.x + ',' + f.y], f)); return; }
-    if (ch === 'S' && (map.signs || {})[f.x + ',' + f.y] && !fromBump) { run(() => talk([['', map.signs[f.x + ',' + f.y]]])); return; }
-    if (ch === 'S' && fromBump && pl.dir === 'up') run(() => talk([['', map.signs[f.x + ',' + f.y]]]));
+    const w = warpAt(f.x, f.y);
+    if (w) { run(() => door(w)); return; }
+    const sg = art.signs.find(b => b.x === f.x && b.y === f.y);
+    if (sg && (!fromBump || pl.dir === 'up')) run(() => talk([['', K().SIGNS[sg.script] || K().SIGN_DEFAULT]]));
   }
   /** Lance une suite d'évènements (bloque les mouvements pendant ce temps). */
   async function run(fn) {
@@ -403,7 +317,7 @@ G.Overworld = (() => {
       const [dx, dy] = DIRV[n.d];
       for (let i = 1; i <= n.trainer.sees; i++) {
         const cx = nx + dx * i, cy = ny + dy * i;
-        if (SOLID.has(at(cx, cy))) break;
+        if (at(cx, cy) === '#' || at(cx, cy) === 'w') break;
         const lat = dx ? Math.abs(ty - cy) : Math.abs(tx - cx);
         if ((dx ? tx === cx : ty === cy) && lat <= 1) { run(() => spotted(n)); return true; }
       }
@@ -458,7 +372,7 @@ G.Overworld = (() => {
     $('world-hud').classList.add('dim');
     const res = await G.AdvBattle.start(opts, place);
     $('world-hud').classList.remove('dim');
-    G.Audio.music(map.music === 'route' ? 'forest' : map.music);
+    G.Audio.music(def.music);
     if (res === 'lose') { await blackout(); return res; }
     await G.AdvBattle.evolutions();
     refreshFollowers();
@@ -468,7 +382,7 @@ G.Overworld = (() => {
   async function blackout() {
     await talk([['', 'Tu n\'as plus de Pokémon en forme… Tu cours au Centre Pokémon le plus proche.']]);
     heal();
-    const h = S.heal || { map: 'bourg', x: 4, y: 5 };
+    const h = S.heal || { map: 'bourg', x: 6, y: 8 };
     setMap(h.map, h.x, h.y, 'down');
     await talk([[h.map === 'bourg' ? 'Maman' : 'Infirmière Joëlle', 'Tes Pokémon sont en pleine forme. Fais attention à toi !']]);
   }
@@ -476,34 +390,37 @@ G.Overworld = (() => {
   function afterMove() {
     const tx = Math.floor(pl.x / TS), ty = Math.floor((pl.y - 4) / TS);
     // Sortie de la carte.
-    if (pl.y - 4 < 0 || pl.y > map.rows.length * TS || pl.x < 0 || pl.x > map.rows[0].length * TS) {
-      const e = exitAt(pl.x < 0 ? -1 : pl.x > map.rows[0].length * TS ? map.rows[0].length : tx, pl.y - 4 < 0 ? -1 : pl.y > map.rows.length * TS ? map.rows.length : ty);
+    if (pl.y - 4 < 0 || pl.y > art.h * TS || pl.x < 0 || pl.x > art.w * TS) {
+      const e = connAt(pl.x < 0 ? -1 : pl.x > art.w * TS ? art.w : tx, pl.y - 4 < 0 ? -1 : pl.y > art.h * TS ? art.h : ty);
       if (e) { run(() => leave(e)); return; }
     }
     const key = tx + ',' + ty;
     if (key === pl.tile) return;
     pl.tile = key;
+    const w = warpAt(tx, ty);
+    if (w) { run(() => door(w)); return; }
     if (checkSight()) return;
-    if (at(tx, ty) === 'g' && map.wild && canFight() && Math.random() < 1 / 9) {
-      const [dex, a, b] = G.U.pick(map.wild);
+    if (at(tx, ty) === 'g' && def.wild && canFight() && Math.random() < 1 / 9) {
+      const [dex, a, b] = G.U.pick(def.wild);
       run(() => battle({ wild: [dex, a + Math.floor(Math.random() * (b - a + 1))] }));
     }
   }
 
   async function leave(e) {
     // Les passages bloqués par l'histoire.
+    const back = () => { pl.x -= DIRV[{ up: 'up', down: 'down', left: 'left', right: 'right' }[e.dir]][0] * 24; pl.y -= DIRV[e.dir][1] * 24; };
+    if (e.todo) { back(); await talk([['', 'Cette route n\'est pas encore ouverte. La suite de l\'aventure arrive bientôt !']]); return; }
     if (mapKey === 'bourg' && !S.flags.starter) {
-      pl.y += 24;
+      back();
       await talk([['Prof. Chen', 'Hé ! Attends ! Il est dangereux de partir sans Pokémon ! Viens me voir devant mon labo, au sud.']]);
       return;
     }
-    if (mapKey === 'jadielle' && e.map === 'foret' && !S.flags.ch1done) {
-      pl.y += 24;
+    if (mapKey === 'jadielle' && e.map === 'route2' && !S.flags.ch1done) {
+      back();
       await talk([['', 'Tes Pokémon sont fatigués par la route. Passe d\'abord au Centre Pokémon de Jadielle.']]);
       return;
     }
-    const dir = { n: 'up', s: 'down', w: 'left', e: 'right' }[e.edge];
-    await fade(() => setMap(e.map, e.x, e.y, dir));
+    await fade(() => setMap(e.map, e.x, e.y, e.dir));
     commit();
     if (e.map === 'argenta' && S.ch === 2) await chapterEnd();
   }
@@ -511,6 +428,19 @@ G.Overworld = (() => {
     const el = $('world-fade');
     el.classList.add('on');
     return new Promise(res => setTimeout(() => { fn(); el.classList.remove('on'); setTimeout(res, 200); }, 220));
+  }
+
+  /** Les entrées de la Forêt de Jade : on passe directement de la Route 2 à la forêt (et retour). */
+  async function link(w) {
+    const to = mapKey === 'foret' ? 'route2' : 'foret';
+    const ws = G.KantoArt.maps[to].warps.filter(x => x.to === w.to);
+    if (!ws.length) return;
+    const t = ws[Math.floor(ws.length / 2)];
+    const tm = G.KantoArt.maps[to], [dx, dy] = DIRV[pl.dir];
+    const free = (x, y) => { const c = (tm.grid[y] || '')[x]; return c && c !== '#' && c !== 'w'; };
+    let x = t.x, y = t.y;
+    for (const [ax, ay] of [[dx, dy], [-dx, -dy], [0, 1], [0, -1], [1, 0], [-1, 0]]) if (free(t.x + ax, t.y + ay)) { x = t.x + ax; y = t.y + ay; break; }
+    await fade(() => setMap(to, x, y, pl.dir));
   }
 
   // ---------------- l'histoire ----------------
@@ -545,8 +475,13 @@ G.Overworld = (() => {
     npcs = npcs.filter(x => x !== n);
   }
 
-  async function door(ev, f) {
-    const back = { map: mapKey, x: f.x, y: f.y + 1 };
+  async function door(w) {
+    const ev = w.ev, back = { map: mapKey, x: w.x, y: w.y + 1 };
+    if (ev === 'link') { await link(w); return; }
+    if (ev === 'school') { await talk([['Élève', 'À l\'école des dresseurs, on apprend que l\'Eau bat le Feu, le Feu bat la Plante et la Plante bat l\'Eau !']]); return; }
+    if (ev === 'museum') { await talk([['Gardien', 'Le Musée d\'Argenta expose des fossiles de Pokémon préhistoriques. Il ouvre bientôt !']]); return; }
+    if (ev === 'cave') { await talk([['', 'La Cave Taupiqueur est sombre et pleine de Taupiqueur… Pas maintenant !']]); return; }
+    if (ev === 'closed') { await talk([['', 'C\'est fermé.']]); return; }
     if (ev === 'home') {
       heal();
       await talk([['Maman', S.flags.starter ? 'Tu as l\'air épuisé ! Repose-toi un peu… Voilà, tes Pokémon sont en forme !' : 'Le Prof. Chen t\'attend devant son labo !']]);

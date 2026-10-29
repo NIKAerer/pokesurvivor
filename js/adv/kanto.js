@@ -1,245 +1,116 @@
 /* ============ kanto.js — les lieux de l'Aventure (version de Nika) ============
- * Chaque lieu est une grille de tuiles (32 px du monde) :
- *   .  herbe        ,  fleurs        g  hautes herbes (Pokémon sauvages)
- *   =  chemin       T  arbre         ~  eau          F  barrière
- *   r  rocher       S  panneau       D  porte (dans un bâtiment)
- *   H  maison  L  labo  C  Centre Pokémon  M  Boutique  G  Arène
- * Sorties : quand on sort de la carte par un bord, `exits` dit où l'on arrive.
- * Les personnages (npcs) apparaissent selon l'histoire (`when`).
+ * Les cartes sont les vraies cartes de Pokémon Rouge Feu (kanto-art.js, généré
+ * par tools/fr_kanto.py) : images, collisions, portes, connexions, habitants.
+ * Ici : ce que le jeu de Nika en fait. Noms, musique, Pokémon sauvages, ce que
+ * fait chaque porte (selon le bâtiment où elle mène), textes des panneaux,
+ * personnages de l'histoire (positions en cases de la carte) et chapitres.
  */
 G.Kanto = (() => {
   const MAPS = {
     bourg: {
-      name: 'Bourg Palette', music: 'village',
-      rows: [
-        'TTTTTTTTT==TTTTTTTTT',
-        'T........==........T',
-        'T..HHHH..==..HHHH..T',
-        'T..HHHH..==..HHHH..T',
-        'T..HDHH..==..HHDH..T',
-        'T...=....==....=...T',
-        'T...============...T',
-        'T.,,.....==.....,,.T',
-        'T.,,..S..==.....,,.T',
-        'T........==........T',
-        'T...FFFF.==.LLLLLL.T',
-        'T...,,,,.==.LLLLLL.T',
-        'T...FFFF.==.LLLLLL.T',
-        'T........==.LLLDLL.T',
-        'T........=======...T',
-        'T.~~~~~~...........T',
-        'T.~~~~~~...........T',
-        'TTTTTTTTTTTTTTTTTTTT'
-      ],
-      exits: [{ edge: 'n', from: 9, to: 10, map: 'route1', x: 9, y: 30 }],
-      doors: { '4,4': 'home', '15,4': 'rivalHome', '15,13': 'lab' },
-      signs: { '6,8': 'Bourg Palette — Une ville aux couleurs pures et blanches.' },
-      wild: null
+      name: 'Bourg Palette', music: 'village', wild: null,
+      doors: { PLAYERS_HOUSE: 'home', RIVALS_HOUSE: 'rivalHome', OAKS_LAB: 'lab' },
+      start: { x: 6, y: 8 }
     },
-    route1: {
-      name: 'Route 1', music: 'route',
-      rows: [
-        'TTTTTTTTT==TTTTTTTTT',
-        'TT.......==.......TT',
-        'TT.gggg..==..gggg.TT',
-        'TT.gggg..==..gggg.TT',
-        'TT.gggg..==..gggg.TT',
-        'TT.......==.......TT',
-        'TTTTT....==....TTTTT',
-        'TT.......==.......TT',
-        'TT...S...==.......TT',
-        'TTggggg..==..ggggggT',
-        'TTggggg..==..ggggggT',
-        'TT.......==.......TT',
-        'TT..rr...==...rr..TT',
-        'TT.......==.......TT',
-        'TTTTTTT..==..TTTTTTT',
-        'TT.......==.......TT',
-        'TT..gggggggggggg..TT',
-        'TT..gggggggggggg..TT',
-        'TT..gggggggggggg..TT',
-        'TT.......==.......TT',
-        'TT.......==...,,..TT',
-        'TTTT.....==.....TTTT',
-        'TT.ggg...==...ggg.TT',
-        'TT.ggg...==...ggg.TT',
-        'TT.......==.......TT',
-        'TT..~~~~.==.......TT',
-        'TT..~~~~.==.......TT',
-        'TT.......==.......TT',
-        'TT.ggggg.==.ggggg.TT',
-        'TT.ggggg.==.ggggg.TT',
-        'TT.......==.......TT',
-        'TTTTTTTTT==TTTTTTTTT'
-      ],
-      exits: [
-        { edge: 's', from: 9, to: 10, map: 'bourg', x: 9, y: 1 },
-        { edge: 'n', from: 9, to: 10, map: 'jadielle', x: 11, y: 18 }
-      ],
-      signs: { '5,8': 'Route 1 — Bourg Palette ↔ Jadielle' },
-      wild: [[16, 2, 4], [19, 2, 4], [21, 3, 4], [19, 3, 5]]
-    },
+    route1: { name: 'Route 1', music: 'forest', wild: [[16, 2, 4], [19, 2, 4], [19, 3, 5], [16, 3, 5]], doors: {} },
     jadielle: {
-      name: 'Jadielle', music: 'village',
-      rows: [
-        'TTTTTTTTTTT==TTTTTTTTTTT',
-        'T..........==..........T',
-        'T.GGGGGG...==...MMMM...T',
-        'T.GGGGGG...==...MMMM...T',
-        'T.GGGGGG...==...MMDM...T',
-        'T.GGGDGG...==.....=....T',
-        'T....==============....T',
-        'T..........==..........T',
-        'T.,,.......==.......,,.T',
-        'T..HHHH....==...CCCCC..T',
-        'T..HHHH....==...CCCCC..T',
-        'T..HDHH....==...CCDCC..T',
-        'T...=......==.....=....T',
-        'T...===============....T',
-        'T..........==..........T',
-        'T..~~~.....==.....S....T',
-        'T..~~~.....==..........T',
-        'T..........==..........T',
-        'T..........==..........T',
-        'TTTTTTTTTTT==TTTTTTTTTTT'
-      ],
-      exits: [
-        { edge: 's', from: 11, to: 12, map: 'route1', x: 9, y: 1 },
-        { edge: 'n', from: 11, to: 12, map: 'foret', x: 10, y: 38 }
-      ],
-      doors: { '5,5': 'gymJadielle', '18,4': 'mart', '4,11': 'house', '18,11': 'center' },
-      signs: { '18,15': 'Jadielle — Une ville éternellement verte.' },
-      wild: null
+      name: 'Jadielle', music: 'village', wild: null,
+      doors: { POKEMON_CENTER: 'center', GYM: 'gymJadielle', MART: 'mart', SCHOOL: 'school', HOUSE: 'house' }
     },
-    foret: { name: 'Forêt de Jade', music: 'forest', rows: null,
-      exits: [
-        { edge: 's', from: 9, to: 11, map: 'jadielle', x: 11, y: 1 },
-        { edge: 'n', from: 9, to: 11, map: 'argenta', x: 11, y: 18 }
-      ],
-      wild: [[10, 3, 5], [13, 3, 5], [11, 4, 6], [14, 4, 6], [25, 4, 6], [10, 5, 6]]
+    route2: {
+      name: 'Route 2', music: 'forest', wild: [[16, 3, 5], [19, 3, 5], [10, 4, 5], [13, 4, 5], [29, 4, 6], [32, 4, 6]],
+      doors: { FOREST_SOUTH_ENTRANCE: 'link', FOREST_NORTH_ENTRANCE: 'link', DIGLETTS_CAVE: 'cave', ROUTE2_HOUSE: 'house', EAST_BUILDING: 'house' }
+    },
+    foret: {
+      name: 'Forêt de Jade', music: 'forest', wild: [[10, 3, 5], [13, 3, 5], [11, 4, 6], [14, 4, 6], [25, 3, 5], [10, 5, 6]],
+      doors: { FOREST_SOUTH_ENTRANCE: 'link', FOREST_NORTH_ENTRANCE: 'link' }
     },
     argenta: {
-      name: 'Argenta', music: 'village',
-      rows: [
-        'TTTTTTTTTTTTTTTTTTTTTTTT',
-        'T......................T',
-        'T...GGGGGGGG...CCCCC...T',
-        'T...GGGGGGGG...CCCCC...T',
-        'T...GGGGGGGG...CCDCC...T',
-        'T...GGGGDGGG.....=.....T',
-        'T.......===========....T',
-        'T..........==..........T',
-        'T.rr.......==.......rr.T',
-        'T..HHHH....==...MMMM...T',
-        'T..HHHH....==...MMMM...T',
-        'T..HDHH....==...MMDM...T',
-        'T...=......==.....=....T',
-        'T...===============....T',
-        'T..........==..........T',
-        'T.rr...S...==......rr..T',
-        'T..........==..........T',
-        'T..........==..........T',
-        'T..........==..........T',
-        'TTTTTTTTTTT==TTTTTTTTTTT'
-      ],
-      exits: [{ edge: 's', from: 11, to: 12, map: 'foret', x: 10, y: 1 }],
-      doors: { '8,5': 'gymArgenta', '17,4': 'center', '18,11': 'mart', '4,11': 'house' },
-      signs: { '7,15': 'Argenta — Une ville grise comme la pierre.' },
-      wild: null
+      name: 'Argenta', music: 'village', wild: null,
+      doors: { MUSEUM: 'museum', GYM: 'gymArgenta', MART: 'mart', POKEMON_CENTER: 'center', HOUSE: 'house' }
     }
   };
 
-  // La forêt : un labyrinthe d'arbres creusé une fois pour toutes (même tracé à chaque partie).
-  (function forest() {
-    const W = 22, H = 40, g = Array.from({ length: H }, () => Array(W).fill('T'));
-    let seed = 4242;
-    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-    const dig = (x, y, c = '.') => { if (x > 0 && x < W - 1 && y >= 0 && y < H && g[y][x] === 'T') g[y][x] = c; };
-    // Chemin (3 tuiles de large) qui serpente du bas au haut, toujours relié.
-    let x = 10, prev = 10;
-    for (let y = H - 1; y >= 0; y--) {
-      if (y <= 3 || y >= H - 3) x = 10;
-      else if (y % 5 === 0) x = Math.max(3, Math.min(W - 4, x + (rnd() < 0.5 ? -4 : 4)));
-      if (x !== prev) for (let xx = Math.min(prev, x) - 1; xx <= Math.max(prev, x) + 1; xx++) { dig(xx, y, '='); dig(xx, y + 1, '='); }
-      for (let k = -1; k <= 1; k++) dig(x + k, y, '=');
-      prev = x;
-    }
-    // Clairières de hautes herbes de part et d'autre.
-    for (let y = 2; y < H - 2; y++) for (let xx = 1; xx < W - 1; xx++) {
-      if (g[y][xx] !== 'T') continue;
-      const near = [[1, 0], [-1, 0], [0, 1], [0, -1], [2, 0], [-2, 0]].some(([dx, dy]) => (g[y + dy] || [])[xx + dx] === '=');
-      if (near && rnd() < 0.55) g[y][xx] = 'g';
-    }
-    for (let y = 4; y < H - 4; y += 7) { const cx = 3 + Math.floor(rnd() * (W - 6)); for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 4; dx++) dig(cx + dx - 1, y + dy, 'g'); }
-    // Le Samouraï garde la sortie, au nord.
-    g[1][8] = 'S';
-    MAPS.foret.rows = g.map(r => r.join(''));
-    MAPS.foret.signs = { '8,1': 'Forêt de Jade — Sortie vers Argenta' };
-  })();
+  /** Textes des panneaux (par script du jeu). */
+  const SIGNS = {
+    PalletTown_EventScript_OaksLabSign: 'Laboratoire Pokémon du Prof. Chen',
+    PalletTown_EventScript_PlayersHouseSign: 'Ta maison',
+    PalletTown_EventScript_RivalsHouseSign: 'Maison de Régis',
+    PalletTown_EventScript_TownSign: 'Bourg Palette — Une ville aux couleurs pures et blanches.',
+    PalletTown_EventScript_TrainerTips: 'Conseil : à la fin de chaque chapitre, un nouveau Pokémon peut rejoindre ton équipe !',
+    Route1_EventScript_RouteSign: 'Route 1 — Bourg Palette ↔ Jadielle',
+    Route2_EventScript_DiglettsCaveSign: 'Cave Taupiqueur',
+    Route2_EventScript_RouteSign: 'Route 2 — Jadielle ↔ Argenta',
+    ViridianForest_EventScript_ExitSign: 'Sortie de la Forêt de Jade — Argenta est tout près !',
+    PewterCity_EventScript_MuseumSign: 'Musée des Sciences d\'Argenta',
+    PewterCity_EventScript_PoliceNotice: 'Avis : la Team Rocket rôde dans la région. Soyez prudents !',
+    PewterCity_EventScript_GymSign: 'Arène d\'Argenta — Champion : Pierre, le dur à cuire !',
+    PewterCity_EventScript_TrainerTips: 'Conseil : les Pokémon Eau et Plante font très mal aux Pokémon Roche.',
+    PewterCity_EventScript_CitySign: 'Argenta — Une ville grise comme la pierre.'
+  };
+  const SIGN_DEFAULT = 'Conseil de dresseur : soigne tes Pokémon au Centre Pokémon avant un gros combat !';
 
-  /** Les personnages, selon l'avancée (flags). trainer: équipe [[dex, niveau]], sees: tuiles de vue. */
+  /** Ce que disent les habitants du jeu (par script), sinon une phrase selon le personnage. */
+  const TALK = {
+    PalletTown_EventScript_SignLady: 'La technologie est incroyable ! On peut échanger des Pokémon avec ses amis !',
+    PalletTown_EventScript_FatMan: 'Je pêche souvent dans l\'étang. Il paraît qu\'un Léviator vit au large…',
+    Route1_EventScript_MartClerk: 'Bonjour ! Je travaille à la Boutique de Jadielle. Viens nous voir pour acheter des Potions !',
+    Route1_EventScript_Boy: 'Les Pokémon sauvages vivent dans les hautes herbes. Fais attention en les traversant !',
+    ViridianCity_EventScript_OldMan: 'L\'arène de Jadielle est fermée depuis longtemps… Personne ne sait où est son champion.',
+    ViridianCity_EventScript_Woman: 'La Forêt de Jade est au nord, après la Route 2. On s\'y perd facilement !',
+    ViridianCity_EventScript_Youngster: 'Tu as vu ? L\'Agent Jenny cherchait un garçon avec un Pikachu blessé…',
+    ViridianCity_EventScript_Boy: 'Ces arbres-là peuvent être coupés avec Coupe. Mais il faut un badge…',
+    ViridianCity_EventScript_DreamEaterTutor: 'Zzz… Hein ? Je rêvais d\'un Ronflex…',
+    ViridianForest_EventScript_Youngster: 'Les dresseurs de la forêt adorent les Pokémon Insecte. Prépare-toi !',
+    ViridianForest_EventScript_Boy: 'J\'ai vu un Pikachu dans la forêt ! Ils sont très rares.',
+    PewterCity_EventScript_Lass: 'Pierre est le champion de l\'arène. Ses Pokémon Roche sont très résistants.',
+    PewterCity_EventScript_MuseumGuide: 'Tu as visité le Musée ? Il y a un fossile d\'Ptéra !',
+    PewterCity_EventScript_FatMan: 'Les Pokémon de Pierre ne craignent pas les attaques Normal.',
+    PewterCity_EventScript_BugCatcher: 'Pierre est super fort ! Il faut des Pokémon Eau ou Plante.',
+    PewterCity_EventScript_GymGuide: 'Tu vas défier Pierre ? Bonne chance, champion en herbe !',
+    PewterCity_EventScript_RunningShoesAide: 'Le Prof. Chen m\'a parlé de toi. Bon voyage !'
+  };
+
+  /** Personnages de l'histoire (cases de la carte). look = sprite du jeu (people/*.png). */
   const NPCS = {
     bourg: [
-      { id: 'mom', look: 'mom', x: 5, y: 5, dir: 'down', talk: f => f.starter
+      { id: 'mom', look: 'mom', name: 'Maman', x: 7, y: 8, dir: 'down', talk: f => f.starter
         ? [['Maman', 'Prends soin de tes Pokémon ! Et n\'oublie pas de changer de sous-vêtements tous les jours !']]
         : [['Maman', 'Le grand jour ! Le Prof. Chen t\'attend devant son labo, au sud.']] },
-      { id: 'chen', look: 'chen', x: 15, y: 14, dir: 'up', event: 'chen' },
-      { id: 'rival1', look: 'rival', x: 12, y: 14, dir: 'right', when: f => f.starter && !f.rival1, event: 'rival1' },
-      { id: 'kid', look: 'villager', x: 13, y: 8, dir: 'left', talk: () => [['Garçon', 'Il paraît qu\'on peut capturer des Pokémon dans les hautes herbes de la Route 1 !']] }
+      { id: 'chen', look: 'prof_oak', x: 17, y: 14, dir: 'left', event: 'chen' },
+      { id: 'rival1', look: 'blue', x: 14, y: 14, dir: 'right', when: f => f.starter && !f.rival1, event: 'rival1' }
     ],
-    route1: [
-      { id: 'r1a', look: 'villager', x: 12, y: 13, dir: 'left', talk: () => [['Promeneur', 'Les Piafabec sont très rancuniers. Ne les embête pas !']] }
-    ],
-    jadielle: [
-      { id: 'jold', look: 'villager', x: 8, y: 7, dir: 'down', talk: f => f.ch1done
-        ? [['Vieil homme', 'La Forêt de Jade est au nord. Les Pokémon Insecte y pullulent !']]
-        : [['Vieil homme', 'Bienvenue à Jadielle ! Le Centre Pokémon, c\'est le bâtiment au toit rouge.']] }
-    ],
+    route1: [],
+    jadielle: [],
+    route2: [],
     foret: [
-      { id: 'scout1', look: 'scout', x: 0, y: 30, dir: 'left', trainer: { name: 'Scout Léo', team: [[10, 5], [10, 5]], sees: 3, coins: 80,
-        meet: 'Hé ! Toi aussi tu chasses les insectes ? Combat !', lose: 'Mes Chenipan…' } },
-      { id: 'scout2', look: 'scout', x: 0, y: 18, dir: 'right', trainer: { name: 'Scout Mila', team: [[13, 6], [14, 6]], sees: 3, coins: 90,
-        meet: 'Attention, mes Aspicot piquent !', lose: 'Bien joué…' } },
-      { id: 'samurai', look: 'samurai', x: 0, y: 4, dir: 'down', trainer: { name: 'Le Samouraï', team: [[11, 7], [127, 9]], sees: 4, coins: 200,
+      // Le Samouraï garde la sortie nord, comme dans l'animé.
+      { id: 'samurai', look: 'black_belt', x: 5, y: 11, dir: 'down', trainer: { name: 'Le Samouraï', team: [[11, 7], [127, 9]], sees: 4, coins: 200,
         meet: 'Halte ! Tu viens de Bourg Palette ? Alors affronte-moi et mon Scarabrute !', lose: 'Quelle force… La sortie est juste derrière moi.' } }
     ],
-    argenta: [
-      { id: 'aold', look: 'villager', x: 13, y: 7, dir: 'down', talk: f => f.pierre
-        ? [['Habitant', 'Tu as battu Pierre ? Incroyable ! La route vers le Mont Sélénite ouvrira bientôt.']]
-        : [['Habitant', 'Le champion Pierre utilise des Pokémon Roche. L\'Eau et la Plante leur font très mal !']] }
-    ]
+    argenta: []
+  };
+  /** Les dresseurs du jeu (Forêt de Jade), par script : leur équipe. */
+  const TRAINERS = {
+    ViridianForest_EventScript_Rick: { name: 'Scout Ricky', team: [[10, 6], [13, 6]], coins: 80, meet: 'Hé ! Toi aussi tu chasses les insectes ? Combat !', lose: 'Mes insectes…' },
+    ViridianForest_EventScript_Doug: { name: 'Scout Doug', team: [[13, 7], [14, 7]], coins: 90, meet: 'Attention, mes Aspicot piquent !', lose: 'Bien joué…' },
+    ViridianForest_EventScript_Sammy: { name: 'Scout Sammy', team: [[13, 9]], coins: 90, meet: 'Tu ne passeras pas !', lose: 'Je dois encore m\'entraîner.' },
+    ViridianForest_EventScript_Anthony: { name: 'Scout Antoine', team: [[10, 7], [11, 8]], coins: 100, meet: 'Je viens de capturer un Chenipan !', lose: 'Il va évoluer, tu verras !' },
+    ViridianForest_EventScript_Charlie: { name: 'Scout Charlie', team: [[14, 8], [10, 8]], coins: 100, meet: 'Mes Pokémon sont prêts !', lose: 'Tu es trop fort…' }
   };
 
-  // Place les dresseurs de la forêt sur le chemin (le tracé est généré).
-  (function placeForest() {
-    const rows = MAPS.foret.rows;
-    for (const n of NPCS.foret) {
-      const r = rows[n.y];
-      let best = -1;
-      for (let x = 1; x < r.length - 1; x++) if (r[x] === '=' && (best < 0 || (n.dir === 'left' ? x > best : x < best))) best = x;
-      n.x = n.id === 'samurai' ? 10 : Math.max(1, Math.min(r.length - 2, best + (n.dir === 'left' ? 1 : -1)));
-      if (rows[n.y][n.x] === 'T') rows[n.y] = rows[n.y].slice(0, n.x) + '.' + rows[n.y].slice(n.x + 1);
-    }
-  })();
-
-  /** Les chapitres : titre, lieu, objectif affiché, et l'intro. */
+  /** Les chapitres : titre, objectif affiché, et l'intro. */
   const CHAPTERS = [
     null,
-    { title: 'Le départ', goal: 'Va voir le Prof. Chen devant son labo, puis rejoins Jadielle par la Route 1.',
-      intro: [['', 'Bourg Palette. Aujourd\'hui, tu deviens dresseur Pokémon !'], ['Maman', 'Le Prof. Chen t\'attend devant son labo, au sud. Vas-y vite !']] },
-    { title: 'La Forêt de Jade', goal: 'Traverse la Forêt de Jade au nord de Jadielle, jusqu\'à Argenta.',
-      intro: [['', 'Chapitre 2 · La Forêt de Jade'], ['Infirmière Joëlle', 'La Forêt de Jade est au nord de Jadielle. On dit qu\'un samouraï y défie tous les voyageurs…']] },
+    { title: 'Le départ', goal: 'Va voir le Prof. Chen devant son labo, puis rejoins Jadielle par la Route 1, au nord.',
+      intro: [['', 'Bourg Palette. Aujourd\'hui, tu deviens dresseur Pokémon !'], ['Maman', 'Le Prof. Chen t\'attend devant son labo, au sud-est. Vas-y vite !']] },
+    { title: 'La Forêt de Jade', goal: 'Prends la Route 2 au nord de Jadielle et traverse la Forêt de Jade jusqu\'à Argenta.',
+      intro: [['', 'Chapitre 2 · La Forêt de Jade'], ['Infirmière Joëlle', 'La Forêt de Jade est au nord, par la Route 2. On dit qu\'un samouraï y défie tous les voyageurs…']] },
     { title: 'Le Badge Roche', goal: 'Défie Pierre, le champion de l\'arène d\'Argenta.',
-      intro: [['', 'Chapitre 3 · Le Badge Roche'], ['', 'Argenta ! L\'arène de Pierre est le grand bâtiment au nord-ouest.']] },
+      intro: [['', 'Chapitre 3 · Le Badge Roche'], ['', 'Argenta ! L\'arène de Pierre est à l\'ouest de la ville.']] },
     { title: 'À suivre…', goal: 'La suite de l\'aventure (Mont Sélénite, Azuria…) arrive bientôt !',
       intro: [['', 'Chapitre 4 · À suivre'], ['', 'Bravo ! La suite de l\'aventure arrive bientôt : le Mont Sélénite et Azuria.']] }
   ];
 
-  for (const k in MAPS) {
-    const m = MAPS[k];
-    const w = m.rows[0].length;
-    if (m.rows.some(r => r.length !== w)) console.error('[Kanto] carte ' + k + ' : lignes de longueurs différentes');
-  }
-
-  return { MAPS, NPCS, CHAPTERS };
+  return { MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS };
 })();
