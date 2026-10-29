@@ -112,7 +112,7 @@ G.I18n.add({
   '+20 de vida máxima (y la recupera).': '+20 PV max (et les récupère).', '+10% de daño con todos los movimientos.': '+10 % de dégâts avec toutes les capacités.',
   '+7% de velocidad de movimiento.': '+7 % de vitesse de déplacement.', '-8% de recarga en todos los movimientos.': '-8 % de recharge sur toutes les capacités.',
   '+6% de reducción de daño recibido.': '+6 % de réduction des dégâts subis.', '+0.9 de vida regenerada por segundo.': '+0.9 PV régénérés par seconde.',
-  '+30% de radio de recogida de experiencia.': "+30 % de rayon de ramassage d'expérience.", '+12% de experiencia ganada.': "+12 % d'expérience gagnée.",
+  '+30% de radio de recogida de experiencia.': "+30 % de rayon de ramassage d'expérience.", '+12% de experiencia ganada.': "+12 % d'expérience gagnée.", '+8% de experiencia ganada.': "+8 % d'expérience gagnée.", '+15% de experiencia.': "+15 % d'expérience.",
   'Baya Zidra': 'Baie Sitrus', 'Recupera el 45% de tu vida ahora mismo.': 'Rend 45 % de tes PV tout de suite.',
   '¡Nivel': 'Niveau', '¡Nivel {x}!': 'Niveau {x} !', 'Elige una recompensa ·': 'Choisis une récompense ·', 'Elige una recompensa': 'Choisis une récompense', 'Elige tu carta': 'Choisis ta carte',
   'Faltan por elegir: {x}': 'Doivent encore choisir : {x}', 'Esperando a {x}…': 'En attente de {x}…', 'tú': 'toi',

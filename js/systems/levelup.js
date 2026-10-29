@@ -21,8 +21,8 @@ G.LevelUp = (() => {
       apply: pl => pl.regenFlat += 0.9 },
     { id: 'mag',  icon: 'magnet', title: 'Imán',         desc: '+30% de radio de recogida de experiencia.',
       apply: pl => pl.magnet *= 1.30, max: 6 },
-    { id: 'xp',   icon: 'book', title: 'Aprendizaje',  desc: '+12% de experiencia ganada.',
-      apply: pl => pl.xpMul *= 1.12, max: 8 },
+    { id: 'xp',   icon: 'book', title: 'Aprendizaje',  desc: '+8% de experiencia ganada.',
+      apply: pl => pl.xpMul *= 1.08, max: 5 },      // version de Nika : +12 % ×8 → +8 % ×5
     { id: 'heal', icon: 'berry', title: 'Baya Zidra',   desc: 'Recupera el 45% de tu vida ahora mismo.',
       apply: pl => pl.heal(pl.maxHp * 0.45) }
   ];

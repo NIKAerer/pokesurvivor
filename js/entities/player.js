@@ -78,8 +78,11 @@ G.Player = class Player {
   static get REVIVE_TIME() { return 3; }
 
   // (×2 y luego ×4 el 2026-10-10: se subía de nivel demasiado rápido.)
+  // Version de Nika (2026-10-29) : après le niveau 50, +7 % d'XP demandée par niveau, cumulés
+  // (des joueurs montaient jusqu'au niveau 150-200).
   static xpFor(level) {
-    return Math.floor((8 + level * 6 + Math.pow(level, 1.75) * 1.6) * 4);
+    const late = level > 50 ? Math.pow(1.07, level - 50) : 1;
+    return Math.floor((8 + level * 6 + Math.pow(level, 1.75) * 1.6) * 4 * late);
   }
 
   cy() { return this.y; }

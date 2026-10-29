@@ -23,8 +23,8 @@ G.Items = (() => {
       on: () => {}, off: () => {} },
     { id: 'amuletcoin', name: 'Moneda Amuleto', desc: '+50% de Pokémonedas al acabar la run.',
       on: p => { p.coinMul *= 1.5; }, off: p => { p.coinMul /= 1.5; } },
-    { id: 'luckyegg', name: 'Huevo Suerte', desc: '+30% de experiencia.',
-      on: p => { p.xpMul *= 1.3; }, off: p => { p.xpMul /= 1.3; } },
+    { id: 'luckyegg', name: 'Huevo Suerte', desc: '+15% de experiencia.',       // version de Nika : 30 % → 15 %
+      on: p => { p.xpMul *= 1.15; }, off: p => { p.xpMul /= 1.15; } },
     { id: 'lifeorb', name: 'Vidasfera', desc: '+30% de daño, pero cada ataque te quita un poco de vida.',
       on: p => { p.atkMul *= 1.3; }, off: p => { p.atkMul /= 1.3; } },
     { id: 'choicescarf', name: 'Pañuelo Elección', desc: '+35% de velocidad.',
