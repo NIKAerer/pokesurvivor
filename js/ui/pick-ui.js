@@ -358,12 +358,12 @@ G.PickUI = (() => {
 
     // Mode et bouton Jouer (il montre qui part au combat, « ? » en aléatoire).
     const tower = s.pickMode === 'tower';
-    $('hub-mode').innerHTML = `<small>Mode</small><b>${tower ? 'Tour' : 'Aventure'}</b>`;
+    $('hub-mode').innerHTML = `<small>Mode</small><b>${tower ? 'Tour' : 'Survivor'}</b>`;
     const pb = $('pick-play');
     pb.innerHTML = '';
     if (s.partnerRandom) pb.insertAdjacentHTML('beforeend', '<b class="pick-q pp-q">?</b>');
     else pb.appendChild(G.UI.spriteCanvas(mon.dex, 40, 34, { fit: true, shiny }));
-    pb.insertAdjacentHTML('beforeend', `<span>JOUER</span><em>${tower ? 'Tour de Combat' : 'Aventure'}</em>`);
+    pb.insertAdjacentHTML('beforeend', `<span>JOUER</span><em>${tower ? 'Tour de Combat' : 'Survivor'}</em>`);
     showView();
   }
 
