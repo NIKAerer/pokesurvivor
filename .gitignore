@@ -1,3 +1,4 @@
 build/
 tools/cache/
 node_modules/
+tools/.fr_cache/
