@@ -15,9 +15,8 @@ G.Overworld = (() => {
   const TS = 32;
   const SOLID = new Set(['#', 'w']);
   const SPEED = TS * 4.5;    // en courant : ×1,7
-  // Version de Nika : les 12 starters des générations 1 à 4 (Plante, Feu, Eau par génération).
-  const GENS = [[1, 4, 7], [152, 155, 158], [252, 255, 258], [387, 390, 393]];
-  const STARTERS = [].concat(...GENS);
+  // Version de Nika : on démarre petit, comme Sacha dans l'animé : Roucool, Rattata ou Pikachu.
+  const STARTERS = [16, 19, 25];
   const card = d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types });
   // Les Pokémon proposés à la fin de chaque chapitre : des Pokémon recherchés (rares,
   // fossiles, évolutions) liés aux lieux de l'animé, pas les Roucool et Rattata des herbes.
@@ -518,17 +517,15 @@ G.Overworld = (() => {
       return;
     }
     await talk([['Prof. Chen', 'Ah, te voilà ! Tu es en retard, Régis est déjà là…'],
-                ['Prof. Chen', 'Les Poké Balls sur la table contiennent des Pokémon Plante, Feu et Eau de toutes les régions. Choisis bien : il sera ton premier compagnon !']]);
+                ['Prof. Chen', 'Il me reste trois Pokémon sur la table : Roucool, Rattata et Pikachu. Choisis bien : il sera ton premier compagnon !']]);
     const i = await G.AdvUI.choose('Choisis ton premier Pokémon', STARTERS.map(card));
     await pickStarter(STARTERS[i]);
   }
   /** Une Poké Ball de la table du labo : on regarde le Pokémon et on le prend (ou pas). */
   async function ball(n) {
     if (S.flags.starter) return;
-    // Chaque Poké Ball de la table : un type (Plante, Feu, Eau), avec les starters des 4 générations.
-    const k = [1, 4, 7].indexOf(n.ball), list = GENS.map(g => g[k]);
-    const i = await G.AdvUI.choose('Prof. Chen : quel Pokémon ' + ['Plante', 'Feu', 'Eau'][k] + ' veux-tu ?', list.map(card).concat([{ title: 'Je réfléchis', desc: '' }]));
-    if (i < list.length) await pickStarter(list[i]);
+    const i = await G.AdvUI.choose('Prof. Chen : tu veux ' + G.DEX_BY[n.ball].name + ' ?', [card(n.ball), { title: 'Je réfléchis', desc: '' }]);
+    if (i === 0) await pickStarter(n.ball);
   }
   async function pickStarter(dex) {
     S.team = [M().make(dex, 5)];
@@ -546,10 +543,9 @@ G.Overworld = (() => {
   }
   async function rival1(n) {
     if (!S.flags.starter) { await talk([['Régis', 'Pff, le Prof. Chen m\'a dit d\'attendre. Choisis vite, toi aussi !']]); return; }
-    // Régis prend le starter qui bat le tien (même génération).
-    const g = GENS.find(x => x.includes(S.flags.starter)) || GENS[0];
-    const counter = g[(g.indexOf(S.flags.starter) + 1) % 3];
-    await talk([['Régis', 'Alors je prends ' + G.DEX_BY[counter].name + ' ! Tiens, voyons ce que vaut le tien !']]);
+    // Régis a pris Évoli, comme Gary dans l'animé.
+    const counter = 133;
+    await talk([['Régis', 'Moi j\'ai un ' + G.DEX_BY[counter].name + ', le plus rare du labo ! Voyons ce que vaut le tien !']]);
     const res = await battle({ trainer: { name: 'Régis', team: [[counter, 5]], smart: true, potions: 0 } }, n);
     S.flags.rival1 = 1;
     heal();

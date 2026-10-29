@@ -122,9 +122,9 @@ G.Kanto = (() => {
     bourg_labo: [
       { id: 'chen', look: 'prof_oak', x: 6, y: 3, dir: 'down', event: 'chen' },
       // Les trois Poké Balls sur la table, comme dans le jeu.
-      { id: 'ball1', look: 'item_ball', x: 8, y: 4, dir: 'down', ball: 1, when: f => !f.starter },
-      { id: 'ball7', look: 'item_ball', x: 9, y: 4, dir: 'down', ball: 7, when: f => !f.starter },
-      { id: 'ball4', look: 'item_ball', x: 10, y: 4, dir: 'down', ball: 4, when: f => !f.starter },
+      { id: 'ball1', look: 'item_ball', x: 8, y: 4, dir: 'down', ball: 16, when: f => !f.starter },
+      { id: 'ball7', look: 'item_ball', x: 9, y: 4, dir: 'down', ball: 19, when: f => !f.starter },
+      { id: 'ball4', look: 'item_ball', x: 10, y: 4, dir: 'down', ball: 25, when: f => !f.starter },
       { id: 'rival1', look: 'blue', x: 5, y: 4, dir: 'down', event: 'rival1', when: f => !f.rival1 }
     ],
     jadielle_centre: [{ id: 'joy', look: 'nurse', x: 7, y: 2, dir: 'down', event: 'center' }],
