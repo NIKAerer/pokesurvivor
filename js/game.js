@@ -115,7 +115,7 @@ G.Game = (() => {
     time = 0; pendingLevels = 0;
     runReal = performance.now(); tampered = false;
 
-    pl = new G.Player(mon, perks, !!save.partnerShiny && G.DB.ownsShiny(mon.dex));
+    pl = new G.Player(mon, perks, G.DB.ownsShiny(mon.dex));
     // Version de Nika : rang du Pokémon (Super Bonbons) : +5 % PV et dégâts par rang.
     { const rk = G.Rank.of(mon.dex); if (rk) { pl.maxHp = Math.round(pl.maxHp * (1 + rk * 0.05)); pl.hp = pl.maxHp; pl.atkMul *= 1 + rk * 0.05; } }
     G.Team.reset(pl);

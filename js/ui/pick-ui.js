@@ -140,7 +140,7 @@ G.PickUI = (() => {
 
     // Version de Nika (menu « Couleur du type ») : le fond prend la couleur du type.
     theme($('scr-pick'));
-    const hasSh = G.DB.ownsShiny(mon.dex), shiny = hasSh && !!s.partnerShiny;
+    const shiny = G.DB.ownsShiny(mon.dex);   // version de Nika : shiny possédé = toujours affiché en shiny
     const av = $('hub-av');
     av.innerHTML = '';
     av.appendChild(G.UI.spriteCanvas(mon.dex, 34, 30, { fit: true, shiny }));
@@ -167,8 +167,7 @@ G.PickUI = (() => {
     mini.onclick = () => pet(mon, mini);
     rb.appendChild(mini);
     rb.insertAdjacentHTML('beforeend', `<b class="pick-name">${shiny ? G.Icons.html('shiny', 14) + ' ' : ''}${mon.name}</b>
-      <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex)}
-      ${hasSh ? `<button id="pick-shiny" class="btn small ${shiny ? 'gold' : 'ghost'}">${G.Icons.html('shiny', 12)} Shiny ${shiny ? 'oui' : 'non'}</button>` : ''}`);
+      <span class="pick-num">N° ${String(mon.dex).padStart(3, '0')}</span>${G.UI.typeChips(mon.types)}${G.Roles.chip(mon.dex)}`);
     {
       const max = rk >= G.Rank.MAX, p = G.Rank.pay(mon.dex), ok = G.Rank.canUp(mon.dex);
       const stars = Array.from({ length: G.Rank.MAX }, (_, i) => `<i class="${i < rk ? 'on' : ''}"></i>`).join('');
@@ -190,7 +189,6 @@ G.PickUI = (() => {
         };
       }
     }
-    if (hasSh) $('pick-shiny').onclick = () => { s.partnerShiny = !s.partnerShiny; G.DB.commit(); G.Audio.sfx('select'); render(); };
 
     // Sa fiche : statistiques, évolutions et attaques.
     const info = $('pick-info');
@@ -279,7 +277,7 @@ G.PickUI = (() => {
       b.className = 'pick-card' + (relMode ? (relSel.has(dex) ? ' rel' : '') : dex === s.partner && !s.partnerRandom ? ' on' : '');
       b.style.setProperty('--c', G.U.TYPE_COLOR[G.DEX_BY[dex].types[0]]);
       b.title = G.DEX_BY[dex].name;
-      b.appendChild(G.UI.spriteCanvas(dex, 64, 54, { fit: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
+      b.appendChild(G.UI.spriteCanvas(dex, 64, 54, { fit: true, shiny: G.DB.ownsShiny(dex) }));
       if (G.DB.ownsShiny(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-sh">${G.Icons.html('shiny', 10)}</span>`);
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
       if (G.Rank.of(dex)) b.insertAdjacentHTML('beforeend', `<span class="pick-rk">${G.Rank.of(dex)}</span>`);
@@ -375,7 +373,7 @@ G.PickUI = (() => {
     for (const dex of list) {
       const b = document.createElement('button');
       b.className = 'qk' + (dex === s.partner && !s.partnerRandom ? ' on' : '');
-      b.appendChild(G.UI.spriteCanvas(dex, 56, 46, { fit: true, shiny: dex === s.partner && G.DB.ownsShiny(dex) && !!s.partnerShiny }));
+      b.appendChild(G.UI.spriteCanvas(dex, 56, 46, { fit: true, shiny: G.DB.ownsShiny(dex) }));
       b.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[dex].name}</small>`);
       b.onclick = () => { if (s.partner !== dex) s.partnerShiny = false; s.partner = dex; s.partnerRandom = false; G.DB.commit(); G.Audio.sfx('select'); render(); };
       q.appendChild(b);

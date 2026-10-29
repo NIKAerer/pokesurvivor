@@ -38,7 +38,7 @@ G.MenuUI = (() => {
   function openOld() {
     const s = G.DB.save;
     const mon = G.DEX_BY[s.partner];
-    const shiny = !!s.partnerShiny && G.DB.ownsShiny(mon.dex);
+    const shiny = G.DB.ownsShiny(mon.dex);
     G.UI.chrome(true);
     G.UI.show('scr-menu');
     G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
@@ -209,7 +209,7 @@ G.MenuUI = (() => {
       cell.insertAdjacentHTML('beforeend', `<span class="no">${String(p.dex).padStart(3, '0')}</span>`);
       if (p.dex === s.partner) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Compañero">${G.Icons.html('crown', 14)}</span>`);
       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
-      const useShiny = sh && p.dex === s.partner && s.partnerShiny;
+      const useShiny = sh && own;     // version de Nika : shiny possédé = affiché en shiny
       cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
       cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
       cell.onclick = () => {
@@ -233,13 +233,13 @@ G.MenuUI = (() => {
     const hasSh = G.DB.ownsShiny(dex);
     const isPartner = dex === s.partner;
     if (!hasSh) viewShiny = false;
-    else if (isPartner && dex !== showDetail.last) viewShiny = !!s.partnerShiny;
+    else if (dex !== showDetail.last) viewShiny = true;
     showDetail.last = dex;
 
     const max = { hp: 183, atk: 1.55, spd: 137 };
     const bar = (label, v, m, txt) =>
       `<div class="stat"><span>${label}</span><div class="bar"><i style="width:${Math.min(100, v / m * 100)}%"></i></div><span>${txt}</span></div>`;
-    const usingThis = isPartner && (!hasSh || !!s.partnerShiny === viewShiny);
+    const usingThis = isPartner;
 
     const box = $('dex-detail');
     box.innerHTML = `
@@ -264,7 +264,7 @@ G.MenuUI = (() => {
           ? `<p class="note center">${G.EVO_FROM[dex] ? 'Se joue en faisant évoluer ' + G.DEX_BY[G.Team.family(dex)].name + ' en partie.' : 'Obtiens-le à la Boutique pour pouvoir jouer avec.'}</p>`
           : usingThis
           ? '<button class="btn grow" disabled style="width:100%">Es tu compañero</button>'
-          : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero${viewShiny ? ' (shiny)' : ''}</button>`}
+          : `<button id="dex-pick" class="btn gold" data-sfx="confirm" style="width:100%">Elegir de compañero</button>`}
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
@@ -277,7 +277,7 @@ G.MenuUI = (() => {
     const pick = $('dex-pick');
     if (pick) pick.onclick = () => {
       s.partner = dex;
-      s.partnerShiny = hasSh && viewShiny;
+      s.partnerShiny = hasSh;
       G.DB.commit();
       G.UI.toast(p.name + (s.partnerShiny ? ' shiny' : '') + ' es ahora tu compañero');
       G.PickUI.open();                     // version de Nika : retour au menu, prêt à jouer
@@ -316,7 +316,7 @@ G.MenuUI = (() => {
     const got = ids.reduce((a, id) => a + Math.min(levels[id] || 0, G.Upgrades.BY[id].max), 0);
     const all = ids.reduce((a, id) => a + G.Upgrades.BY[id].max, 0);
     const mon = G.DEX_BY[s.partner];
-    const shiny = !!s.partnerShiny && G.DB.ownsShiny(s.partner);
+    const shiny = G.DB.ownsShiny(s.partner);
     const sum = $('upg-sum');
     sum.innerHTML = `<div class="ts-stage"><canvas width="120" height="110"></canvas></div>
       <div class="us-txt"><b>Niveau d'équipe ${got} / ${all}</b>
