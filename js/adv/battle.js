@@ -171,7 +171,6 @@ G.AdvBattle = (() => {
       const bag = () => {
         const s = G.Overworld.save();
         menu([
-          { html: `<b>Poké Ball</b><small>× ${s.balls}</small>`, color: '#e05040', disabled: !!B.trainer || s.balls <= 0, fn: () => res({ type: 'ball' }) },
           { html: `<b>Potion</b><small>× ${s.potions} · +20 PV</small>`, color: '#a050d0', disabled: s.potions <= 0 || B.me.hp >= M.maxHp(B.me), fn: () => res({ type: 'potion' }) },
           { html: 'Retour', cls: 'back', fn: main }
         ]);

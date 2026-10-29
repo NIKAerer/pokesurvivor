@@ -16,6 +16,13 @@ G.Overworld = (() => {
   const SOLID = new Set(['T', '~', 'F', 'r', 'S', 'H', 'L', 'C', 'M', 'G', 'D']);
   const SPEED = TS * 4.5;
   const STARTERS = [1, 4, 7];
+  // Les Pokémon proposés à la fin de chaque chapitre (ceux de l'animé à cet endroit).
+  const CATCH = {
+    1: [16, 19, 21, 25, 29, 32, 56, 52],
+    2: [10, 13, 25, 11, 14, 123, 127, 46],
+    3: [74, 95, 27, 50, 41, 66, 104, 111],
+    4: [35, 41, 46, 74, 39, 54, 60, 118]
+  };
 
   let S = null;              // la sauvegarde de l'Aventure
   let map = null, mapKey = '', bg = null, npcs = [];
@@ -519,9 +526,9 @@ G.Overworld = (() => {
     G.DB.grant(dex, 'adv');
     refreshFollowers();
     G.Audio.sfx('legend');
-    S.balls += 5; S.potions += 2;
+    S.potions += 2;
     await talk([['', 'Tu as choisi ' + G.DEX_BY[dex].name + ' !'],
-                ['Prof. Chen', 'Prends aussi ces 5 Poké Balls et 2 Potions. Lance une Poké Ball sur un Pokémon sauvage affaibli pour le capturer !']]);
+                ['Prof. Chen', 'Prends aussi ces 2 Potions. Et à la fin de chaque étape de ton voyage, un nouveau Pokémon pourra rejoindre ton équipe !']]);
     loadNpcs();
   }
   async function rival1(n) {
@@ -573,14 +580,13 @@ G.Overworld = (() => {
   async function mart() {
     for (;;) {
       const i = await G.AdvUI.choose('Boutique · ' + S.money + ' pièces', [
-        { title: '5 Poké Balls', desc: '300 pièces', icon: 'pball', off: S.money < 300 },
-        { title: '3 Potions', desc: '300 pièces', icon: 'up', off: S.money < 300 },
+        { title: '3 Potions', desc: '300 pièces · +20 PV chacune', icon: 'up', off: S.money < 300 },
         { title: 'Au revoir', desc: '' }
       ]);
-      if (i === 2) return;
+      if (i === 1) return;
       if (S.money < 300) { await talk([['Vendeur', 'Tu n\'as pas assez de pièces…']]); continue; }
       S.money -= 300;
-      if (i === 0) S.balls += 5; else S.potions += 3;
+      S.potions += 3;
       G.Audio.sfx('confirm');
     }
   }
@@ -590,33 +596,20 @@ G.Overworld = (() => {
     const ch = S.ch;
     G.Audio.sfx('legend');
     await talk([['', 'Chapitre ' + ch + ' terminé : ' + K().CHAPTERS[ch].title + ' !']]);
+    // Version de Nika : pas de capture en combat ; à la fin d'un chapitre, on choisit un Pokémon parmi 3 cartes.
     const avg = Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
-    const pool = [...new Set([].concat(...Object.values(K().MAPS).map(m => (m.wild || []).map(w => w[0]))))];
-    const catchDex = G.U.pick(pool.filter(d => !S.team.some(m => m.dex === d)).length ? pool.filter(d => !S.team.some(m => m.dex === d)) : pool);
-    const lead = S.team[0];
-    const nm = M().learnset(lead.dex).find(id => !lead.moves.includes(id));
-    const opts = [
-      { dex: catchDex, title: 'Capturer ' + G.DEX_BY[catchDex].name, desc: 'Il rejoint ton équipe au niveau ' + avg },
-      nm ? { icon: 'move:' + nm, title: 'Apprendre ' + M().moveName(nm), desc: 'Pour ' + M().name(lead) } : null,
-      { icon: 'up', title: 'Entraînement', desc: 'Toute l\'équipe gagne 1 niveau' }
-    ].filter(Boolean);
-    const i = await G.AdvUI.choose('Choisis ta récompense', opts);
-    const r = opts[i];
-    if (r.dex) {
-      const m = M().make(r.dex, avg);
-      if (S.team.length < 6) S.team.push(m); else S.box.push(m);
-      G.DB.grant(r.dex, 'adv');
-      refreshFollowers();
-    } else if (r.icon && r.icon.startsWith('move:')) {
-      if (lead.moves.length < 4) lead.moves.push(nm);
-      else {
-        const j = await G.AdvUI.choose('Quelle attaque oublier ?', lead.moves.map(x => ({ icon: 'move:' + x, title: M().moveName(x), desc: '' })));
-        lead.moves[j] = nm;
-      }
-    } else {
-      for (const m of S.team) { const b = M().maxHp(m); m.lv++; m.xp = Math.max(m.xp, M().xpAt(m.lv)); m.hp += M().maxHp(m) - b; const n2 = M().newMoveAt(m.dex, m.lv); if (n2 && m.moves.length < 4 && !m.moves.includes(n2)) m.moves.push(n2); }
-      await G.AdvBattle.evolutions();
-    }
+    const all = CATCH[ch] || CATCH[1];
+    const fresh = all.filter(d => G.DEX_BY[d] && !S.team.some(m => m.dex === d) && !S.box.some(m => m.dex === d));
+    const pool = (fresh.length >= 3 ? fresh : all.slice()).sort(() => Math.random() - 0.5);
+    const picks = pool.slice(0, 3);
+    const i = await G.AdvUI.choose('Un Pokémon veut te rejoindre ! Lequel captures-tu ?',
+      picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + avg })));
+    const dex = picks[i];
+    const m = M().make(dex, avg);
+    if (S.team.length < 6) S.team.push(m); else S.box.push(m);
+    G.DB.grant(dex, 'adv');
+    refreshFollowers();
+    await talk([['', 'Et hop ! ' + G.DEX_BY[dex].name + ' est capturé' + (S.team.includes(m) ? ' et te suit !' : ' et part dans ta boîte.')]]);
     G.Audio.sfx('confirm');
     S.ch = Math.min(K().CHAPTERS.length - 1, ch + 1);
     commit();
@@ -645,7 +638,7 @@ G.Overworld = (() => {
     if (busy) return;
     run(async () => {
       for (;;) {
-        const i = await G.AdvUI.choose('Menu · ' + S.money + ' pièces · ' + S.balls + ' Poké Balls · ' + S.potions + ' Potions', [
+        const i = await G.AdvUI.choose('Menu · ' + S.money + ' pièces · ' + S.potions + ' Potions', [
           { icon: 'pball', title: 'Équipe', desc: S.team.length + ' Pokémon' },
           { icon: 'up', title: 'Objectif', desc: K().CHAPTERS[S.ch].goal },
           { title: 'Quitter', desc: 'Sauvegarde et retour au menu' },
