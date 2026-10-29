@@ -18,14 +18,16 @@ G.Overworld = (() => {
   // Version de Nika : on démarre petit, comme Sacha dans l'animé : Roucool, Rattata ou Pikachu.
   const STARTERS = [16, 19, 25];
   const card = d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types });
-  // Les Pokémon proposés à la fin de chaque chapitre : des Pokémon recherchés (rares,
-  // fossiles, évolutions) liés aux lieux de l'animé, pas les Roucool et Rattata des herbes.
-  // Version de Nika : on suit l'histoire, mais sans Pikachu.
-  const CATCH = {
-    1: [133, 58, 63, 147, 66, 37, 77, 92],
-    2: [123, 127, 15, 12, 102, 114, 83, 2],
-    3: [95, 111, 104, 138, 140, 142, 27, 75],
-    4: [131, 120, 54, 61, 118, 35, 39, 116]
+  // Les Pokémon qui vivent logiquement autour des lieux de chaque chapitre (jeux et animé).
+  const HABITAT = {
+    // Bourg Palette, Route 1, Jadielle et la Route 22 : prairies, étangs, villes.
+    1: [16, 19, 21, 29, 32, 43, 69, 54, 60, 52, 58, 56, 118, 129],
+    // Route 2 et la Forêt de Jade : insectes, plantes, Pikachu.
+    2: [10, 13, 11, 14, 25, 46, 48, 43, 69, 102, 114, 123, 127, 16, 17],
+    // Argenta, Route 3 et le Musée : roches, grottes, fossiles.
+    3: [74, 95, 27, 50, 35, 39, 41, 23, 104, 138, 140, 142, 56, 21],
+    // Mont Sélénite et Azuria : grottes, eau, Pokémon Psy.
+    4: [35, 39, 41, 74, 46, 54, 60, 118, 120, 116, 43, 69, 63, 72]
   };
 
   let S = null;              // la sauvegarde de l'Aventure
@@ -441,6 +443,10 @@ G.Overworld = (() => {
     const sx = -uy * side, sy = Math.abs(ux) * side;
     const place = { me: { x: mx - ux * gap + sx, y: my - uy * gap + sy }, foe: { x: mx + ux * gap + sx, y: my + uy * gap + sy } };
     $('world-hud').classList.add('dim');
+    // Les Pokémon croisés pendant le chapitre (proposés à la capture en fin de chapitre).
+    const met = opts.wild ? [opts.wild[0]] : opts.trainer.team.map(t => t[0]);
+    const seen = (S.seen = S.seen || {})[S.ch] = S.seen[S.ch] || [];
+    for (const d of met) if (!seen.includes(d)) seen.push(d);
     const res = await G.AdvBattle.start(opts, place);
     $('world-hud').classList.remove('dim');
     G.Audio.music(def.music);
@@ -655,10 +661,16 @@ G.Overworld = (() => {
   /** Capturer : 3 cartes de Pokémon de la région (ceux de l'animé à cet endroit). */
   async function capture(ch) {
     const avg = Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
-    const all = CATCH[ch] || CATCH[1];
-    const fresh = all.filter(d => G.DEX_BY[d] && !S.team.some(m => m.dex === d) && !S.box.some(m => m.dex === d));
-    const pool = (fresh.length >= 3 ? fresh : all.slice()).sort(() => Math.random() - 0.5);
-    const picks = pool.slice(0, 3);
+    // Version de Nika : des Pokémon cohérents avec le coin (ceux qui y vivent dans les jeux et l'animé),
+    // et au moins un de ceux croisés pendant le chapitre (sauvages ou Pokémon des dresseurs).
+    const owned = d => S.team.some(m => m.dex === d) || S.box.some(m => m.dex === d);
+    const ok = d => G.DEX_BY[d] && !G.DEX_BY[d].leg && !owned(d);
+    const shuffle = a => [...new Set(a)].filter(ok).sort(() => Math.random() - 0.5);
+    const met = shuffle((S.seen && S.seen[ch]) || []);
+    let picks = met.slice(0, 1);
+    for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(shuffle(HABITAT[c] || []).filter(d => !picks.includes(d))).slice(0, 3);
+    if (picks.length < 3) picks = picks.concat(met.filter(d => !picks.includes(d))).slice(0, 3);
+    if (!picks.length) picks = [16, 19, 21];
     const i = await G.AdvUI.choose('Un Pokémon veut te rejoindre ! Lequel captures-tu ?',
       picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + avg + ' · ' + M().movesAt(d, avg).map(M().moveName).join(', ') })));
     const dex = picks[i];
