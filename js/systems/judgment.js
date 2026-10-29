@@ -45,7 +45,7 @@ G.Judgment = (() => {
   const TRIAL = 180;                  // version de Nika : 3 min d'épreuve, puis Arceus est attaquable
   const ARCEUS_HP = 40;               // vie d'Arceus = 40 × celle du premier légendaire
   const JOIN = 0.1;                   // chance qu'Arceus te rejoigne après la victoire
-  const LOOT = { coins: 1500, balls: 30, t1: 3, ct: 2 };
+  const LOOT = { coins: 1500, balls: 30, t1: 3 };
   const TOUCH = 0.4;                  // vida que quita tocar a Arceus
   const ARCEUS = 493, SCALE = 1.5;
   // Línea de tiempo de la animación (segundos).
@@ -378,7 +378,6 @@ G.Judgment = (() => {
     const s = G.DB.save, pl = G.Game.player;
     if (pl) { pl.coins += LOOT.coins; pl.t1 += LOOT.t1; }
     G.Game.addBalls(LOOT.balls);
-    G.Tutor.add(LOOT.ct);
     let join = false;
     if (s && Math.random() < JOIN) {
       if (!s.box.includes(ARCEUS) && G.Box.free() > 0) { s.box.push(ARCEUS); G.DB.grant(ARCEUS, 'judgment'); join = true; }
@@ -387,7 +386,7 @@ G.Judgment = (() => {
     G.DB.commit(true);
     G.Game.flash('#fff3c8', 0.9);
     G.Audio.sfx('levelup');
-    G.Spawner.say(join ? 'Arceus est vaincu… et il te rejoint !' : 'Arceus est vaincu ! +' + LOOT.coins + ' pièces, +' + LOOT.balls + ' Super Bonbons, +' + LOOT.t1 + ' Poké Balls, +' + LOOT.ct + ' CT', 5, true);
+    G.Spawner.say(join ? 'Arceus est vaincu… et il te rejoint !' : 'Arceus est vaincu ! +' + LOOT.coins + ' pièces, +' + LOOT.balls + ' Super Bonbons, +' + LOOT.t1 + ' Poké Balls', 5, true);
   }
 
   /** Tocar a Arceus (cada uno mira el suyo). */

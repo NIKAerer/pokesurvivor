@@ -176,12 +176,9 @@ G.Team = (() => {
    */
   const sets = {};
   const LEARN = 7, ROLE_N = 4;
-  /** Version de Nika : avec les attaques apprises par CT (tutor.js) à leur place. */
   function learnset(dex) {
-    const base = baseLearnset(dex), t = G.Tutor && G.Tutor.of(family(dex));
-    if (!t) return base;
-    // (une attaque déjà dans le répertoire n'y entre pas deux fois)
-    return base.map((id, i) => (i && t[i] && G.Moves.BY_ID[t[i]] && !base.includes(t[i]) ? t[i] : id));
+    // (Version de Nika, 2026-10-29 : les CT et le Maître des capacités sont retirés.)
+    return baseLearnset(dex);
   }
   function baseLearnset(dex) {
     const root = family(dex);
