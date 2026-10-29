@@ -1,122 +1,12 @@
-/* ============ adv-ui.js — écran de l'Aventure (version de Nika) ============
- * Choix du premier Pokémon (Bulbizarre, Salamèche, Carapuce), l'équipe de
- * l'Aventure (toucher un Pokémon le met en tête), et la carte des chapitres de
- * Kanto. Aussi la boîte de dialogue des chapitres (talk) et le bilan (result).
+/* ============ adv-ui.js — dialogues et choix de l'Aventure (version de Nika) ============
+ * La grande boîte de dialogue au centre de l'écran (talk / talkP) et les
+ * cartes de choix (choose) : premier Pokémon, récompenses, boutique, menu.
+ * L'Aventure elle-même se joue sur la carte (js/adv/overworld.js).
  */
 G.AdvUI = (() => {
   const $ = id => document.getElementById(id);
-  const A = () => G.Adventure;
 
-  function open() {
-    if (G.Game.state !== 'ui') G.Game.toUI();
-    G.UI.chrome(false);
-    G.Audio.music('village');
-    G.UI.show('scr-adv');
-    render();
-  }
-
-  function render() {
-    const st = A().state(), box = $('adv-body');
-    box.innerHTML = '';
-    if (!st.team.length) { starters(box); return; }
-    if (st.reward != null) { reward(box); return; }
-
-    // L'équipe : les 6 premiers partent, les autres attendent en réserve.
-    const team = document.createElement('div');
-    team.className = 'ts-card adv-team';
-    team.innerHTML = `<h3>Ton équipe</h3><p class="note">Touche un Pokémon pour qu'il mène l'équipe. Les ${A().TRAVEL} premiers partent à l'aventure.</p>`;
-    const row = document.createElement('div');
-    row.className = 'adv-mons';
-    st.team.forEach((m, i) => {
-      const p = G.DEX_BY[m.dex];
-      if (!p) return;
-      const b = document.createElement('button');
-      b.className = 'adv-mon' + (i === 0 ? ' lead' : '') + (i >= A().TRAVEL ? ' rest' : '');
-      b.appendChild(G.UI.spriteCanvas(m.dex, 56, 48, { fit: true, shiny: G.DB.ownsShiny(m.dex) }));
-      b.insertAdjacentHTML('beforeend', `<b>${p.name}</b><small>N. ${m.lv}${i === 0 ? ' · tête' : i >= A().TRAVEL ? ' · réserve' : ''}</small>`);
-      b.onclick = () => { if (i) { A().setLeader(i); G.Audio.sfx('select'); render(); } };
-      row.appendChild(b);
-    });
-    team.appendChild(row);
-    box.appendChild(team);
-
-    // Les chapitres de Kanto.
-    const map = document.createElement('div');
-    map.className = 'ts-card adv-map';
-    map.innerHTML = `<h3>Kanto · ${Math.min(st.done, A().CH.length)} / ${A().CH.length} chapitres</h3>`;
-    const list = document.createElement('div');
-    list.className = 'adv-chs';
-    A().CH.forEach((c, i) => {
-      const done = i < st.done, next = i === st.done, locked = i > st.done;
-      const b = document.createElement('button');
-      b.className = 'adv-ch' + (done ? ' done' : '') + (next ? ' next' : '');
-      b.disabled = locked;
-      b.style.setProperty('--tc', G.U.TYPE_COLOR[c.type] || '#888');
-      b.innerHTML = `<span class="adv-n">${i + 1}</span><span class="adv-t"><b>${c.place}</b><small>${locked ? '???' : c.who}</small></span>`
-        + `<span class="adv-s">${done ? G.Icons.html('medal1', 18) : next ? 'Jouer' : ''}</span>`;
-      b.onclick = () => play(i);
-      list.appendChild(b);
-    });
-    map.appendChild(list);
-    box.appendChild(map);
-  }
-
-  /** Version de Nika : un choix à la fin de chaque chapitre gagné. */
-  function reward(box) {
-    const list = A().rewards();
-    if (!list.length) { A().state().reward = null; render(); return; }
-    const c = document.createElement('div');
-    c.className = 'ts-card adv-start';
-    c.innerHTML = `<h3>Chapitre ${A().state().reward + 1} terminé !</h3><p>Choisis ta récompense :</p>`;
-    const row = document.createElement('div');
-    row.className = 'adv-starters adv-rewards';
-    for (const r of list) {
-      const b = document.createElement('button');
-      b.className = 'adv-starter';
-      const p = r.dex && G.DEX_BY[r.dex];
-      b.style.setProperty('--tc', r.kind === 'train' ? '#e0a020' : r.kind === 'move' ? G.U.TYPE_COLOR[G.Moves.BY_ID[r.move].type] : G.U.TYPE_COLOR[p.types[0]]);
-      if (r.kind === 'catch') b.appendChild(G.UI.spriteCanvas(r.dex, 120, 100, { scale: 3, hero: true, lively: true, shiny: G.DB.ownsShiny(r.dex) }));
-      else b.insertAdjacentHTML('beforeend', `<span class="adv-rico">${G.Icons.html(r.kind === 'move' ? 'move:' + r.move : 'up', 64)}</span>`);
-      b.insertAdjacentHTML('beforeend', `<b>${r.title}</b><small>${r.desc}</small>`);
-      b.onclick = () => { A().takeReward(r); G.Audio.sfx('confirm'); render(); };
-      row.appendChild(b);
-    }
-    c.appendChild(row);
-    box.appendChild(c);
-  }
-
-  function starters(box) {
-    const c = document.createElement('div');
-    c.className = 'ts-card adv-start';
-    c.innerHTML = `<h3>Bourg Palette</h3><p>Le Professeur Chen t'attend. Il lui reste trois Pokémon : lequel sera ton premier compagnon ?</p>`;
-    const row = document.createElement('div');
-    row.className = 'adv-starters';
-    for (const dex of A().STARTERS) {
-      const p = G.DEX_BY[dex];
-      const b = document.createElement('button');
-      b.className = 'adv-starter';
-      b.style.setProperty('--tc', G.U.TYPE_COLOR[p.types[0]]);
-      b.appendChild(G.UI.spriteCanvas(dex, 120, 100, { scale: 3, hero: true, lively: true, shiny: G.DB.ownsShiny(dex) }));
-      b.insertAdjacentHTML('beforeend', `<b>${p.name}</b><span>${G.UI.typeChips(p.types)}</span>`);
-      b.onclick = () => {
-        A().pickStarter(dex);
-        G.DB.grant(dex, 'adv');
-        G.Audio.sfx('confirm');
-        render();
-      };
-      row.appendChild(b);
-    }
-    c.appendChild(row);
-    box.appendChild(c);
-  }
-
-  function play(i) {
-    if (i > A().state().done) return;
-    G.Audio.sfx('confirm');
-    G.Sprites.preload(A().state().team.slice(0, A().TRAVEL).map(m => m.dex));
-    A().start(i);
-    G.Game.startRun();
-  }
+  function open() { G.Overworld.open(); }
 
   // ---------------- dialogues ----------------
   let talkCb = null, talkLines = [], talkI = 0;
@@ -126,6 +16,7 @@ G.AdvUI = (() => {
     $('adv-talk').classList.remove('hidden');
     show();
   }
+  const talkP = lines => new Promise(res => talk(lines, res));
   function show() {
     const [who, txt] = talkLines[talkI];
     $('adv-talk-who').textContent = who || '';
@@ -143,28 +34,54 @@ G.AdvUI = (() => {
     if (cb) cb();
   }
 
-  /** Bilan d'un chapitre, puis retour à la carte. */
-  function result(res) {
-    open();
-    if (!res) return;
-    const c = A().CH[res.ch];
-    const got = res.caught.map(d => G.DEX_BY[d].name).join(', ');
-    const lines = res.won
-      ? [['', 'Chapitre ' + (res.ch + 1) + ' réussi : ' + c.place + ' ! +' + res.coins + ' pièces.' + (got ? ' Capturés : ' + got + '.' : '')]]
-      : res.dead
-        ? [['', 'Ton équipe est K.O.… Elle garde son expérience' + (got ? ' et ses captures (' + got + ')' : '') + '. Réessaie !']]
-        : got ? [['', 'Chapitre interrompu. Tes captures sont gardées : ' + got + '.']] : [];
-    talk(lines, () => render());
+  // ---------------- choix ----------------
+  /** options : [{ title, desc, dex?, types?, icon?, off? }] → Promise de l'index choisi. */
+  function choose(title, options) {
+    return new Promise(res => {
+      const box = $('adv-choose');
+      box.innerHTML = '';
+      const card = document.createElement('div');
+      card.className = 'adv-choose-box';
+      card.insertAdjacentHTML('beforeend', `<h3>${title}</h3>`);
+      const row = document.createElement('div');
+      row.className = 'adv-choose-row' + (options.length > 4 ? ' many' : '');
+      options.forEach((o, i) => {
+        const b = document.createElement('button');
+        b.className = 'adv-opt' + (o.off ? ' off' : '');
+        const p = o.dex && G.DEX_BY[o.dex];
+        const mv = o.icon && o.icon.startsWith('move:') && G.Moves.BY_ID[o.icon.slice(5)];
+        b.style.setProperty('--tc', p ? G.U.TYPE_COLOR[p.types[0]] : mv ? G.U.TYPE_COLOR[mv.type] : '#e0a020');
+        if (p) b.appendChild(G.UI.spriteCanvas(o.dex, 72, 60, { fit: true, shiny: G.DB.ownsShiny(o.dex) }));
+        else if (o.icon) b.insertAdjacentHTML('beforeend', `<span class="adv-oico">${G.Icons.html(o.icon, 36)}</span>`);
+        b.insertAdjacentHTML('beforeend', `<span class="adv-otx"><b>${o.title}</b>${o.types ? `<span>${G.UI.typeChips(o.types)}</span>` : ''}${o.desc ? `<small>${o.desc}</small>` : ''}</span>`);
+        b.onclick = e => {
+          e.stopPropagation();
+          G.Audio.sfx('confirm');
+          box.classList.add('hidden');
+          box.innerHTML = '';
+          res(i);
+        };
+        row.appendChild(b);
+      });
+      card.appendChild(row);
+      box.appendChild(card);
+      box.classList.remove('hidden');
+    });
   }
+
+  /** (ancienne Aventure) */
+  function result() { G.Overworld.open(); }
 
   function init() {
     $('adv-talk').onclick = next;
     document.addEventListener('keydown', e => {
       if ($('adv-talk').classList.contains('hidden') || !['Space', 'Enter', 'KeyE'].includes(e.code)) return;
       e.preventDefault();
+      e.stopImmediatePropagation();
       next();
-    });
+    }, true);
+    G.Overworld.init();
   }
 
-  return { open, render, talk, result, init };
+  return { open, talk, talkP, choose, result, init };
 })();

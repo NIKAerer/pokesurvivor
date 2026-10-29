@@ -626,16 +626,27 @@
   <p class="pick-credits">Fan game non commercial d'après PokéSurvivor de JPTER78 · Sprites : PMD SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Creatures / GAME FREAK</p>
 </section>
 
-<!-- ====== Aventure (version de Nika, js/ui/adv-ui.js) ====== -->
-<section id="scr-adv" class="scr hidden ts">
-  <div class="ts-top">
-    <button class="ts-back" data-back aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button>
-    <h2>Aventure</h2>
-    <div class="ts-wallet"></div>
+<!-- ====== Aventure (version de Nika, js/adv/overworld.js) ====== -->
+<section id="scr-world" class="scr hidden">
+  <canvas id="world-cv"></canvas>
+  <div id="world-hud">
+    <div class="world-top">
+      <div class="world-info"><b id="world-ch"></b><span id="world-place"></span></div>
+      <button id="world-menu" class="world-btn">Menu</button>
+    </div>
+    <p id="world-goal"></p>
+    <button id="world-act" class="world-btn world-act">Parler</button>
   </div>
-  <div class="ts-body"><div class="ts-wrap" id="adv-body"></div></div>
+  <div id="world-banner"></div>
+  <div id="world-fade"></div>
+  <div id="advb" class="hidden">
+    <div id="advb-foe" class="advb-card foe"></div>
+    <div id="advb-me" class="advb-card me"></div>
+    <div class="advb-bottom"><div id="advb-msg"></div><div id="advb-menu"></div></div>
+  </div>
 </section>
 <div id="adv-talk" class="adv-talk hidden"><div class="adv-talk-box"><b id="adv-talk-who"></b><p id="adv-talk-txt"></p><small>Touche pour continuer</small></div></div>
+<div id="adv-choose" class="adv-choose hidden"></div>
 
 <!-- ====== Table des types (version de Nika, js/ui/types-ui.js) ====== -->
 <section id="scr-types" class="scr hidden ts">
@@ -768,6 +779,10 @@
 <script defer src="js/ui/run-ui.js"></script>
 <script defer src="js/ui/types-ui.js"></script>
 <script defer src="js/ui/pick-ui.js"></script>
+<script defer src="js/adv/people.js"></script>
+<script defer src="js/adv/kanto.js"></script>
+<script defer src="js/adv/battle.js"></script>
+<script defer src="js/adv/overworld.js"></script>
 <script defer src="js/ui/adv-ui.js"></script>
 <script defer src="js/ui/daily-ui.js"></script>
 <script defer src="js/ui/social-ui.js"></script>
