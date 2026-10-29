@@ -196,6 +196,10 @@ G.Icons = (() => {
     medalOff: { pal: { r: '#3a4870', q: '#2a3458', m: '#3a4870', n: '#2a3458', w: '#4a5a88', s: '#4a5a88' }, rows: MEDAL },
     // Version de Nika : menu Accueil (cadeau du jour, onglet Accueil).
     gift: { pal: { r: '#ff5f6d', d: '#b8303c', w: '#ffc2c8', y: '#ffd23f' }, rows: ['...kk..kk...', '..kyykkyyk..', '...kyyyyk...', 'kkkkkyykkkkk', 'krrrryyrrrrk', 'kwrrryyrrrdk', 'kkkkkyykkkkk', '.krrryyrrrk.', '.kwrryyrrdk.', '.krrryyrrdk.', '.kdddyydddk.', '.kkkkkkkkkk.'] },
+    // Version de Nika : la Boîte (un carton du PC avec une Poké Ball dessus).
+    pcbox: { pal: { b: '#e0a86a', d: '#a86b3c', l: '#f6d39c', r: '#ff4d4d', w: '#f4f4f4' }, rows: [
+      '............', 'kkkkkkkkkkkk', 'kllllllllllk', 'kllllllllldk', 'kkkkkkkkkkkk', '.kbbbbbbbdk.',
+      '.kbbbkkbbdk.', '.kbbkrrkbdk.', '.kbbkkkkbdk.', '.kbbkwwkbdk.', '.kbbbkkbbdk.', '.kkkkkkkkkk.'] },
     home: { pal: { r: '#ff7a4d', w: '#f4ead2', d: '#c9b48a', b: '#8a5a2b' }, rows: ['.....kk.....', '....krrk....', '...krrrrk...', '..krrrrrrk..', '.krrrrrrrrk.', 'kkkkkkkkkkkk', '.kwwwwwwwdk.', '.kwkkwwbbdk.', '.kwkkwwbbdk.', '.kwwwwwbbdk.', '.kwwwwwbbdk.', '.kkkkkkkkkk.'] },
     trophy: { pal: { y: '#ffd23f', d: '#c08a10', w: '#fff3b0' }, rows: [
       '............', '..kkkkkkkk..', 'kkkwyyyydkkk', 'k.kwyyyydk.k', 'k.kwyyyydk.k', '.kkwyyyydkk.',
