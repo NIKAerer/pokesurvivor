@@ -49,9 +49,10 @@ G.AdvUI = (() => {
         const b = document.createElement('button');
         b.className = 'adv-opt' + (o.off ? ' off' : '');
         const p = o.dex && G.DEX_BY[o.dex];
-        const mv = o.icon && o.icon.startsWith('move:') && G.Moves.BY_ID[o.icon.slice(5)];
+        const mv = o.icon && o.icon.startsWith('move:') && G.AdvMon.move(o.icon.slice(5));
         b.style.setProperty('--tc', p ? G.U.TYPE_COLOR[p.types[0]] : mv ? G.U.TYPE_COLOR[mv.type] : '#e0a020');
         if (p) b.appendChild(G.UI.spriteCanvas(o.dex, 72, 60, { fit: true, shiny: G.DB.ownsShiny(o.dex) }));
+        else if (mv) b.insertAdjacentHTML('beforeend', `<span class="adv-oico adv-otype">${G.U.TYPE_NAME[mv.type] || mv.type}</span>`);
         else if (o.icon) b.insertAdjacentHTML('beforeend', `<span class="adv-oico">${G.Icons.html(o.icon, 36)}</span>`);
         b.insertAdjacentHTML('beforeend', `<span class="adv-otx"><b>${o.title}</b>${o.types ? `<span>${G.UI.typeChips(o.types)}</span>` : ''}${o.desc ? `<small>${o.desc}</small>` : ''}</span>`);
         b.onclick = e => {
@@ -69,9 +70,6 @@ G.AdvUI = (() => {
     });
   }
 
-  /** (ancienne Aventure) */
-  function result() { G.Overworld.open(); }
-
   function init() {
     $('adv-talk').onclick = next;
     document.addEventListener('keydown', e => {
@@ -83,5 +81,5 @@ G.AdvUI = (() => {
     G.Overworld.init();
   }
 
-  return { open, talk, talkP, choose, result, init };
+  return { open, talk, talkP, choose, init };
 })();

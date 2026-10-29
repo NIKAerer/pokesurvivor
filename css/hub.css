@@ -216,28 +216,6 @@
 #gacha-room .btn { margin-left: 6px; vertical-align: middle; }
 
 /* ---------- Aventure (version de Nika, js/ui/adv-ui.js) ---------- */
-#scr-adv .ts-card h3 { margin: 0 0 6px; }
-.adv-starters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
-.adv-starter { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 14px;
-  border: 3px solid var(--tc); background: color-mix(in srgb, var(--tc) 18%, #fff8f0); cursor: pointer; font: inherit; color: inherit; }
-.adv-starter:hover { transform: translateY(-2px); }
-.adv-starter canvas { max-width: 100%; height: auto; }
-.adv-mons { display: flex; flex-wrap: wrap; gap: 8px; }
-.adv-mon { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 84px; padding: 6px 4px; border-radius: 12px;
-  border: 2px solid rgba(0,0,0,.12); background: rgba(255,255,255,.6); cursor: pointer; font: inherit; color: inherit; }
-.adv-mon b { font-size: 11px; } .adv-mon small { font-size: 10px; opacity: .75; }
-.adv-mon.lead { border-color: #e0a020; background: #fff3cf; }
-.adv-mon.rest { opacity: .6; }
-.adv-chs { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
-.adv-ch { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; text-align: left;
-  border: 2px solid color-mix(in srgb, var(--tc) 60%, #fff); background: color-mix(in srgb, var(--tc) 12%, #fff); cursor: pointer; font: inherit; color: inherit; }
-.adv-ch:disabled { opacity: .45; cursor: default; filter: grayscale(.7); }
-.adv-ch.next { border-color: var(--tc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 35%, transparent); }
-.adv-n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: var(--tc); flex: none; }
-.adv-t { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.adv-t small { opacity: .7; font-size: 11px; }
-.adv-s { font-weight: 800; font-size: 12px; }
-.adv-ch.next .adv-s { background: var(--tc); color: #fff; padding: 4px 10px; border-radius: 99px; }
 .adv-talk { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px;
   background: rgba(8,10,20,.45); cursor: pointer; }
 .adv-talk.hidden { display: none; }
@@ -249,9 +227,6 @@
 .adv-talk-box p { margin: 0 0 10px; font-size: 24px; line-height: 1.4; }
 .adv-talk-box small { display: block; text-align: right; opacity: .55; font-size: 13px; }
 @media (max-width: 600px) { .adv-talk-box { padding: 16px 18px 12px; } .adv-talk-box p { font-size: 19px; } .adv-talk-box b { font-size: 15px; } }
-.adv-rewards .adv-starter small { font-size: 12px; opacity: .8; text-align: center; }
-.adv-rewards .adv-starter b { text-align: center; }
-.adv-rico { display: grid; place-items: center; height: 100px; }
 @media (max-width: 600px) { .adv-starters.adv-rewards { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .adv-starters { gap: 6px; } .adv-starter canvas { width: 84px; } }
 
@@ -285,6 +260,7 @@ body.touch .world-act { display: block; }
 .advb-card.foe { left: 12px; top: max(12px, env(safe-area-inset-top)); }
 .advb-card.me { right: 12px; top: max(12px, env(safe-area-inset-top)); }
 .advb-nm { display: flex; justify-content: space-between; gap: 6px; font-size: 15px; }
+.advb-st { font-style: normal; font-size: 11px; font-weight: 800; color: #fff; padding: 1px 5px; border-radius: 5px; margin-left: auto; margin-right: 6px; align-self: center; }
 .advb-hp { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
 .advb-hp small { font-weight: 800; font-size: 11px; color: #e0a020; }
 .advb-hp i { flex: 1; height: 8px; background: #555; border-radius: 4px; overflow: hidden; }
@@ -316,6 +292,7 @@ body.touch .world-act { display: block; }
 .adv-opt.off { opacity: .5; }
 .adv-opt canvas { flex: none; }
 .adv-oico { flex: none; display: flex; }
+.adv-otype { font-size: 11px; font-weight: 800; color: #fff; background: var(--tc); padding: 4px 7px; border-radius: 6px; align-self: center; }
 .adv-otx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .adv-otx b { font-size: 16px; }
 .adv-otx small { font-size: 12px; opacity: .75; }

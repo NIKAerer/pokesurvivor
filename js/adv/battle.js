@@ -2,75 +2,85 @@
  * Pas d'écran à part : ton Pokémon sort devant toi, face au sauvage (ou au
  * Pokémon du dresseur), et le menu s'ouvre en bas : Attaque, Sac, Pokémon, Fuite.
  *
- * Les Pokémon de l'Aventure : { dex, lv, xp, hp, moves: [id...] }
- *   - statistiques tirées du Pokédex du jeu (PV, attaque, vitesse, BST) avec
- *     les formules des jeux (niveau 1-100) ;
- *   - attaques : celles du répertoire du Pokémon (team.js learnset), apprises à
- *     certains niveaux (LEARN_LV), 4 au plus ;
- *   - expérience « moyenne » des jeux : il faut niveau³ points au total.
- * La vraie table des types des jeux (×2, ×0,5, ×0), STAB ×1,5, coups critiques.
+ * Comme dans les vrais jeux (données de moves-data.js) :
+ *   - les vraies statistiques de base (PV, Attaque, Défense, Atq. Spé., Déf. Spé., Vitesse)
+ *     et les formules des jeux ;
+ *   - les vraies attaques de chaque Pokémon, apprises aux vrais niveaux, 4 au plus,
+ *     avec leur précision, priorité, effets (statuts, stats, vol de vie, recul,
+ *     coups multiples, peur, coups critiques) et leurs PP ;
+ *   - les statuts : paralysie, sommeil, gel, brûlure, poison, confusion ;
+ *   - la table des types (×2, ×0,5, ×0), STAB ×1,5.
+ * Les Pokémon de l'Aventure : { dex, lv, xp, hp, moves: [id...], pp: [n...], st, sleep }
  */
 G.AdvMon = (() => {
-  const LEARN_LV = [1, 4, 9, 14, 20, 27, 35];
-  // Puissance des attaques connues (celles des jeux) ; les autres : 55.
-  const POWER = {
-    tackle: 40, scratch: 40, pound: 40, ember: 40, 'water-gun': 40, 'thunder-shock': 40, 'vine-whip': 45, 'quick-attack': 40,
-    gust: 40, bubble: 40, 'powder-snow': 40, 'mega-drain': 40, lick: 30, 'poison-sting': 25, 'peck': 35, 'bug-bite': 60,
-    bite: 60, 'wing-attack': 60, confusion: 50, 'rock-throw': 50, 'karate-chop': 50, 'mud-shot': 55, 'razor-leaf': 55,
-    'metal-claw': 50, 'aerial-ace': 60, swift: 60, 'flame-wheel': 60, 'fairy-wind': 40, 'disarming-voice': 40, 'icicle-spear': 50,
-    psybeam: 65, 'bubble-beam': 65, 'night-slash': 70, 'psycho-cut': 70, 'rock-tomb': 60, 'shadow-ball': 80, 'dragon-breath': 60,
-    'air-slash': 75, 'rock-slide': 75, 'giga-drain': 75, 'bulldoze': 60, 'electroweb': 55, 'silver-wind': 60, 'hex': 65,
-    'bullet-seed': 50, 'flash-cannon': 80, 'dark-pulse': 80, 'aura-sphere': 80, 'sludge': 65, 'dazzling-gleam': 80, 'bug-buzz': 90,
-    psychic: 90, flamethrower: 90, thunderbolt: 90, 'ice-beam': 90, 'hyper-voice': 90, 'heat-wave': 95, discharge: 80,
-    'hydro-pump': 110, 'leaf-storm': 110, 'hyper-beam': 120, 'meteor-mash': 90, 'fire-spin': 35, 'struggle-bug': 50,
-    'night-shade': 50, 'dragon-rage': 50, 'fury-swipes': 45, 'bonemerang': 50, 'bullet-punch': 40, hail: 40
-  };
-
+  const D = () => G.AdvData;
   const P = dex => G.DEX_BY[dex];
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  /** Statistiques de base (style des jeux) tirées des données du jeu. */
-  function base(dex) {
-    const p = P(dex);
-    return {
-      hp: clamp(p.hp * 0.55, 35, 115),
-      atk: clamp(p.atk * 55, 35, 125),
-      def: clamp(p.bst / 6.5, 30, 115),
-      spd: clamp(p.spd * 0.55, 20, 120)
-    };
-  }
-  function maxHp(m) { return Math.floor(2 * base(m.dex).hp * m.lv / 100) + m.lv + 10; }
-  function stat(m, k) { return Math.floor(2 * base(m.dex)[k] * m.lv / 100) + 5; }
-  const xpAt = lv => lv * lv * lv;
+  const IV = 15;
 
-  function move(id) { return G.Moves.BY_ID[id]; }
+  /** Une attaque des jeux, ou null. */
+  function move(id) {
+    const a = D().moves[id];
+    if (!a) return null;
+    return a._o || (a._o = { id: +id, name: a[0], type: a[1], cls: a[2], power: a[3], acc: a[4], prio: a[5], self: !!a[6], ail: a[7], ailCh: a[8],
+      stats: a[9], statCh: a[10], drain: a[11], heal: a[12], hitMin: a[13], hitMax: a[14], flinch: a[15], crit: a[16], pp: a[17], key: a[18] });
+  }
+  // Attaques à dégâts fixes des jeux.
+  const FIXED = { 'dragon-rage': () => 40, 'sonic-boom': () => 20, 'seismic-toss': u => u.lv, 'night-shade': u => u.lv, 'super-fang': (u, t) => Math.max(1, Math.floor(t.hp / 2)) };
   function power(id) {
     const m = move(id);
-    if (!m || m.kind === 'buff') return 0;
-    if (POWER[id]) return POWER[id];
-    return /^sig-/.test(id) ? 50 : 55;
+    if (!m || !m.cls) return 0;
+    return m.power || (FIXED[m.key] ? 0 : 60);
   }
-  /** Les attaques apprises jusqu'au niveau lv (les 4 dernières). */
-  function learnset(dex) { return [...new Set(G.Team.learnset(dex))].filter(id => move(id)); }
+
+  const base = dex => D().stats[dex] || [50, 50, 50, 50, 50, 50];
+  const K = { atk: 1, def: 2, spa: 3, spd: 4, spe: 5 };
+  function maxHp(m) { return m.dex === 292 ? 1 : Math.floor((2 * base(m.dex)[0] + IV) * m.lv / 100) + m.lv + 10; }
+  function stat(m, k) { return Math.floor((2 * base(m.dex)[K[k]] + IV) * m.lv / 100) + 5; }
+  const xpAt = lv => lv * lv * lv;
+
+  /** Les attaques du Pokémon par niveau : [[niveau, id], ...]. */
+  function learnset(dex) { return (D().learn[dex] || [[1, 33]]).filter(([, id]) => move(id)); }
+  /** Les 4 dernières attaques apprises jusqu'au niveau lv (comme un Pokémon sauvage des jeux). */
   function movesAt(dex, lv) {
-    const set = learnset(dex), out = [];
-    set.forEach((id, i) => { if ((LEARN_LV[i] || 99) <= lv) out.push(id); });
-    if (!out.length && set.length) out.push(set[0]);
+    const out = [];
+    for (const [l, id] of learnset(dex)) if (l <= lv && !out.includes(id)) out.push(id);
+    if (!out.length) out.push(learnset(dex)[0][1]);
     return out.slice(-4);
   }
-  /** Attaque apprise en arrivant au niveau lv (ou null). */
-  function newMoveAt(dex, lv) {
-    const set = learnset(dex);
-    const i = LEARN_LV.indexOf(lv);
-    return i > 0 && set[i] ? set[i] : null;
+  /** Attaques apprises en arrivant pile au niveau lv. */
+  function newMovesAt(dex, lv) { return learnset(dex).filter(([l]) => l === lv).map(([, id]) => id); }
+  /** Les prochaines attaques du Pokémon (pas encore connues), pour le Maître des capacités. */
+  function nextMoves(m, n = 3) {
+    const out = [];
+    for (const [l, id] of learnset(m.dex)) if (!m.moves.includes(id) && !out.includes(id) && (l > 1 || m.lv < 5)) out.push(id);
+    const known = learnset(m.dex).filter(([l]) => l <= m.lv).map(([, id]) => id);
+    const later = out.filter(id => !known.includes(id));
+    return (later.length ? later : out).slice(0, n);
   }
+  function fixPp(m) {
+    m.pp = m.moves.map((id, i) => (m.pp && m.pp[i] != null ? Math.min(m.pp[i], move(id).pp || 10) : move(id).pp || 10));
+  }
+  function restore(m) { m.hp = maxHp(m); m.st = ''; m.sleep = 0; m.pp = m.moves.map(id => move(id).pp || 10); }
   function make(dex, lv) {
-    const m = { dex, lv, xp: xpAt(lv), hp: 0, moves: movesAt(dex, lv) };
-    m.hp = maxHp(m);
+    const m = { dex, lv, xp: xpAt(lv), hp: 0, moves: movesAt(dex, lv), st: '' };
+    restore(m);
     return m;
   }
+  /** Les anciennes sauvegardes (attaques du Survivor) : on leur donne leurs vraies attaques. */
+  function migrate(m) {
+    if (!m.moves || !m.moves.length || m.moves.some(id => !move(id))) { m.moves = movesAt(m.dex, m.lv); m.pp = null; }
+    if (!m.pp || m.pp.length !== m.moves.length) fixPp(m);
+    if (m.st == null) m.st = '';
+    m.hp = Math.min(m.hp, maxHp(m));
+  }
   function name(m) { return P(m.dex).name; }
-  const tr = s => (G.I18n && G.I18n.t ? G.I18n.t(s) : s);
-  function moveName(id) { return tr((move(id) || {}).name || id); }
+  function moveName(id) { return (move(id) || {}).name || '?'; }
+  const CLS = ['Statut', 'Physique', 'Spécial'];
+  /** « Feu · Spécial · Puiss. 40 · Préc. 100 » */
+  function moveInfo(id) {
+    const mv = move(id), pw = power(id);
+    return (G.U.TYPE_NAME[mv.type] || mv.type) + ' · ' + CLS[mv.cls] + (pw ? ' · Puiss. ' + pw : FIXED[mv.key] ? ' · Dégâts fixes' : '') + (mv.acc ? ' · Préc. ' + mv.acc : '');
+  }
 
   /** Multiplicateur des jeux (×2, ×0,5, ×0). */
   function typeMul(type, types) {
@@ -80,15 +90,19 @@ G.AdvMon = (() => {
     return k;
   }
 
-  return { LEARN_LV, base, maxHp, stat, xpAt, power, move, movesAt, newMoveAt, make, name, moveName, typeMul, learnset };
+  return { base, maxHp, stat, xpAt, power, move, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
 })();
 
 G.AdvBattle = (() => {
   const M = G.AdvMon;
+  const FX = () => G.AdvFX;
   const $ = id => document.getElementById(id);
   let active = false;
-  let B = null;            // { wild, trainer, foes, fi, foe, me, mi, stages, actors, result }
+  let B = null;            // { wild, trainer, foes, fi, foe, me, stages, vol, aMe, aFoe, slotMe, slotFoe }
   let tweens = [];
+
+  const ST_NAME = { par: 'PAR', slp: 'SOM', frz: 'GEL', brn: 'BRÛ', psn: 'PSN' };
+  const ST_COLOR = { par: '#d8b020', slp: '#8888a8', frz: '#58b8e8', brn: '#e07030', psn: '#a040a0' };
 
   // ---------------- petites animations ----------------
   function tween(dur, fn) {
@@ -104,6 +118,7 @@ G.AdvBattle = (() => {
       if (k >= 1) { tweens.splice(i, 1); w.res(); }
     }
     if (B) for (const a of [B.aMe, B.aFoe]) if (a && a.anim) a.anim.update(dt);
+    FX().update(dt);
   }
 
   // ---------------- interface ----------------
@@ -123,7 +138,8 @@ G.AdvBattle = (() => {
     const p = G.DEX_BY[m.dex], mx = M.maxHp(m), k = Math.max(0, m.hp) / mx;
     const col = k > 0.5 ? '#3ad06a' : k > 0.2 ? '#f0c030' : '#e84040';
     const xpK = foe ? 0 : (m.xp - M.xpAt(m.lv)) / Math.max(1, M.xpAt(m.lv + 1) - M.xpAt(m.lv));
-    el.innerHTML = `<div class="advb-nm"><b>${p.name}</b><span>N. ${m.lv}</span></div>
+    const st = m.st ? `<em class="advb-st" style="background:${ST_COLOR[m.st]}">${ST_NAME[m.st]}</em>` : '';
+    el.innerHTML = `<div class="advb-nm"><b>${p.name}</b>${st}<span>N. ${m.lv}</span></div>
       <div class="advb-hp"><small>PV</small><i><b style="width:${k * 100}%;background:${col}"></b></i></div>
       ${foe ? '' : `<div class="advb-hpn">${Math.max(0, Math.ceil(m.hp))} / ${mx}</div><div class="advb-xp"><b style="width:${clamp01(xpK) * 100}%"></b></div>`}`;
   }
@@ -157,27 +173,29 @@ G.AdvBattle = (() => {
   /** Le joueur choisit son action. */
   function chooseAction() {
     return new Promise(res => {
+      const noPp = B.me.pp.every(n => n <= 0);
       const main = () => menu([
-        { html: 'Attaque', cls: 'big', color: '#e05040', fn: attacks },
+        { html: 'Attaque', cls: 'big', color: '#e05040', fn: noPp ? () => res({ type: 'move', id: 0 }) : attacks },
         { html: 'Sac', cls: 'big', color: '#e0a020', fn: bag },
         { html: 'Pokémon', cls: 'big', color: '#3ab060', fn: team },
-        { html: B.trainer ? 'Fuite' : 'Fuite', cls: 'big', color: '#3a7ae0', disabled: !!B.trainer, fn: () => res({ type: 'run' }) }
+        { html: 'Fuite', cls: 'big', color: '#3a7ae0', disabled: !!B.trainer, fn: () => res({ type: 'run' }) }
       ]);
-      const attacks = () => menu(B.me.moves.map(id => {
+      const attacks = () => menu(B.me.moves.map((id, i) => {
         const mv = M.move(id), pw = M.power(id);
-        return { html: `<b>${M.moveName(id)}</b><small>${G.U.TYPE_NAME[mv.type] || mv.type} · ${pw ? 'Puiss. ' + pw : 'Statut'}</small>`,
-          color: G.U.TYPE_COLOR[mv.type], fn: () => res({ type: 'move', id }) };
+        return { html: `<b>${mv.name}</b><small>${G.U.TYPE_NAME[mv.type] || mv.type} · ${pw ? 'Puiss. ' + pw : mv.cls ? 'Fixe' : 'Statut'} · PP ${B.me.pp[i]}/${mv.pp}</small>`,
+          color: G.U.TYPE_COLOR[mv.type], disabled: B.me.pp[i] <= 0, fn: () => res({ type: 'move', id, i }) };
       }).concat([{ html: 'Retour', cls: 'back', fn: main }]));
       const bag = () => {
         const s = G.Overworld.save();
         menu([
           { html: `<b>Potion</b><small>× ${s.potions} · +20 PV</small>`, color: '#a050d0', disabled: s.potions <= 0 || B.me.hp >= M.maxHp(B.me), fn: () => res({ type: 'potion' }) },
+          { html: `<b>Total Soin</b><small>× ${s.cures || 0} · soigne le statut</small>`, color: '#e0a020', disabled: !(s.cures > 0) || !B.me.st, fn: () => res({ type: 'cure' }) },
           { html: 'Retour', cls: 'back', fn: main }
         ]);
       };
       const team = () => {
         const t = G.Overworld.save().team;
-        menu(t.map((m, i) => ({ html: `<b>${M.name(m)}</b><small>N. ${m.lv} · ${Math.ceil(m.hp)}/${M.maxHp(m)} PV</small>`,
+        menu(t.map((m, i) => ({ html: `<b>${M.name(m)}</b><small>N. ${m.lv} · ${Math.ceil(m.hp)}/${M.maxHp(m)} PV${m.st ? ' · ' + ST_NAME[m.st] : ''}</small>`,
           disabled: m.hp <= 0 || m === B.me, color: '#3ab060', fn: () => res({ type: 'switch', i }) })).concat([{ html: 'Retour', cls: 'back', fn: main }]));
       };
       main();
@@ -225,76 +243,266 @@ G.AdvBattle = (() => {
     } }));
   }
 
-  // ---------------- règles ----------------
+  // ---------------- règles des jeux ----------------
   const stageK = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
-  function spd(m, side) { return M.stat(m, 'spd') * stageK(B.stages[side].spd); }
+  const accK = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
+  const fresh = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0, eva: 0 });
+  const STAT_NAME = { atk: 'L\'Attaque', def: 'La Défense', spa: 'L\'Attaque Spéciale', spd: 'La Défense Spéciale', spe: 'La Vitesse', acc: 'La Précision', eva: 'L\'Esquive' };
+  const other = side => (side === 'me' ? 'foe' : 'me');
+  const mon = side => (side === 'me' ? B.me : B.foe);
+  const act = side => (side === 'me' ? B.aMe : B.aFoe);
+  const label = side => (side === 'foe' ? (B.wild ? M.name(B.foe) + ' sauvage' : M.name(B.foe) + ' ennemi') : M.name(B.me));
+  const types = m => G.DEX_BY[m.dex].types;
+  function speed(side) {
+    const m = mon(side);
+    return M.stat(m, 'spe') * stageK(B.stages[side].spe) * (m.st === 'par' ? 0.25 : 1);
+  }
+  const pt = a => ({ x: a.x + a.ox, y: a.y - 22 });
 
+  /** Peut-on lui infliger ce statut ? (immunités de type des jeux) */
+  function canAil(m, st) {
+    if (st === 'cnf') return true;
+    if (m.st || m.hp <= 0) return false;
+    const t = types(m);
+    if (st === 'brn' && t.includes('fire')) return false;
+    if (st === 'frz' && t.includes('ice')) return false;
+    if (st === 'psn' && (t.includes('poison') || t.includes('steel'))) return false;
+    if (st === 'par' && t.includes('electric')) return false;
+    return true;
+  }
+  async function inflict(side, st) {
+    const m = mon(side), a = act(side);
+    if (st === 'cnf') {
+      if (B.vol[side].cnf) { await say(label(side) + ' est déjà confus.', 1); return false; }
+      B.vol[side].cnf = 2 + Math.floor(Math.random() * 4);
+      FX().ail(a.x, a.y - 22, 'cnf');
+      await say(label(side) + ' devient confus !', 1.1);
+      return true;
+    }
+    if (!canAil(m, st)) return false;
+    m.st = st;
+    if (st === 'slp') m.sleep = 1 + Math.floor(Math.random() * 3);
+    FX().ail(a.x, a.y - 22, st);
+    G.Audio.sfx('select');
+    cards();
+    await say(label(side) + ({ par: ' est paralysé ! Il aura du mal à attaquer.', slp: ' s\'endort !', frz: ' est gelé !', brn: ' est brûlé !', psn: ' est empoisonné !' })[st], 1.2);
+    return true;
+  }
+  async function changeStat(side, k, n) {
+    const sg = B.stages[side], a = act(side);
+    if ((n > 0 && sg[k] >= 6) || (n < 0 && sg[k] <= -6)) { await say(STAT_NAME[k] + ' de ' + label(side) + ' ne peut plus ' + (n > 0 ? 'monter' : 'baisser') + ' !', 1); return; }
+    sg[k] = Math.max(-6, Math.min(6, sg[k] + n));
+    FX().stat(a.x, a.y - 10, n > 0);
+    G.Audio.sfx(n > 0 ? 'levelup' : 'select');
+    await say(STAT_NAME[k] + ' de ' + label(side) + (n > 0 ? (n > 1 ? ' augmente beaucoup !' : ' augmente !') : (n < -1 ? ' baisse beaucoup !' : ' baisse !')), 1);
+  }
+
+  /** Avant d'agir : sommeil, gel, paralysie, peur, confusion. Rend false si le Pokémon ne peut pas agir. */
+  async function canAct(side) {
+    const m = mon(side), v = B.vol[side];
+    if (m.st === 'slp') {
+      if (--m.sleep > 0) { FX().ail(act(side).x, act(side).y - 30, 'slp'); await say(label(side) + ' dort profondément…', 1); return false; }
+      m.st = ''; cards();
+      await say(label(side) + ' se réveille !', 1);
+    }
+    if (m.st === 'frz') {
+      if (Math.random() < 0.2) { m.st = ''; cards(); await say(label(side) + ' n\'est plus gelé !', 1); }
+      else { await say(label(side) + ' est gelé ! Il ne peut pas bouger !', 1); return false; }
+    }
+    if (v.flinch) { v.flinch = 0; await say(label(side) + ' a peur ! Il n\'attaque pas !', 1); return false; }
+    if (v.cnf) {
+      if (--v.cnf <= 0) { v.cnf = 0; await say(label(side) + ' n\'est plus confus !', 1); }
+      else {
+        await say(label(side) + ' est confus…', 0.8);
+        if (Math.random() < 1 / 3) {
+          const dmg = Math.max(1, Math.floor(((2 * m.lv / 5 + 2) * 40 * M.stat(m, 'atk') / M.stat(m, 'def')) / 50 + 2));
+          act(side).flash = 1; G.Audio.sfx('hit');
+          await wait(0.15); act(side).flash = 0;
+          await hpTo(m, Math.max(0, m.hp - dmg));
+          await say('Il se blesse dans sa confusion !', 1);
+          return false;
+        }
+      }
+    }
+    if (m.st === 'par' && Math.random() < 0.25) { FX().ail(act(side).x, act(side).y - 22, 'par'); await say(label(side) + ' est paralysé ! Il ne peut pas attaquer !', 1.1); return false; }
+    return true;
+  }
+
+  /** Une attaque, avec toutes ses règles. id 0 = Lutte (plus de PP). */
   async function useMove(side, id) {
-    const user = side === 'me' ? B.me : B.foe, target = side === 'me' ? B.foe : B.me;
-    const ua = side === 'me' ? B.aMe : B.aFoe, ta = side === 'me' ? B.aFoe : B.aMe;
-    const mv = M.move(id), pw = M.power(id);
-    await say((side === 'foe' ? (B.wild ? M.name(user) + ' sauvage' : M.name(user) + ' ennemi') : M.name(user)) + ' utilise ' + M.moveName(id) + ' !', 0.9);
+    const user = mon(side), tside = other(side), target = mon(tside);
+    const ua = act(side), ta = act(tside);
+    if (!(await canAct(side))) return;
+    const struggle = !id;
+    const mv = struggle ? { name: 'Lutte', type: 'normal', cls: 1, power: 50, acc: 0, stats: [], drain: -25, hitMin: 0, flinch: 0, crit: 0, key: 'struggle' } : M.move(id);
+    if (!struggle) { const i = user.moves.indexOf(id); if (i >= 0 && user.pp[i] > 0) user.pp[i]--; }
+    await say(label(side) + ' utilise ' + mv.name + ' !', 0.9);
+
+    // Précision (les attaques sur soi touchent toujours).
+    if (mv.acc && !mv.self) {
+      const k = accK(Math.max(-6, Math.min(6, B.stages[side].acc - B.stages[tside].eva)));
+      if (Math.random() * 100 >= mv.acc * k) { await say(label(side) + ' rate son attaque !', 1); return; }
+    }
+
     // Élan vers la cible.
     const dx = ta.x - ua.x, dy = ta.y - ua.y, d = Math.hypot(dx, dy) || 1;
     ua.anim.play('Attack');
-    await tween(0.18, k => { ua.ox = dx / d * 26 * k; ua.oy = dy / d * 26 * k; });
-    if (!pw) {
-      await tween(0.18, k => { ua.ox = dx / d * 26 * (1 - k); ua.oy = dy / d * 26 * (1 - k); });
-      const st = mv.stat === 'spd' ? 'spd' : mv.stat === 'def' || mv.stat === 'shield' ? 'def' : mv.stat === 'regen' ? 'regen' : 'atk';
-      if (st === 'regen') {
-        const heal = Math.round(M.maxHp(user) * 0.3);
-        G.FX && G.FX.burst && G.FX.burst(ua.x, ua.y - 20, '#5fe08a', 16, 120);
-        await hpTo(user, Math.min(M.maxHp(user), user.hp + heal));
-        await say(M.name(user) + ' récupère des PV !', 1);
-      } else {
-        const sg = B.stages[side];
-        if (sg[st] >= 6) { await say('Ça n\'a aucun effet…', 1); return; }
-        sg[st] = Math.min(6, sg[st] + 1);
-        G.Audio.sfx('select');
-        await say({ atk: 'L\'Attaque', def: 'La Défense', spd: 'La Vitesse' }[st] + ' de ' + M.name(user) + ' augmente !', 1);
+    const lunge = mv.cls === 2 || !mv.cls ? 10 : 26;
+    await tween(0.16, k => { ua.ox = dx / d * lunge * k; ua.oy = dy / d * lunge * k; });
+
+    if (!mv.cls) {
+      await tween(0.16, k => { ua.ox = dx / d * lunge * (1 - k); ua.oy = dy / d * lunge * (1 - k); });
+      let did = false;
+      if (mv.heal > 0) {
+        if (user.hp >= M.maxHp(user)) { await say('Les PV de ' + label(side) + ' sont au maximum !', 1); return; }
+        FX().heal(ua.x, ua.y - 20);
+        G.Audio.sfx('levelup');
+        await hpTo(user, Math.min(M.maxHp(user), user.hp + Math.round(M.maxHp(user) * mv.heal / 100)));
+        await say(label(side) + ' récupère des PV !', 1);
+        did = true;
       }
+      if (mv.stats.length) {
+        if (!mv.self) await FX().attack(mv.type, pt(ua), pt(ta), 2);
+        for (const [k, n] of mv.stats) await changeStat(mv.self ? side : tside, k, n);
+        did = true;
+      }
+      if (mv.ail) {
+        const tgt = mv.self ? side : tside;
+        await FX().attack(mv.type, pt(ua), pt(act(tgt)), 2);
+        if (!(await inflict(tgt, mv.ail))) await say('Mais cela échoue !', 1);
+        did = true;
+      }
+      if (!did) await say('Mais rien ne se passe…', 1);
       return;
     }
-    const mul = M.typeMul(mv.type, G.DEX_BY[target.dex].types);
-    const crit = Math.random() < 1 / 16;
-    const atk = M.stat(user, 'atk') * stageK(B.stages[side].atk);
-    const def = M.stat(target, 'def') * stageK(B.stages[side === 'me' ? 'foe' : 'me'].def);
-    const stab = G.DEX_BY[user.dex].types.includes(mv.type) ? 1.5 : 1;
-    let dmg = Math.floor(((2 * user.lv / 5 + 2) * pw * atk / def) / 50 + 2);
-    dmg = Math.max(mul ? 1 : 0, Math.floor(dmg * stab * mul * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
-    // Impact.
-    G.Audio.sfx(mul > 1 ? 'crit' : 'hit');
-    ta.flash = 1;
-    if (mul) ta.anim.play('Hurt');
-    if (G.Overworld.fx) G.Overworld.fx(ta.x, ta.y - 22, G.U.TYPE_COLOR[mv.type] || '#fff', dmg);
-    await tween(0.18, k => { ua.ox = dx / d * 26 * (1 - k); ua.oy = dy / d * 26 * (1 - k); ta.ox = Math.sin(k * 25) * 5 * (1 - k); });
-    ta.flash = 0; ta.ox = 0;
-    await hpTo(target, Math.max(0, target.hp - dmg));
-    if (crit && mul) await say('Coup critique !', 0.9);
+
+    // Dégâts.
+    const mul = M.typeMul(mv.type, types(target));
+    const hits = mv.hitMin ? mv.hitMin + Math.floor(Math.random() * (mv.hitMax - mv.hitMin + 1)) : 1;
+    let total = 0, n = 0, crits = 0;
+    const phys = mv.cls === 1;
+    for (; n < hits && target.hp > 0; n++) {
+      await FX().attack(mv.type, pt(ua), pt(ta), mv.cls);
+      let dmg;
+      if (M.FIXED[mv.key]) dmg = mul ? M.FIXED[mv.key](user, target) : 0;
+      else {
+        const crit = Math.random() < [1 / 16, 1 / 8, 1 / 4, 1 / 3, 1 / 2][Math.min(4, mv.crit || 0)];
+        if (crit && mul) crits++;
+        // Coup critique : on ignore les baisses de l'attaquant et les hausses de la cible.
+        const as = B.stages[side][phys ? 'atk' : 'spa'], ds = B.stages[tside][phys ? 'def' : 'spd'];
+        const atk = M.stat(user, phys ? 'atk' : 'spa') * stageK(crit ? Math.max(0, as) : as) * (phys && user.st === 'brn' ? 0.5 : 1);
+        const def = M.stat(target, phys ? 'def' : 'spd') * stageK(crit ? Math.min(0, ds) : ds);
+        const stab = types(user).includes(mv.type) ? 1.5 : 1;
+        dmg = Math.floor(((2 * user.lv / 5 + 2) * (mv.power || 60) * atk / def) / 50 + 2);
+        dmg = Math.max(mul ? 1 : 0, Math.floor(dmg * stab * mul * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+      }
+      G.Audio.sfx(mul > 1 ? 'crit' : 'hit');
+      ta.flash = 1;
+      if (mul) ta.anim.play('Hurt');
+      if (G.Overworld.fx && dmg) G.Overworld.fx(ta.x, ta.y - 22, G.U.TYPE_COLOR[mv.type] || '#fff', dmg);
+      await tween(0.16, k => { if (n === 0) { ua.ox = dx / d * lunge * (1 - k); ua.oy = dy / d * lunge * (1 - k); } ta.ox = Math.sin(k * 25) * 5 * (1 - k); });
+      ta.flash = 0; ta.ox = 0;
+      dmg = Math.min(dmg, Math.ceil(target.hp));
+      total += dmg;
+      await hpTo(target, Math.max(0, target.hp - dmg));
+      if (!mul) break;
+    }
+    ua.ox = ua.oy = 0;
+    if (crits) await say(crits > 1 ? 'Coups critiques !' : 'Coup critique !', 0.9);
     if (mul > 1) await say('C\'est super efficace !', 1);
-    else if (mul === 0) await say('Ça n\'affecte pas ' + M.name(target) + '…', 1.1);
+    else if (mul === 0) { await say('Ça n\'affecte pas ' + label(tside) + '…', 1.1); return; }
     else if (mul < 1) await say('Ce n\'est pas très efficace…', 1);
+    if (hits > 1) await say('Touché ' + n + ' fois !', 0.9);
+    // Le dégel par une attaque Feu.
+    if (target.st === 'frz' && mv.type === 'fire' && target.hp > 0) { target.st = ''; cards(); await say(label(tside) + ' n\'est plus gelé !', 1); }
+
+    // Vol de vie / contrecoup.
+    if (mv.drain > 0 && user.hp > 0 && total) {
+      FX().heal(ua.x, ua.y - 20);
+      await hpTo(user, Math.min(M.maxHp(user), user.hp + Math.max(1, Math.floor(total * mv.drain / 100))));
+      await say(label(tside) + ' perd de l\'énergie !', 0.9);
+    } else if (mv.drain < 0 && total) {
+      const r = struggle ? Math.max(1, Math.floor(M.maxHp(user) / 4)) : Math.max(1, Math.floor(total * -mv.drain / 100));
+      ua.flash = 1; await wait(0.12); ua.flash = 0;
+      await hpTo(user, Math.max(0, user.hp - r));
+      await say(label(side) + ' subit le contrecoup !', 0.9);
+    }
+    // Effets secondaires.
+    if (target.hp > 0 && mv.ail && Math.random() * 100 < (mv.ailCh || 100) && canAil(target, mv.ail)) await inflict(tside, mv.ail);
+    if (mv.stats.length && Math.random() * 100 < (mv.statCh || 100)) {
+      const who = mv.self ? side : tside;
+      if (mon(who).hp > 0) for (const [k, v] of mv.stats) await changeStat(who, k, v);
+    }
+    if (mv.flinch && target.hp > 0 && Math.random() * 100 < mv.flinch && B.order[0] === side) B.vol[tside].flinch = 1;
   }
 
-  /** L'adversaire choisit son attaque (les dresseurs visent le meilleur coup). */
-  function foeMove() {
-    const ms = B.foe.moves.length ? B.foe.moves : M.movesAt(B.foe.dex, B.foe.lv);
-    if (B.wild && Math.random() < 0.5) return G.U.pick(ms);
-    let best = ms[0], bv = -1;
-    for (const id of ms) {
-      const mv = M.move(id);
-      const v = (M.power(id) || 25) * M.typeMul(mv.type, G.DEX_BY[B.me.dex].types) * (G.DEX_BY[B.foe.dex].types.includes(mv.type) ? 1.5 : 1) * (0.8 + Math.random() * 0.4);
+  /** Fin du tour : brûlure et poison. */
+  async function endTurn(side) {
+    const m = mon(side);
+    if (!m || m.hp <= 0 || (m.st !== 'brn' && m.st !== 'psn')) return;
+    const a = act(side);
+    FX().ail(a.x, a.y - 22, m.st);
+    a.flash = 1; await wait(0.12); a.flash = 0;
+    await hpTo(m, Math.max(0, m.hp - Math.max(1, Math.floor(M.maxHp(m) / 8))));
+    await say(label(side) + (m.st === 'brn' ? ' souffre de sa brûlure !' : ' souffre du poison !'), 1);
+  }
+
+  // ---------------- l'adversaire ----------------
+  /** Valeur d'une attaque pour l'adversaire. */
+  function scoreMove(id, user, target, us, ts) {
+    const mv = M.move(id);
+    if (!mv.cls) {
+      let v = 0;
+      if (mv.heal > 0) v = user.hp < M.maxHp(user) * 0.5 ? 70 : 0;
+      if (mv.ail && canAil(target, mv.ail) && !(mv.ail === 'cnf' && B.vol[ts].cnf)) v = Math.max(v, { slp: 60, par: 50, psn: 40, brn: 40, cnf: 35, frz: 30 }[mv.ail] * (mv.acc ? mv.acc / 100 : 1));
+      if (mv.stats.length) {
+        const [k, n] = mv.stats[0];
+        if (mv.self && B.stages[us][k] < 2 && user.hp > M.maxHp(user) * 0.6) v = Math.max(v, 30);
+        if (!mv.self && B.stages[ts][k] > -2) v = Math.max(v, 18);
+      }
+      return v;
+    }
+    const mul = M.typeMul(mv.type, types(target));
+    const stab = types(user).includes(mv.type) ? 1.5 : 1;
+    const pw = M.FIXED[mv.key] ? 45 : (mv.power || 60) * (mv.hitMin ? (mv.hitMin + mv.hitMax) / 2 : 1);
+    return pw * mul * stab * (mv.acc ? mv.acc / 100 : 1);
+  }
+  /** Ce que fait l'adversaire : attaque (les dresseurs visent juste), Potion ou changement (dresseurs malins). */
+  function foeAction() {
+    const f = B.foe, usable = f.moves.filter((id, i) => f.pp[i] > 0);
+    if (!usable.length) return { type: 'move', id: 0 };
+    if (B.wild) return { type: 'move', id: G.U.pick(usable) };
+    const tr = B.trainer;
+    if (tr.smart) {
+      if (B.foePotions > 0 && f.hp < M.maxHp(f) * 0.3 && f.hp > 0 && Math.random() < 0.7) return { type: 'potion' };
+      // Changer si le Pokémon en face le domine.
+      const threat = Math.max(...B.me.moves.map(id => M.move(id).cls ? M.typeMul(M.move(id).type, types(f)) : 0));
+      if (threat >= 2 && !B.switched && Math.random() < 0.6) {
+        let best = -1, bv = 0;
+        B.foes.forEach((o, i) => {
+          if (i === B.fi || o.hp <= 0) return;
+          const t2 = Math.max(...B.me.moves.map(id => M.move(id).cls ? M.typeMul(M.move(id).type, types(o)) : 0));
+          if (t2 < threat && o.hp / M.maxHp(o) > bv) { bv = o.hp / M.maxHp(o); best = i; }
+        });
+        if (best >= 0) return { type: 'switch', i: best };
+      }
+    }
+    let best = usable[0], bv = -1;
+    for (const id of usable) {
+      const v = scoreMove(id, f, B.me, 'foe', 'me') * (0.8 + Math.random() * 0.4);
       if (v > bv) { bv = v; best = id; }
     }
-    return best;
+    return { type: 'move', id: best };
   }
 
   async function faint(side) {
-    const a = side === 'me' ? B.aMe : B.aFoe, m = side === 'me' ? B.me : B.foe;
+    const a = act(side), m = mon(side);
     a.anim.play('Faint', { hold: true });
     G.Audio.sfx('faint');
     await tween(0.5, k => { a.alpha = 1 - k; });
-    await say((side === 'foe' && B.wild ? M.name(m) + ' sauvage' : M.name(m)) + ' est K.O. !', 1.1);
+    await say(label(side) + ' est K.O. !', 1.1);
+    B.vol[side] = {};
+    if (side === 'me') m.st = '';
   }
 
   /** Expérience après un K.O. adverse (le Pokémon au combat, et un tiers pour les autres). */
@@ -308,84 +516,55 @@ G.AdvBattle = (() => {
       if (xp <= 0) continue;
       m.xp += xp;
       if (m === B.me) await say(M.name(m) + ' gagne ' + xp + ' points d\'expérience !', 1.1);
-      while (m.lv < 100 && m.xp >= M.xpAt(m.lv + 1)) {
-        const before = M.maxHp(m);
-        m.lv++;
-        m.hp += M.maxHp(m) - before;
-        G.Audio.sfx('levelup');
-        if (m === B.me) cards();
-        await say(M.name(m) + ' monte au niveau ' + m.lv + ' !', 1.1);
-        const nm = M.newMoveAt(m.dex, m.lv);
-        if (nm && !m.moves.includes(nm)) await learn(m, nm);
-      }
+      while (m.lv < 100 && m.xp >= M.xpAt(m.lv + 1)) await levelUp(m, true);
     }
     cards();
   }
+  /** Un niveau de plus : PV en plus et les attaques apprises à ce niveau. */
+  async function levelUp(m, inBattle, quiet) {
+    const before = M.maxHp(m);
+    m.lv++;
+    m.xp = Math.max(m.xp, M.xpAt(m.lv));
+    m.hp += M.maxHp(m) - before;
+    G.Audio.sfx('levelup');
+    const msg = M.name(m) + ' monte au niveau ' + m.lv + ' !';
+    if (inBattle) { if (m === B.me) cards(); await say(msg, 1.1); }
+    else if (!quiet) await G.AdvUI.talkP([['', msg]]);
+    for (const id of M.newMovesAt(m.dex, m.lv)) if (!m.moves.includes(id)) await learn(m, id, inBattle);
+  }
 
   /** Apprendre une attaque (au-delà de 4, on en oublie une, ou pas). */
-  async function learn(m, id) {
+  async function learn(m, id, inBattle) {
+    const tell = (t, h) => (inBattle && B ? say(t, h) : G.AdvUI.talkP([['', t]]));
+    const mv = M.move(id);
     if (m.moves.length < 4) {
       m.moves.push(id);
+      m.pp.push(mv.pp || 10);
       G.Audio.sfx('confirm');
-      await say(M.name(m) + ' apprend ' + M.moveName(id) + ' !', 1.2);
-      return;
+      await tell(M.name(m) + ' apprend ' + mv.name + ' !', 1.2);
+      return true;
     }
-    const pick = await G.AdvUI.choose(M.name(m) + ' veut apprendre ' + M.moveName(id) + '. Oublier une attaque ?',
-      m.moves.map(x => ({ title: M.moveName(x), desc: (G.U.TYPE_NAME[M.move(x).type] || '') + (M.power(x) ? ' · Puiss. ' + M.power(x) : ' · Statut'), icon: 'move:' + x }))
+    const pick = await G.AdvUI.choose(M.name(m) + ' veut apprendre ' + mv.name + ' (' + M.moveInfo(id) + '). Oublier une attaque ?',
+      m.moves.map(x => ({ title: M.moveName(x), desc: M.moveInfo(x), icon: 'move:' + x }))
         .concat([{ title: 'Ne pas apprendre', desc: 'Garder ses 4 attaques' }]));
     if (pick < 4) {
       const old = m.moves[pick];
       m.moves[pick] = id;
-      await say(M.name(m) + ' oublie ' + M.moveName(old) + ' et apprend ' + M.moveName(id) + ' !', 1.4);
-    } else await say(M.name(m) + ' n\'apprend pas ' + M.moveName(id) + '.', 1.1);
-  }
-
-  async function throwBall() {
-    const s = G.Overworld.save();
-    s.balls--;
-    const pl = G.Overworld.player(), fa = B.aFoe;
-    const ball = { x: pl.x, y: pl.y - 30 };
-    B.ball = ball;
-    G.Audio.sfx('select');
-    await tween(0.55, k => { ball.x = pl.x + (fa.x - pl.x) * k; ball.y = pl.y - 30 + (fa.y - 20 - pl.y + 30) * k - Math.sin(k * Math.PI) * 60; });
-    await tween(0.25, k => { fa.scale = 1 - k; fa.alpha = 1 - k; });
-    const p = G.DEX_BY[B.foe.dex], mx = M.maxHp(B.foe);
-    const rate = { 1: 255, 2: 190, 3: 120, 4: 60, 5: 8 }[p.rarity] || 120;
-    const a = (3 * mx - 2 * B.foe.hp) * rate / (3 * mx);
-    const ok = Math.random() < Math.max(0.03, Math.min(1, a / 255));
-    const shakes = ok ? 3 : Math.floor(Math.random() * 3);
-    for (let i = 0; i < shakes; i++) { await tween(0.45, k => { ball.wob = Math.sin(k * Math.PI * 2) * 0.5; }); G.Audio.sfx('click'); }
-    ball.wob = 0;
-    if (ok) {
-      G.Audio.sfx('shiny');
-      await say('Et hop ! ' + p.name + ' est capturé !', 1.4);
-      B.ball = null;
-      const m = { dex: B.foe.dex, lv: B.foe.lv, xp: M.xpAt(B.foe.lv), hp: B.foe.hp, moves: B.foe.moves.slice() };
-      if (s.team.length < 6) s.team.push(m);
-      else { s.box.push(m); await say(p.name + ' est envoyé dans ta boîte.', 1.2); }
-      G.DB.grant(m.dex, 'adv');
+      m.pp[pick] = mv.pp || 10;
+      await tell('1, 2 et… Tadaa ! ' + M.name(m) + ' oublie ' + M.moveName(old) + ' et apprend ' + mv.name + ' !', 1.4);
       return true;
     }
-    B.ball = null;
-    await tween(0.2, k => { fa.scale = k; fa.alpha = k; });
-    await say(shakes ? 'Mince ! Il y était presque…' : 'Oh non ! ' + p.name + ' s\'est libéré !', 1.2);
+    await tell(M.name(m) + ' n\'apprend pas ' + mv.name + '.', 1.1);
     return false;
   }
 
-  function drawBall(ctx) {
-    const b = B && B.ball;
-    if (!b) return;
-    ctx.save();
-    ctx.translate(b.x, b.y);
-    ctx.rotate(b.wob || 0);
-    G.Icons.draw(ctx, 'pball', -10, -10, 20);
-    ctx.restore();
-  }
+  function drawBall(ctx) { FX().draw(ctx); }
 
   async function sendOut(i) {
     const team = G.Overworld.save().team;
     B.me = team[i];
-    B.stages.me = { atk: 0, def: 0, spd: 0 };
+    B.stages.me = fresh();
+    B.vol.me = {};
     const pl = G.Overworld.player();
     B.aMe = actor(B.me, B.slotMe.x, B.slotMe.y, B.slotFoe);
     B.aMe.alpha = 0;
@@ -396,7 +575,8 @@ G.AdvBattle = (() => {
   async function foeOut(i) {
     B.fi = i;
     B.foe = B.foes[i];
-    B.stages.foe = { atk: 0, def: 0, spd: 0 };
+    B.stages.foe = fresh();
+    B.vol.foe = {};
     B.aFoe = actor(B.foe, B.slotFoe.x, B.slotFoe.y, B.slotMe);
     B.aFoe.face.foe = true;
     B.aFoe.alpha = 0;
@@ -404,15 +584,59 @@ G.AdvBattle = (() => {
     cards();
   }
 
+  /** Une action qui n'est pas une attaque (Potion, changement, fuite…). Rend un résultat de combat ou null. */
+  async function doAction(side, a) {
+    const s = G.Overworld.save();
+    if (side === 'foe') {
+      if (a.type === 'potion') {
+        B.foePotions--;
+        FX().heal(B.aFoe.x, B.aFoe.y - 20);
+        await say(B.trainer.name + ' utilise une Super Potion !', 1);
+        await hpTo(B.foe, Math.min(M.maxHp(B.foe), B.foe.hp + 50));
+      } else if (a.type === 'switch') {
+        B.switched = true;
+        await say(B.trainer.name + ' rappelle ' + M.name(B.foe) + ' !', 1);
+        await tween(0.2, k => { B.aFoe.alpha = 1 - k; });
+        await foeOut(a.i);
+        await say(B.trainer.name + ' envoie ' + M.name(B.foe) + ' !', 1.1);
+      }
+      return null;
+    }
+    if (a.type === 'run') {
+      const ok = speed('me') >= speed('foe') || Math.random() < 0.6;
+      if (ok) { await say('Tu prends la fuite !', 1); return 'run'; }
+      await say('Impossible de fuir !', 1);
+    } else if (a.type === 'potion') {
+      s.potions--;
+      FX().heal(B.aMe.x, B.aMe.y - 20);
+      await hpTo(B.me, Math.min(M.maxHp(B.me), B.me.hp + 20));
+      await say(M.name(B.me) + ' récupère des PV !', 1);
+    } else if (a.type === 'cure') {
+      s.cures--;
+      B.me.st = ''; B.me.sleep = 0; cards();
+      FX().heal(B.aMe.x, B.aMe.y - 20);
+      await say(M.name(B.me) + ' est guéri !', 1);
+    } else if (a.type === 'switch') {
+      await say('Reviens, ' + M.name(B.me) + ' !', 0.9);
+      G.Overworld.setFollowerHidden(null);
+      await tween(0.2, k => { B.aMe.alpha = 1 - k; });
+      await sendOut(a.i);
+      await say('Vas-y, ' + M.name(B.me) + ' !', 0.9);
+    }
+    return null;
+  }
+
   /**
-   * Lance un combat. opts : { wild: [dex, lv] } ou { trainer: { name, team: [[dex, lv]] } }
-   * place : { me: {x, y}, foe: {x, y} } (pixels du monde). Rend 'win' | 'lose' | 'run' | 'caught'.
+   * Lance un combat. opts : { wild: [dex, lv] } ou { trainer: { name, team: [[dex, lv]], smart?, potions? } }
+   * place : { me: {x, y}, foe: {x, y} } (pixels du monde). Rend 'win' | 'lose' | 'run'.
    */
   async function start(opts, place) {
     const s = G.Overworld.save();
     active = true;
-    B = { wild: !!opts.wild, trainer: opts.trainer || null, stages: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe };
+    B = { wild: !!opts.wild, trainer: opts.trainer || null, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
     B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1])] : opts.trainer.team.map(([d, l]) => M.make(d, l));
+    B.foePotions = opts.trainer ? (opts.trainer.potions != null ? opts.trainer.potions : opts.trainer.smart ? 1 : 0) : 0;
+    s.team.forEach(M.migrate);
     G.Sprites.preload(B.foes.map(f => f.dex), 6000, false);
     $('advb').classList.remove('hidden');
     $('advb-foe').innerHTML = ''; $('advb-me').innerHTML = '';
@@ -426,38 +650,29 @@ G.AdvBattle = (() => {
 
     let result = null;
     while (!result) {
-      const act = await chooseAction();
-      let foeActs = true, meFirst = true;
-      if (act.type === 'run') {
-        const ok = spd(B.me, 'me') >= spd(B.foe, 'foe') || Math.random() < 0.6;
-        if (ok) { await say('Tu prends la fuite !', 1); result = 'run'; break; }
-        await say('Impossible de fuir !', 1);
-      } else if (act.type === 'ball') {
-        if (await throwBall()) { result = 'caught'; break; }
-      } else if (act.type === 'potion') {
-        s.potions--;
-        await hpTo(B.me, Math.min(M.maxHp(B.me), B.me.hp + 20));
-        await say(M.name(B.me) + ' récupère des PV !', 1);
-      } else if (act.type === 'switch') {
-        await say('Reviens, ' + M.name(B.me) + ' !', 0.9);
-        G.Overworld.setFollowerHidden(null);
-        await tween(0.2, k => { B.aMe.alpha = 1 - k; });
-        await sendOut(act.i);
-        await say('Vas-y, ' + M.name(B.me) + ' !', 0.9);
-      } else {
-        meFirst = spd(B.me, 'me') > spd(B.foe, 'foe') || (spd(B.me, 'me') === spd(B.foe, 'foe') && Math.random() < 0.5);
-        if (meFirst) { await useMove('me', act.id); foeActs = B.foe.hp > 0; }
+      const mine = await chooseAction();
+      const theirs = foeAction();
+      // Ordre : les actions qui ne sont pas des attaques d'abord, puis priorité, puis Vitesse.
+      const prio = a => (a.type !== 'move' ? 10 : a.id ? M.move(a.id).prio : 0);
+      const pm = prio(mine), pf = prio(theirs);
+      const meFirst = pm !== pf ? pm > pf : speed('me') !== speed('foe') ? speed('me') > speed('foe') : Math.random() < 0.5;
+      B.order = meFirst ? ['me', 'foe'] : ['foe', 'me'];
+      const plan = { me: mine, foe: theirs };
+      for (const side of B.order) {
+        if (mon(side).hp <= 0 || mon(other(side)).hp <= 0) continue;
+        const a = plan[side];
+        if (side === 'foe' && plan.me.type === 'switch' && a.type === 'switch') continue;
+        if (a.type === 'move') await useMove(side, a.id);
+        else { result = await doAction(side, a); if (result) break; }
       }
-      if (B.foe.hp > 0 && foeActs) {
-        await useMove('foe', foeMove());
-        if (act.type === 'move' && !meFirst && B.me.hp > 0 && B.foe.hp > 0) await useMove('me', act.id);
-      }
+      if (!result) for (const side of B.order) await endTurn(side);
       // K.O.
-      if (B.foe.hp <= 0) {
+      if (!result && B.foe.hp <= 0) {
         await faint('foe');
         await gainXp();
-        if (B.trainer && B.fi + 1 < B.foes.length) {
-          await foeOut(B.fi + 1);
+        const next = B.foes.findIndex((f, i) => i !== B.fi && f.hp > 0);
+        if (B.trainer && next >= 0) {
+          await foeOut(next);
           await say(B.trainer.name + ' envoie ' + M.name(B.foe) + ' !', 1.2);
         } else result = 'win';
       }
@@ -482,6 +697,7 @@ G.AdvBattle = (() => {
     $('advb').classList.add('hidden');
     $('advb-msg').classList.remove('on');
     B = null; active = false; tweens = [];
+    FX().clear();
   }
 
   /** Évolutions après un combat (le niveau d'évolution du Pokémon est atteint). */
@@ -503,9 +719,11 @@ G.AdvBattle = (() => {
       G.DB.grant(to, 'adv');
       G.Overworld.refreshFollowers();
       await G.AdvUI.talkP([['', 'Félicitations ! ' + before + ' a évolué en ' + G.DEX_BY[to].name + ' !']]);
+      // Comme dans les jeux : l'attaque que la nouvelle forme apprend à ce niveau.
+      for (const id of M.newMovesAt(to, m.lv)) if (!m.moves.includes(id)) await learn(m, id, false);
     }
   }
 
-  return { start, update, drawables, drawBall, evolutions, get active() { return active; },
+  return { start, update, drawables, drawBall, evolutions, learn, levelUp, ST_NAME, get active() { return active; },
            get focus() { return B ? { x: (B.slotMe.x + B.slotFoe.x) / 2, y: (B.slotMe.y + B.slotFoe.y) / 2 } : null } };
 })();

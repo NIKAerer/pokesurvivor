@@ -90,8 +90,7 @@ G.Game = (() => {
   function startRun(coop = null) {
     holdBy = []; awayBy = null; checkT = 0;
     const save = G.DB.save;
-    const adv = G.Adventure.active && !coop;   // version de Nika : mode Aventure (adventure.js)
-    const mon = G.DEX_BY[adv ? G.Adventure.leaderDex() : save.partner];
+    const mon = G.DEX_BY[save.partner];
     const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));   // améliorations du menu
 
     G.UI.hideAll();
@@ -118,7 +117,7 @@ G.Game = (() => {
 
     pl = new G.Player(mon, perks, G.DB.ownsShiny(mon.dex));
     // Version de Nika : rang du Pokémon (Super Bonbons) : +5 % PV et dégâts par rang.
-    if (!adv) { const rk = G.Rank.of(mon.dex); if (rk) { pl.maxHp = Math.round(pl.maxHp * (1 + rk * 0.05)); pl.hp = pl.maxHp; pl.atkMul *= 1 + rk * 0.05; } }
+    { const rk = G.Rank.of(mon.dex); if (rk) { pl.maxHp = Math.round(pl.maxHp * (1 + rk * 0.05)); pl.hp = pl.maxHp; pl.atkMul *= 1 + rk * 0.05; } }
     G.Team.reset(pl);
     banked = { t1: 0, t10: 0 };
     caught = [];
@@ -134,9 +133,8 @@ G.Game = (() => {
     };
     // Version de Nika (2026-10-28) : en solo, la première attaque se choisit sur 3 cartes
     // (la signature + 2 attaques de son répertoire). En groupe, la signature comme avant.
-    const firstMoves = coop || adv ? [] : firstMoveCards(mon.dex, pl);
-    if (adv) G.Adventure.setup(pl);                 // son équipe, ses niveaux et ses attaques
-    else if (firstMoves.length < 2) { pl.addMove(G.startMoveOf(mon.dex)); extraMove(); }
+    const firstMoves = coop ? [] : firstMoveCards(mon.dex, pl);
+    if (firstMoves.length < 2) { pl.addMove(G.startMoveOf(mon.dex)); extraMove(); }
 
     if (coop) {
       G.Coop.begin(coop, pl, coopApi);
@@ -363,16 +361,6 @@ G.Game = (() => {
   }
 
   function endRun(dead = true) {
-    // Version de Nika : fin d'un chapitre de l'Aventure (on garde l'équipe, retour à la carte).
-    if (G.Adventure.active) {
-      state = 'over';
-      G.Audio.music(null);
-      G.Audio.sfx(dead ? 'gameover' : 'back');
-      const res = G.Adventure.finish(dead);
-      pl = null;
-      G.AdvUI.result(res);
-      return;
-    }
     if (state === 'over' || !pl) return;
     delete G.DB.save.runCrash;               // la partie se termine normalement
     const coop = !!pl.uid;                    // sólo las partidas en grupo le ponen uid
@@ -462,7 +450,6 @@ G.Game = (() => {
   // ---------------- subida de nivel ----------------
 
   function maybeLevelUp() {
-    if (G.Adventure.active) { pendingLevels = 0; return; }   // (Aventure : pas de cartes, adventure.js)
     if (pendingLevels <= 0 || state !== 'playing') return;
     if (G.Coop.active) {
       // En grupo, las cartas salen a la vez para todos y se espera a que elijan.
@@ -556,7 +543,7 @@ G.Game = (() => {
     if (mine || p.kind === 'bomb') G.Audio.sfx(PICK_SFX[p.kind]);
     if (p.kind === 'xp' || p.kind === 'xpBig') {
       const xp = p.value * (G.Coop.active ? G.Coop.xpFactor() : 1);
-      const up = pl.gainXp(G.Adventure.active ? G.Adventure.xpFor(pl, xp) : xp);
+      const up = pl.gainXp(xp);
       if (!G.Tower.active) pendingLevels += up;     // version de Nika : dans la Tour, une seule carte par étage
       G.Team.shareXp(xp);              // version de Nika : XP partagée avec toute l'équipe
       return;
@@ -738,9 +725,8 @@ G.Game = (() => {
     if (!coop && (checkT += dt) >= 15) { checkT = 0; checkpoint(); }
 
     const tower = G.Tower.active;           // version de Nika : Tour de Combat (salles, tower.js)
-    const adv = G.Adventure.active;         // version de Nika : Aventure (exploration, adventure.js)
     const b = Math.floor(time / 240);
-    if (b !== biome && !tower && !adv && !G.Rift.inArena && !G.Judgment.active) {
+    if (b !== biome && !tower && !G.Rift.inArena && !G.Judgment.active) {
       biome = b;
       G.World.setBiome(b);
       G.Audio.sfx('biome');
@@ -759,7 +745,7 @@ G.Game = (() => {
     G.World.update(dt, G.Camera);
 
     const all = everyone();
-    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); if (!tower && !adv) G.Spawner.update(dt, all, time); else G.Spawner.tickBanner(dt); }
+    if (!coop || G.Coop.isHost) { G.Path.update(dt, all); if (!tower) G.Spawner.update(dt, all, time); else G.Spawner.tickBanner(dt); }
     else G.Spawner.tickBanner(dt);
     G.EnemyMgr.update(dt, all);
     G.EnemyMgr.rebuildGrid();
@@ -772,7 +758,6 @@ G.Game = (() => {
     G.Hazards.update(dt);
     G.Interact.update(dt, pl);
     if (tower) G.Tower.update(dt, pl);
-    else if (adv) G.Adventure.update(dt, pl);
     else {
       G.Rift.update(dt, pl, time);
       G.Judgment.update(dt, pl, time);
@@ -783,7 +768,7 @@ G.Game = (() => {
     G.DayNight.update(time);
     G.FX.update(dt);
 
-    G.Audio.music(adv ? (G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[0]) : tower ? (G.Tower.step().boss && !G.Tower.door ? 'boss' : 'rift') : G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? (G.Rift.inGym ? 'boss' : 'rift') : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
+    G.Audio.music(tower ? (G.Tower.step().boss && !G.Tower.door ? 'boss' : 'rift') : G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? (G.Rift.inGym ? 'boss' : 'rift') : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (G.Coop.isHost) checkAllDown(dt);
   }
@@ -826,7 +811,6 @@ G.Game = (() => {
     if (rift) items.push({ y: rift.y, ent: rift });
     const door = G.Tower.drawable();
     if (door) items.push({ y: door.y, ent: door });
-    for (const d of G.Adventure.drawables()) items.push({ y: d.y, ent: d });
     const arceus = pl && state !== 'ui' ? G.Judgment.drawable() : null;
     if (arceus) items.push({ y: arceus.y, ent: arceus });
     if (pl && state !== 'ui') for (const d of G.Events.drawables()) items.push({ y: d.y, ent: d });

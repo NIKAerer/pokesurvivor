@@ -139,6 +139,13 @@ G.People = (() => {
   /** Dessine un personnage, pieds en (x, y) (pixels du monde). dir : 'up' | 'down' | 'left' | 'right'. */
   function draw(ctx, look, x, y, dir = 'down', walkT = 0, moving = false) {
     const sh = sheet(look);
+    if (sh && sh.naturalHeight < 32) {
+      // Objet de 16 × 16 (Poké Ball posée) : pas d'ombre, pas d'animation.
+      ctx.save(); ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(sh, 0, 0, 16, 16, x - 16, y - 32 + 2, 32, 32);
+      ctx.restore();
+      return;
+    }
     if (sh) {
       const n = Math.floor(sh.naturalWidth / 16);
       const base = dir === 'up' ? 1 : dir === 'down' ? 0 : 2;

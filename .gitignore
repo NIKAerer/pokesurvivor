@@ -2,3 +2,5 @@ build/
 tools/cache/
 node_modules/
 tools/.fr_cache/
+tools/.pokeapi/
+tools/__pycache__/
