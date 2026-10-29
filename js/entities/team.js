@@ -12,8 +12,8 @@
  * les alliés les lisent chez lui.
  */
 G.Ally = class Ally extends G.Player {
-  constructor(mon, leader, slot) {
-    super(mon, {}, false);
+  constructor(mon, leader, slot, shiny = false) {
+    super(mon, {}, shiny);
     this.leader = leader;
     this.slot = slot;
     this.ally = true;
@@ -151,11 +151,12 @@ G.Team = (() => {
   function recruit(dex) {
     if (!leader || full()) return null;
     makeRoom();
-    const a = new G.Ally(G.DEX_BY[dex], leader, allies.length);
+    // Version de Nika : un Pokémon dont tu as le shiny rejoint l'équipe en shiny.
+    const a = new G.Ally(G.DEX_BY[dex], leader, allies.length, G.DB.ownsShiny(dex));
     a.addMove(G.startMoveOf(dex));
     allies.push(a);
     G.Roles.recompute();               // bonus de rôle de l'équipe
-    G.Sprites.preload([dex], 4000);
+    G.Sprites.preload([dex], 4000, a.shiny);
     G.FX.ring(a.x, a.y, 6, 90, '#7fe0ff', 0.6, 5);
     G.FX.burst(a.x, a.y - a.bodyH * 0.5, '#bdf3ff', 24, 180);
     G.Spawner.say(a.mon.name + ' rejoint ton équipe !', 2.8, true);

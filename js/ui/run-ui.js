@@ -65,7 +65,7 @@ G.RunUI = (() => {
       if (c.dex || c.who) {
         const ico = el.querySelector('.ico');
         if (c.dex) ico.innerHTML = '';
-        const cv = G.UI.spriteCanvas(c.dex || c.who, c.dex ? 132 : 40, c.dex ? 112 : 40, c.dex ? { scale: 4, hero: true, lively: true } : { scale: 2, hero: true });
+        const cv = G.UI.spriteCanvas(c.dex || c.who, c.dex ? 132 : 40, c.dex ? 112 : 40, c.dex ? { scale: 4, hero: true, lively: true, shiny: !!c.shiny } : { scale: 2, hero: true });
         if (!c.dex) cv.className = 'who';
         ico.appendChild(cv);
       }
