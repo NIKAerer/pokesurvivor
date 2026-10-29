@@ -414,6 +414,7 @@ G.PickUI = (() => {
   let view = 'home', fromBox = false;     // fromBox : la fiche a été ouverte depuis la Boîte (« Retour » y revient)
   function go(v) {
     if (v === 'shop') { G.GachaUI.open(); return; }
+    if (v === 'dex') { G.MenuUI.openDex(); return; }
     fromBox = false;
     view = v;
     G.Audio.sfx('select');
@@ -421,7 +422,7 @@ G.PickUI = (() => {
   }
   function showView() {
     document.querySelectorAll('#scr-pick .hub-view').forEach(el => el.classList.toggle('on', el.dataset.v === view));
-    document.querySelectorAll('#hub-tabs button').forEach(el => el.classList.toggle('on', el.dataset.v === view));
+    document.querySelectorAll('#hub-tabs button').forEach(el => el.classList.toggle('on', el.dataset.v === (view === 'team' ? 'box' : view)));
     $('scr-pick').dataset.view = view;
   }
 
@@ -455,13 +456,14 @@ G.PickUI = (() => {
     for (const [id, ico] of [['pick-gift', 'gift'], ['pick-goals', 'trophy'], ['pick-dex', 'book'], ['pick-gacha', 'ticket'], ['pick-upg', 'up'], ['pick-tower', 'crown']]) {
       $(id).querySelector('.ht-ico').innerHTML = G.Icons.html(ico, 34);
     }
-    const TAB_ICO = { team: 'star', box: 'ball', home: 'home', shop: 'ticket', league: 'medal1' };
+    // Version de Nika : plus d'onglet Équipe (la fiche s'ouvre en touchant un Pokémon de la Boîte), le Pokédex à sa place.
+    const TAB_ICO = { dex: 'book', box: 'pcbox', home: 'home', shop: 'ticket', league: 'medal1' };
     document.querySelectorAll('#hub-tabs button').forEach(b => {
       b.querySelector('.ht-ico').innerHTML = G.Icons.html(TAB_ICO[b.dataset.v], 26);
       b.onclick = () => go(b.dataset.v);
     });
     // Équipe, Boîte, Ligue : un bouton « Retour » vers l'Accueil, comme sur les autres écrans.
-    const VIEW_NAME = { team: 'Équipe', box: 'Boîte', league: 'Ligue' };
+    const VIEW_NAME = { team: 'Fiche', box: 'Boîte', league: 'Ligue' };
     document.querySelectorAll('#scr-pick .hub-view:not([data-v="home"])').forEach(v => {
       v.insertAdjacentHTML('afterbegin', `<div class="hub-backrow"><button class="ts-back" data-sfx="back" aria-label="Retour"><span class="ts-arrow"></span><span>Retour</span></button><h2>${VIEW_NAME[v.dataset.v] || ''}</h2></div>`);
       v.querySelector('.ts-back').onclick = () => { view = v.dataset.v === 'team' && fromBox ? 'box' : 'home'; fromBox = false; showView(); };
