@@ -168,7 +168,7 @@ G.Game = (() => {
   /** Les cartes de la première attaque : la signature et 2 attaques (pas de soutien). */
   function firstMoveCards(dex, p) {
     const start = G.startMoveOf(dex), B = G.Moves.BY_ID;
-    const pool = G.Team.learnset(dex).filter(id => id !== start && B[id] && B[id].kind !== 'buff' && !p.banned.has(id));
+    const pool = [...new Set(G.Team.learnset(dex))].filter(id => id !== start && B[id] && B[id].kind !== 'buff' && !p.banned.has(id));
     const ids = [start, ...G.U.pickN(pool, 2)].filter(id => B[id]);
     return ids.map(id => {
       const d = B[id];

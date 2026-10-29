@@ -180,7 +180,8 @@ G.Team = (() => {
   function learnset(dex) {
     const base = baseLearnset(dex), t = G.Tutor && G.Tutor.of(family(dex));
     if (!t) return base;
-    return base.map((id, i) => (i && t[i] && G.Moves.BY_ID[t[i]] ? t[i] : id));
+    // (une attaque déjà dans le répertoire n'y entre pas deux fois)
+    return base.map((id, i) => (i && t[i] && G.Moves.BY_ID[t[i]] && !base.includes(t[i]) ? t[i] : id));
   }
   function baseLearnset(dex) {
     const root = family(dex);
