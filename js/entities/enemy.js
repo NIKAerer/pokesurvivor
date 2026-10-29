@@ -98,7 +98,7 @@
 
     /** @param eff  'super' | 'weak' | null (tabla de tipos, sólo para enseñarlo) */
     hurt(amount, color = '#fff', dirX = 0, dirY = 0, knock = 0, eff = null) {
-      if (this.dead) return;
+      if (this.dead || this.stunned) return;      // (Aventure : sonné, on le capture)
       const d = Math.max(1, Math.round(amount));
       // Copia de un enemigo del anfitrión: el golpe se le manda a él, que es
       // quien decide si cae. Aquí sólo se ve (número, destello y animación).
@@ -125,7 +125,7 @@
         this.ky += ny * knock;
       }
       if (G.Coop.isHost) G.Coop.hurtShown(this, d, color);
-      if (this.hp <= 0) this.die();
+      if (this.hp <= 0) { if (this.catchable && G.Adventure.stun(this)) return; this.die(); }
     }
 
     /** Lo que se VE al recibir un golpe. */
@@ -137,6 +137,22 @@
       G.FX.spark(this.x, this.y - this.bodyH * 0.5, color, dirX, dirY, 3);
       if (!this.anim.busy() && this.phase !== 'dash') this.anim.play('Hurt');
       G.Audio.sfx('hit');
+    }
+
+    /** Aventure : petits pas au hasard autour de chez lui. */
+    wander(dt, spd) {
+      this.wT = (this.wT || 0) - dt;
+      if (this.wT <= 0) {
+        this.wT = G.U.rand(1.2, 3);
+        const h = this.home || this, far = Math.hypot(this.x - h.x, this.y - h.y) > 140;
+        this.wA = far ? Math.atan2(h.y - this.y, h.x - this.x) : Math.random() < 0.4 ? null : Math.random() * 6.2832;
+      }
+      if (this.wA == null) { this.anim.loop('Idle'); return; }
+      const v = spd * 0.35;
+      this.x += Math.cos(this.wA) * v * dt; this.y += Math.sin(this.wA) * v * dt;
+      if (G.World.collide(this)) this.wT = 0;
+      this.anim.dir = G.Sprites.dirFromAngle(this.wA);
+      this.anim.loop('Walk');
     }
 
     applySlow(factor, dur = 1.2) {
@@ -283,6 +299,14 @@
       const spd = this.spd * (1 - this.slow) * terrainMul * G.Weather.speedFor(this.types);
       let [dx, dy] = G.U.norm(pl.x - this.x, pl.y - this.y);
       const dist = G.U.dist(this.x, this.y, pl.x, pl.y);
+      // Version de Nika (Aventure) : sonné (Poké Ball), ou sauvage qui se promène
+      // tant qu'on ne s'approche pas et qu'on ne le frappe pas.
+      if (this.stunned) { this.anim.loop('Idle'); return; }
+      if (this.calm) {
+        if (this.angry && dist > 700) { this.angry = false; this.home = { x: this.x, y: this.y }; }
+        if (!this.angry && (dist < 210 || this.hp < this.maxHp)) this.angry = true;
+        if (!this.angry) { this.wander(dt, spd); return; }
+      }
       // Duende del tesoro: huye de ti (en zigzag) en cuanto te acercas.
       if (this.behavior === 'thief') {
         this.zig = (this.zig || 0) + dt;
@@ -918,9 +942,11 @@
         const e = list[i];
         if (e.remote) continue;
         if (e.dead) {
-          pl.kills++;
-          if (e.boss && !e.judge) pl.bosses++;
-          G.Progress.kill(e);
+          if (!e.gone) {                     // (Aventure : parti ou capturé, pas vaincu)
+            pl.kills++;
+            if (e.boss && !e.judge) pl.bosses++;
+            G.Progress.kill(e);
+          }
           corpses.push(e);
           list.splice(i, 1);
           byId.delete(e.id);
@@ -936,7 +962,7 @@
           if (G.Coop.isHost) G.Coop.enemyGone(e, false);
           continue;
         }
-        if (e.boss || e.shiny || G.Rift.inArena) continue;
+        if (e.boss || e.shiny || e.calm || G.Rift.inArena) continue;
         // Rezagados: los que se quedan atrás mientras corres y llevan un rato
         // FUERA DE LA VISTA (de todos) vuelven a salir por delante de ti. Así
         // no se puede huir sin más, y nunca desaparece uno que estés viendo.
