@@ -12,7 +12,7 @@
  * Solo seulement (en coopératif, chaque joueur a sa propre équipe).
  */
 G.Rocket = (() => {
-  const FROM = 480, TO = 1320, LIFE = 40;
+  const FROM = 480, TO = 1320, LIFE = 28;          // version de Nika : 40 s → 28 s, plus dur à rattraper
   const MEOWTH = 52, ESCORT = [24, 109];          // Miaouss, Abo, Smogo
   let at = 0, done = false, stolen = null, thief = null;
 
@@ -42,8 +42,8 @@ G.Rocket = (() => {
     G.Sprites.preload([MEOWTH, ...ESCORT]);
     // Miaouss part de là où était le Pokémon volé.
     const mon = G.DEX_BY[MEOWTH];
-    const def = { dex: MEOWTH, name: mon.name + ' (Team Rocket)', behavior: 'thief', hp: Math.round(260 * (1 + time / 95)),
-                  spd: 84, dmg: 0, xp: 60, loot: 'coins' };
+    const def = { dex: MEOWTH, name: mon.name + ' (Team Rocket)', behavior: 'thief', hp: Math.round(420 * (1 + time / 95)),
+                  spd: 104, dmg: 0, xp: 60, loot: 'coins' };
     const [x, y] = spot(pl, 120, 160);
     const e = new G.Enemy(def, x, y, { hp: 1, spd: 1, dmg: 1 });
     e.life = LIFE; e.rocket = true;
@@ -58,7 +58,7 @@ G.Rocket = (() => {
       const g = new G.Enemy({ dex, name: m.name + ' (Team Rocket)', hp: Math.round(180 * (1 + time / 80)), spd: 62,
                               dmg: Math.round((20 + time / 30) * G.League.dmgK()), xp: 120, behavior: dex === 109 ? 'ranged' : 'charger',
                               shotDmg: Math.round(10 + time / 60), shotCd: 1.4, range: 240 }, ex, ey, { hp: 1, spd: 1, dmg: 1 });
-      g.maxHp = g.hp = G.Power.bossHp(g.maxHp, 'rival') * 0.5;
+      g.maxHp = g.hp = G.Power.bossHp(g.maxHp, 'rival') * 0.7;
       g.rocketGuard = true;
       G.EnemyMgr.add(g);
     }

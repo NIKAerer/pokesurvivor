@@ -109,9 +109,19 @@ G.Team = (() => {
   let held = 0;
   function full() { return allies.filter(a => !a.guestT).length + 1 + held >= MAX; }
 
+  /** Version de Nika : jamais plus de MAX Pokémon à l'écran (chef, alliés, invité et Pokémon volé compris). */
+  const crowded = () => allies.length + 1 + held >= MAX;
+  /** Fait de la place : l'invité temporaire rentre chez lui. */
+  function makeRoom() {
+    const g = allies.find(a => a.guestT);
+    if (!crowded() || !g) return;
+    g.guestT = -1;
+    guestTick(0);
+  }
+
   /** Version de Nika : un allié sauvage qui t'aide `secs` secondes (Pokémon perdu ramené). */
   function guest(dex, secs) {
-    if (!leader || !G.DEX_BY[dex]) return null;
+    if (!leader || !G.DEX_BY[dex] || crowded()) return null;
     const a = new G.Ally(G.DEX_BY[dex], leader, allies.length);
     a.addMove(G.startMoveOf(dex));
     a.guestT = secs;
@@ -140,6 +150,7 @@ G.Team = (() => {
   /** Ajoute un Pokémon à l'équipe, niveau 1, avec son mouvement de départ. */
   function recruit(dex) {
     if (!leader || full()) return null;
+    makeRoom();
     const a = new G.Ally(G.DEX_BY[dex], leader, allies.length);
     a.addMove(G.startMoveOf(dex));
     allies.push(a);
@@ -322,8 +333,10 @@ G.Team = (() => {
 
   /** Version de Nika : la Team Rocket vole un allié au hasard (rocket.js). */
   function steal() {
-    if (!allies.length) return null;
-    const a = allies.splice(Math.floor(Math.random() * allies.length), 1)[0];
+    const real = allies.filter(x => !x.guestT);       // jamais l'invité temporaire
+    if (!real.length) return null;
+    const a = real[Math.floor(Math.random() * real.length)];
+    allies.splice(allies.indexOf(a), 1);
     allies.forEach((x, i) => { x.slot = i; });
     held = 1;
     G.Roles.recompute();
@@ -335,6 +348,7 @@ G.Team = (() => {
   function giveBack(a) {
     held = 0;
     if (!a || !leader || full()) return false;
+    makeRoom();
     a.slot = allies.length; a.x = leader.x; a.y = leader.y;
     allies.push(a);
     G.Roles.recompute();
