@@ -50,6 +50,11 @@ G.Touch = (() => {
     document.addEventListener('selectstart', e => {
       if (!e.target.closest || !e.target.closest('input, textarea, [contenteditable]')) e.preventDefault();
     });
+    // Version de Nika : plus aucun doigt sur l'écran = plus de joystick (filet si le « lâcher » s'est perdu).
+    const allUp = e => { if (!e.touches.length) stick = null; };
+    document.addEventListener('touchend', allUp, true);
+    document.addEventListener('touchcancel', allUp, true);
+    cv.addEventListener('lostpointercapture', up);
     addEventListener('blur', reset);
     document.addEventListener('visibilitychange', reset);
   }
