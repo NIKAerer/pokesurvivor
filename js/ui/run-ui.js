@@ -180,7 +180,7 @@ G.RunUI = (() => {
     const ot = $('over-team');
     for (const m of team) {
       const w = document.createElement('div');
-      w.appendChild(G.UI.spriteCanvas(m.dex, 56, 52, { scale: 1 }));
+      w.appendChild(G.UI.spriteCanvas(m.dex, 56, 52, { scale: 1, shiny: !!m.shiny }));
       w.insertAdjacentHTML('beforeend', `<small>${m.mon.name} N.${m.level}</small>`);
       ot.appendChild(w);
     }
