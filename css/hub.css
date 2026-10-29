@@ -254,3 +254,68 @@
 .adv-rico { display: grid; place-items: center; height: 100px; }
 @media (max-width: 600px) { .adv-starters.adv-rewards { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .adv-starters { gap: 6px; } .adv-starter canvas { width: 84px; } }
+
+/* ---------- Aventure sur la carte (version de Nika, js/adv/overworld.js) ---------- */
+#scr-world { position: fixed; inset: 0; z-index: 40; background: #1f6a34; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+#scr-world.hidden { display: none; }
+#world-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#world-hud { position: absolute; left: 0; right: 0; top: 0; padding: max(10px, env(safe-area-inset-top)) 12px 0; pointer-events: none; transition: opacity .2s; }
+#world-hud.dim { opacity: 0; }
+.world-top { display: flex; gap: 10px; align-items: flex-start; }
+.world-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; background: rgba(20, 16, 12, .72); color: #fff; border-radius: 12px; padding: 8px 12px; }
+.world-info b { font-size: 15px; color: #ffe14d; }
+.world-info span { font-size: 13px; opacity: .85; }
+#world-goal { margin: 8px 0 0; max-width: 520px; background: rgba(255, 250, 242, .92); color: #2a1d14; border-radius: 10px; padding: 6px 10px; font-size: 13px; line-height: 1.35; }
+.world-btn { pointer-events: auto; border: 3px solid #3a2a1c; background: #ffe14d; color: #2a1d14; font-weight: 800; font-size: 15px; border-radius: 12px; padding: 9px 16px; cursor: pointer; }
+.world-act { position: fixed; right: 16px; bottom: max(18px, env(safe-area-inset-bottom)); padding: 16px 20px; border-radius: 50px; display: none; }
+body.touch .world-act { display: block; }
+#world-banner { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(.9); opacity: 0; transition: .35s; pointer-events: none;
+  background: #3a2a1c; color: #fff; border: 4px solid #ffe14d; border-radius: 18px; padding: 16px 34px; text-align: center; }
+#world-banner.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#world-banner small { display: block; color: #ffe14d; font-size: 15px; font-weight: 700; }
+#world-banner b { font-size: 28px; }
+#world-fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .2s; }
+#world-fade.on { opacity: 1; }
+
+/* Combat au tour par tour (js/adv/battle.js) */
+#advb { position: absolute; inset: 0; pointer-events: auto; }
+#advb.hidden { display: none; }
+.advb-card { position: absolute; width: min(250px, 46vw); background: rgba(255, 250, 242, .95); color: #2a1d14; border: 3px solid #3a2a1c; border-radius: 12px; padding: 7px 10px; }
+.advb-card:empty { display: none; }
+.advb-card.foe { left: 12px; top: max(12px, env(safe-area-inset-top)); }
+.advb-card.me { right: 12px; top: max(12px, env(safe-area-inset-top)); }
+.advb-nm { display: flex; justify-content: space-between; gap: 6px; font-size: 15px; }
+.advb-hp { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.advb-hp small { font-weight: 800; font-size: 11px; color: #e0a020; }
+.advb-hp i { flex: 1; height: 8px; background: #555; border-radius: 4px; overflow: hidden; }
+.advb-hp i b { display: block; height: 100%; transition: background .2s; }
+.advb-hpn { text-align: right; font-size: 13px; font-weight: 700; margin-top: 2px; }
+.advb-xp { height: 4px; background: #ccc; border-radius: 2px; overflow: hidden; margin-top: 3px; }
+.advb-xp b { display: block; height: 100%; background: #3a8ae0; }
+.advb-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 10px max(10px, env(safe-area-inset-bottom)); }
+#advb-msg { display: none; background: #fffaf2; color: #2a1d14; border: 4px solid #3a2a1c; border-radius: 16px; padding: 14px 18px; font-size: 19px; min-height: 64px; max-width: 860px; margin: 0 auto; }
+#advb-msg.on { display: block; }
+#advb-menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 860px; margin: 0 auto; }
+#advb-menu:empty { display: none; }
+.advb-btn { --bc: #888; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; background: #fffaf2; color: #2a1d14;
+  border: 3px solid #3a2a1c; border-left: 10px solid var(--bc); border-radius: 12px; padding: 10px 12px; font-size: 16px; cursor: pointer; min-height: 52px; }
+.advb-btn.big { font-size: 20px; font-weight: 800; justify-content: center; }
+.advb-btn small { font-size: 12px; opacity: .7; }
+.advb-btn.back { grid-column: 1 / -1; align-items: center; min-height: 40px; border-left-width: 3px; }
+.advb-btn:disabled { opacity: .4; cursor: default; }
+
+/* Cartes de choix (js/ui/adv-ui.js) */
+.adv-choose { position: fixed; inset: 0; z-index: 61; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 8, 6, .55); }
+.adv-choose.hidden { display: none; }
+.adv-choose-box { width: min(760px, 100%); max-height: 90vh; overflow: auto; background: #fffaf2; color: #2a1d14; border: 5px solid #3a2a1c; border-radius: 20px; padding: 16px; }
+.adv-choose-box h3 { margin: 0 0 12px; font-size: 20px; text-align: center; }
+.adv-choose-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.adv-opt { --tc: #888; display: flex; align-items: center; gap: 10px; text-align: left; background: #fff; color: #2a1d14; border: 3px solid var(--tc);
+  border-radius: 14px; padding: 10px; cursor: pointer; box-shadow: 0 4px 0 var(--tc); }
+.adv-opt:hover { transform: translateY(-2px); }
+.adv-opt.off { opacity: .5; }
+.adv-opt canvas { flex: none; }
+.adv-oico { flex: none; display: flex; }
+.adv-otx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.adv-otx b { font-size: 16px; }
+.adv-otx small { font-size: 12px; opacity: .75; }

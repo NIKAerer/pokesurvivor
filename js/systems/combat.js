@@ -561,12 +561,19 @@ G.Combat = (() => {
     }
   }
 
+  /** Version de Nika : objet Anticura (items.js) : l'ennemi touché se soigne 60 % de moins pendant 5 s. */
+  function antiHeal(pl, e) {
+    const o = pl && (pl.ally ? pl.leader : pl);
+    if (o && o.item === 'healblock' && e && !e.dead) e.noHealT = performance.now() + 5000;
+  }
+
   function hit(pl, e, dmg, col, dx, dy, knock, m) {
     const k = typeK(m.type, e) * G.Talents.moveK(pl, m, e);
     const crit = isCrit(pl);
     dmg *= k * (crit ? CRIT_MUL : 1);
     e.hurt(dmg, col, dx, dy, knock, crit ? 'crit' : G.Types.label(G.Types.mult(m.type, e.types)));
     if (!ghost) pl.onDealt(dmg);
+    antiHeal(pl, e);
     if (!ghost && pl.inTeam) G.Roles.onDamage(dmg);    // vol de vie des mêlées de l'équipe
     if (!ghost && m.leech) vamp(pl.ally ? pl.leader : pl, dmg * m.leech);   // Méga-Sangsue
     pl.dmgDealt += dmg;
@@ -684,6 +691,7 @@ G.Combat = (() => {
         // et les alliés à projectiles, comme Absol, restaient à 0 dans le HUD).
         (p.owner || pl).dmgDealt += p.dmg * k;
         pl.onDealt(p.dmg * k);
+        antiHeal(pl, e);
         if (p.burn) e.applyBurn(p.burn);
         if (p.poison) e.applyPoison(p.poison);
         if (p.slow) e.applySlow(p.slow);

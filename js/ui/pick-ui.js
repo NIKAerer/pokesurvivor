@@ -359,7 +359,7 @@ G.PickUI = (() => {
     $('hub-mode').innerHTML = `<small>Mode</small><b>${tower ? 'Tour' : adv ? 'Aventure' : 'Survivor'}</b>`;
     const pb = $('pick-play');
     pb.innerHTML = '';
-    if (adv) { const t = G.Adventure.state().team; if (t.length) pb.appendChild(G.UI.spriteCanvas(t[0].dex, 40, 34, { fit: true, shiny: G.DB.ownsShiny(t[0].dex) })); }
+    if (adv) { const t = G.Overworld.save().team; if (t.length) pb.appendChild(G.UI.spriteCanvas(t[0].dex, 40, 34, { fit: true, shiny: G.DB.ownsShiny(t[0].dex) })); }
     else if (s.partnerRandom) pb.insertAdjacentHTML('beforeend', '<b class="pick-q pp-q">?</b>');
     else pb.appendChild(G.UI.spriteCanvas(mon.dex, 40, 34, { fit: true, shiny }));
     pb.insertAdjacentHTML('beforeend', `<span>JOUER</span><em>${tower ? 'Tour de Combat' : adv ? 'Aventure' : 'Survivor'}</em>`);
@@ -406,7 +406,7 @@ G.PickUI = (() => {
 
   function play() {
     const save = G.DB.save;
-    if (save.pickMode === 'adv') { G.AdvUI.open(); return; }   // version de Nika : la carte de l'Aventure (adv-ui.js)
+    if (save.pickMode === 'adv') { G.Overworld.open(); return; }   // version de Nika : l'Aventure sur la carte de Kanto (adv/overworld.js)
     if (save.pickMode === 'tower') G.Tower.start();     // version de Nika : la Tour de Combat (tower.js)
     if (save.partnerRandom) {
       const mons = box();

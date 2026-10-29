@@ -120,7 +120,8 @@ G.I18n.add({
   // ---------------- objetos ----------------
   'Restos': 'Leftovers', 'Cinta Elección': 'Choice Band', 'Garra Rápida': 'Quick Claw', 'Banda Focus': 'Focus Sash',
   'Cascabel Concha': 'Shell Bell', 'Moneda Amuleto': 'Amulet Coin', 'Huevo Suerte': 'Lucky Egg', 'Vidasfera': 'Life Orb',
-  'Pañuelo Elección': 'Choice Scarf', 'Casco Dentado': 'Rocky Helmet', 'Chaleco Asalto': 'Assault Vest',
+  'Pañuelo Elección': 'Choice Scarf', 'Casco Dentado': 'Rocky Helmet', 'Chaleco Asalto': 'Assault Vest', 'Anticura': 'Heal Block',
+  'Tus ataques (y los de tu equipo) aplican anticura: los enemigos golpeados se curan un 60% menos durante 5 s.': 'Your attacks (and your team\'s) apply heal block: enemies hit heal 60% less for 5 s.',
   'Recuperas un 1,5% de tu vida por segundo.': 'You recover 1.5% of your HP per second.',
   '+40% de daño, pero no puedes cambiar de movimiento.': '+40% damage, but you can\'t switch moves.',
   '-20% de recarga en todos tus movimientos.': '-20% cooldown on all your moves.',
