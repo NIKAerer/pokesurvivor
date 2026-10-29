@@ -37,6 +37,17 @@ G.HUD = (() => {
     roundRect(ctx, x0, y0, BW, BH, 9);
     ctx.fillStyle = 'rgba(8,12,24,.6)'; ctx.fill();
     ctx.textAlign = 'left';
+    // Version de Nika : en Aventure, le chapitre et l'objectif.
+    const A = G.Adventure.info();
+    if (A) {
+      ctx.font = F(800, 11); ctx.fillStyle = '#ffcb3d';
+      ctx.fillText('AVENTURE · CHAPITRE ' + A.n, x0 + 8, y0 + 14);
+      ctx.fillStyle = '#8fa3c4';
+      ctx.fillText(A.place + (A.caught ? ' · ' + A.caught + ' capturé' + (A.caught > 1 ? 's' : '') : ''), x0 + 8, y0 + 32);
+      ctx.fillStyle = A.phase === 'boss' ? '#ff6b6b' : '#eaf2ff';
+      ctx.fillText(A.phase === 'boss' ? 'Bats ' + A.who + ' !' : A.phase === 'won' ? 'Chapitre réussi !' : A.who + ' · ' + A.dist + ' m', x0 + 8, y0 + 54);
+      return;
+    }
     // Version de Nika : en Tour de Combat, l'étage et le record à la place des badges.
     if (G.Tower.active) {
       ctx.font = F(800, 11); ctx.fillStyle = '#ffcb3d';
@@ -203,14 +214,14 @@ G.HUD = (() => {
     ctx.fillText(G.U.mmss(st.time), cx, 42 + top);
     ctx.font = F(600, 10);
     ctx.fillStyle = '#8fa3c4';
-    ctx.fillText((G.Tower.active ? 'SALLE ' + (G.U.TYPE_NAME[G.Tower.room && G.Tower.room.type] || '').toUpperCase() : G.World.biomeName().toUpperCase()) + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', cx, 58 + top);
+    ctx.fillText((G.Adventure.info() ? G.Adventure.info().place.toUpperCase() : G.Tower.active ? 'SALLE ' + (G.U.TYPE_NAME[G.Tower.room && G.Tower.room.type] || '').toUpperCase() : G.World.biomeName().toUpperCase()) + '  ·  ' + pl.kills + ' DERROTADOS  ·  ' + pl.coins + ' MONEDAS', cx, 58 + top);
     // Version de Nika : vague en cours et prochain boss
     {
       // (le prochain défi de la Ligue est déjà dans le cadre des badges)
       const wv = G.Spawner.wave(), nb = G.Spawner.nextBossIn(st.time);
       const fmt = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
       const txt = (wv ? 'VAGUE ' + wv : '') + (nb != null && !G.Rift.inArena ? '  ·  BOSS DANS ' + fmt(nb) : '');
-      if (txt && !G.EnemyMgr.bossAlive() && !G.Tower.active) {
+      if (txt && !G.EnemyMgr.bossAlive() && !G.Tower.active && !G.Adventure.active) {
         ctx.font = F(800, 11);
         ctx.fillStyle = nb != null && nb < 15 ? '#ff6b6b' : '#ffcb3d';
         ctx.fillText(txt, cx, 72 + top);

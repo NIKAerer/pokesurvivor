@@ -355,13 +355,14 @@ G.PickUI = (() => {
     $('pick-tower').classList.toggle('on', s.pickMode === 'tower');
 
     // Mode et bouton Jouer (il montre qui part au combat, « ? » en aléatoire).
-    const tower = s.pickMode === 'tower';
-    $('hub-mode').innerHTML = `<small>Mode</small><b>${tower ? 'Tour' : 'Survivor'}</b>`;
+    const tower = s.pickMode === 'tower', adv = s.pickMode === 'adv';
+    $('hub-mode').innerHTML = `<small>Mode</small><b>${tower ? 'Tour' : adv ? 'Aventure' : 'Survivor'}</b>`;
     const pb = $('pick-play');
     pb.innerHTML = '';
-    if (s.partnerRandom) pb.insertAdjacentHTML('beforeend', '<b class="pick-q pp-q">?</b>');
+    if (adv) { const t = G.Adventure.state().team; if (t.length) pb.appendChild(G.UI.spriteCanvas(t[0].dex, 40, 34, { fit: true, shiny: G.DB.ownsShiny(t[0].dex) })); }
+    else if (s.partnerRandom) pb.insertAdjacentHTML('beforeend', '<b class="pick-q pp-q">?</b>');
     else pb.appendChild(G.UI.spriteCanvas(mon.dex, 40, 34, { fit: true, shiny }));
-    pb.insertAdjacentHTML('beforeend', `<span>JOUER</span><em>${tower ? 'Tour de Combat' : 'Survivor'}</em>`);
+    pb.insertAdjacentHTML('beforeend', `<span>JOUER</span><em>${tower ? 'Tour de Combat' : adv ? 'Aventure' : 'Survivor'}</em>`);
     showView();
   }
 
@@ -405,6 +406,7 @@ G.PickUI = (() => {
 
   function play() {
     const save = G.DB.save;
+    if (save.pickMode === 'adv') { G.AdvUI.open(); return; }   // version de Nika : la carte de l'Aventure (adv-ui.js)
     if (save.pickMode === 'tower') G.Tower.start();     // version de Nika : la Tour de Combat (tower.js)
     if (save.partnerRandom) {
       const mons = box();
@@ -418,7 +420,10 @@ G.PickUI = (() => {
   function init() {
     $('pick-play').onclick = play;
     const mode = m => { const s = G.DB.save; s.pickMode = m; G.DB.commit(); G.Audio.sfx('select'); render(); };
-    $('hub-mode').onclick = () => mode(G.DB.save.pickMode === 'tower' ? 'run' : 'tower');
+    // Version de Nika : Survivor → Tour → Aventure → Survivor.
+    const NEXT = { run: 'tower', tower: 'adv', adv: 'run' };
+    $('hub-mode').onclick = () => mode(NEXT[G.DB.save.pickMode] || 'tower');
+    G.AdvUI.init();
     $('pick-tower').onclick = () => mode(G.DB.save.pickMode === 'tower' ? 'run' : 'tower');
     $('pick-upg').onclick = () => G.MenuUI.openUpgrades();
     $('pick-gacha').onclick = () => G.GachaUI.open();
