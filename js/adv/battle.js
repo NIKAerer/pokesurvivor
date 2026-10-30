@@ -510,9 +510,12 @@ G.AdvBattle = (() => {
     const foe = B.foe, p = G.DEX_BY[foe.dex];
     const total = Math.floor(p.bst / 5 * foe.lv / 7 * (B.trainer ? 1.5 : 1));
     const team = G.Overworld.save().team;
+    // Version de Nika : Multi Exp naturel, toujours actif : les autres Pokémon de l'équipe gagnent la moitié de l'expérience.
+    const share = true;
+    if (team.some(m => m !== B.me && m.hp > 0)) await say('Le reste de l\'équipe gagne ' + Math.floor(total / 2) + ' points (Multi Exp) !', 1.1);
     for (const m of team) {
       if (m.hp <= 0) continue;
-      const xp = m === B.me ? total : Math.floor(total / 3);
+      const xp = m === B.me ? total : share ? Math.floor(total / 2) : 0;
       if (xp <= 0) continue;
       m.xp += xp;
       if (m === B.me) await say(M.name(m) + ' gagne ' + xp + ' points d\'expérience !', 1.1);
