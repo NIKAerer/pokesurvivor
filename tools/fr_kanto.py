@@ -40,12 +40,14 @@ MAPS = {  # clé du jeu de Nika : nom pret
     'souterrain': 'UndergroundPath_NorthSouthTunnel', 'souterrain_s': 'UndergroundPath_SouthEntrance', 'route6': 'Route6',
     'carmin': 'VermilionCity', 'carmin_centre': 'VermilionCity_PokemonCenter_1F', 'carmin_boutique': 'VermilionCity_Mart',
     'carmin_arene': 'VermilionCity_Gym', 'carmin_club': 'VermilionCity_PokemonFanClub', 'carmin_maison1': 'VermilionCity_House1',
-    'carmin_maison2': 'VermilionCity_House2', 'carmin_maison3': 'VermilionCity_House3'
+    'carmin_maison2': 'VermilionCity_House2', 'carmin_maison3': 'VermilionCity_House3',
+    # Chapitres 7 à 9 : l'Océane, Routes 9 et 10, la Grotte, Lavanville et la Tour Pokémon.
+    'ssanne': 'SSAnne_Exterior', 'ssanne_1f': 'SSAnne_1F_Corridor', 'ssanne_2f': 'SSAnne_2F_Corridor', 'ssanne_3f': 'SSAnne_3F_Corridor', 'ssanne_b1f': 'SSAnne_B1F_Corridor', 'ssanne_pont': 'SSAnne_Deck', 'ssanne_cuisine': 'SSAnne_Kitchen', 'ssanne_capitaine': 'SSAnne_CaptainsOffice', 'ssanne_1f_c1': 'SSAnne_1F_Room1', 'ssanne_1f_c2': 'SSAnne_1F_Room2', 'ssanne_1f_c3': 'SSAnne_1F_Room3', 'ssanne_1f_c4': 'SSAnne_1F_Room4', 'ssanne_1f_c5': 'SSAnne_1F_Room5', 'ssanne_1f_c6': 'SSAnne_1F_Room6', 'ssanne_1f_c7': 'SSAnne_1F_Room7', 'ssanne_2f_c1': 'SSAnne_2F_Room1', 'ssanne_2f_c2': 'SSAnne_2F_Room2', 'ssanne_2f_c3': 'SSAnne_2F_Room3', 'ssanne_2f_c4': 'SSAnne_2F_Room4', 'ssanne_2f_c5': 'SSAnne_2F_Room5', 'ssanne_2f_c6': 'SSAnne_2F_Room6', 'ssanne_b1f_c1': 'SSAnne_B1F_Room1', 'ssanne_b1f_c2': 'SSAnne_B1F_Room2', 'ssanne_b1f_c3': 'SSAnne_B1F_Room3', 'ssanne_b1f_c4': 'SSAnne_B1F_Room4', 'ssanne_b1f_c5': 'SSAnne_B1F_Room5', 'route9': 'Route9', 'route10': 'Route10', 'route10_centre': 'Route10_PokemonCenter_1F', 'grotte1': 'RockTunnel_1F', 'grotte2': 'RockTunnel_B1F', 'lavanville': 'LavenderTown', 'lavanville_centre': 'LavenderTown_PokemonCenter_1F', 'lavanville_boutique': 'LavenderTown_Mart', 'lavanville_fuji': 'LavenderTown_VolunteerPokemonHouse', 'lavanville_maison1': 'LavenderTown_House1', 'lavanville_maison2': 'LavenderTown_House2', 'tour1': 'PokemonTower_1F', 'tour2': 'PokemonTower_2F', 'tour3': 'PokemonTower_3F', 'tour4': 'PokemonTower_4F', 'tour5': 'PokemonTower_5F', 'tour6': 'PokemonTower_6F', 'tour7': 'PokemonTower_7F'
 }
 PEOPLE = ['red_normal', 'prof_oak', 'blue', 'mom', 'nurse', 'brock', 'bug_catcher', 'black_belt', 'clerk',
           'old_man_1', 'boy', 'little_boy', 'youngster', 'camper', 'woman_1', 'fat_man', 'lass', 'gym_guy',
           'little_girl', 'woman_2', 'old_woman', 'scientist', 'gentleman', 'woman_3', 'worker_f', 'worker_m', 'man',
-          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'rocket_f', 'misc/item_ball']
+          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'rocket_f', 'channeler', 'misc/item_ball', 'misc/cut_tree', 'misc/ss_anne']
 
 NUM_PRI_TILES, NUM_PRI_MT, NUM_PRI_PALS = 640, 640, 7
 

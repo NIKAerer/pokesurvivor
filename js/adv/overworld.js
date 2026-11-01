@@ -31,7 +31,13 @@ G.Overworld = (() => {
     // Azuria, le Pont Pépite et la Route 25 : eau, Psy, et les Pokémon de l'animé (Bulbizarre du village caché, Salamèche abandonnée).
     5: [54, 60, 118, 120, 116, 72, 79, 63, 43, 69, 10, 13, 1, 4, 129, 98],
     // Routes 5 et 6 et Carmin sur Mer : l'Escouade Carapuce, la mer, l'électricité.
-    6: [7, 52, 56, 66, 81, 100, 86, 90, 98, 72, 16, 17, 43, 69, 39, 25]
+    6: [7, 52, 56, 66, 81, 100, 86, 90, 98, 72, 16, 17, 43, 69, 39, 25],
+    // L'Océane : la mer, les Pokémon des passagers et des marins.
+    7: [72, 90, 98, 116, 118, 120, 129, 86, 52, 58, 37, 66, 56, 79, 40, 108],
+    // Routes 9 et 10, la Grotte : roches, Onix, Électrik de la Centrale.
+    8: [74, 66, 95, 41, 56, 21, 23, 100, 81, 19, 96, 104, 111, 27],
+    // Lavanville et la Tour Pokémon : les spectres, Osselait l'orphelin, Spectrum le farceur.
+    9: [92, 93, 104, 96, 63, 39, 35, 79, 52, 58, 37, 132]
   };
 
   let S = null;              // la sauvegarde de l'Aventure
@@ -77,10 +83,11 @@ G.Overworld = (() => {
   }
 
   // ---------------- personnages ----------------
-  const SKIP = new Set(['item_ball', 'cut_tree', 'var_0', 'push_boulder', 'prof_oak', 'blue', 'pokedex', 'town_map', 'old_amber', 'fossil', 'bill', 'clefairy']);
+  const SKIP = new Set(['item_ball', 'cut_tree', 'var_0', 'push_boulder', 'prof_oak', 'blue', 'pokedex', 'town_map', 'old_amber', 'fossil', 'bill', 'clefairy', 'mr_fuji', 'rock_smash_rock']);
   const INVISIBLE = new Set(['', 'clipboard']);   // journaux et cahiers posés sur les tables : on peut les lire
   // Les Pokémon posés sur la carte (le Piafabec de Jadielle, le Rondoudou du Centre…) : dessinés avec nos sprites.
-  const MONS = { spearow: 21, nidoran_m: 32, jigglypuff: 39, pikachu: 25, clefairy: 35, meowth: 52, pidgey: 16, machop: 66, seel: 86, slowbro: 80 };
+  const MONS = { spearow: 21, nidoran_m: 32, jigglypuff: 39, pikachu: 25, clefairy: 35, meowth: 52, pidgey: 16, machop: 66, seel: 86, slowbro: 80,
+                 cubone: 104, psyduck: 54, nidorino: 33, wigglytuff: 40, machoke: 67 };
   /** Un dresseur du jeu sans équipe écrite : des Pokémon du coin, toujours les mêmes pour lui. */
   function genTrainer(o) {
     let h = 7;
@@ -88,21 +95,25 @@ G.Overworld = (() => {
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
     const ch = def.ch || S.ch;
     const pool = o.gfx === 'rocket_m' ? [19, 41, 23, 109] : def.pool || (art.wild.length ? art.wild.map(w => w[0]) : HABITAT[ch] || [16, 19]);
-    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20][ch] || 12;
+    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26][ch] || 26;
     const n = 1 + Math.floor(rnd() * 3), team = [];
     for (let i = 0; i < n; i++) team.push([pool[Math.floor(rnd() * pool.length)], Math.max(2, top - (n - 1) + Math.floor(rnd() * 2))]);
     const who = (K().CLASSES[o.gfx] || 'Dresseur') + ' ' + String(o.script || '').replace(/^.*_EventScript_/, '').replace(/\d+$/, '');
     const MEET = ['Nos regards se sont croisés : combat !', 'Hé, toi ! Montre-moi tes Pokémon !', 'Je m\'entraîne ici depuis des jours. À toi de voir !', 'Tu n\'iras pas plus loin sans me battre !'];
     const LOSE = ['Bien joué…', 'J\'ai encore beaucoup à apprendre.', 'Tes Pokémon sont vraiment forts !', 'La prochaine fois, je gagnerai !'];
-    return { name: who, team, coins: 20 * top * n, meet: MEET[Math.floor(rnd() * 4)], lose: LOSE[Math.floor(rnd() * 4)] };
+    const spooky = o.gfx === 'channeler';
+    return { name: who, team, coins: 20 * top * n, meet: spooky ? 'Va-t\'en… VA-T\'EN… Les esprits ne veulent pas de toi ici !' : MEET[Math.floor(rnd() * 4)],
+             lose: spooky ? 'Hein ? Où suis-je ? … J\'étais possédée !' : LOSE[Math.floor(rnd() * 4)] };
   }
   const FACE = { face_left: 'left', face_right: 'right', face_up: 'up', face_down_and_up: 'down' };
   function loadNpcs() {
     const story = (K().NPCS[mapKey] || []).filter(n => !n.when || n.when(S.flags));
-    const amb = art.objs.filter(o => !SKIP.has(o.gfx)).map((o, i) => {
+    // Le petit arbre de la Route 9 : il bloque le passage jusqu'à ce qu'on ait Coupe.
+    const cut = mapKey === 'route9' && !S.flags.cut_route9;
+    const amb = art.objs.filter(o => o.gfx === 'cut_tree' ? cut : !SKIP.has(o.gfx)).map((o, i) => {
       const t = o.trainer && (K().TRAINERS[o.script] || genTrainer(o));
       return { id: mapKey + '_' + i, look: G.People.has(o.gfx) ? o.gfx : 'boy', mon: MONS[o.gfx], x: o.x, y: o.y, dir: FACE[o.mv] || 'down',
-        inv: INVISIBLE.has(o.gfx), event: o.gfx === 'nurse' ? 'center' : o.gfx === 'clerk' ? 'mart' : undefined,
+        inv: INVISIBLE.has(o.gfx), event: o.gfx === 'nurse' ? 'center' : o.gfx === 'clerk' ? 'mart' : o.gfx === 'cut_tree' ? 'cut' : undefined,
         trainer: t ? { ...t, sees: Math.max(2, +o.sight || 3) } : null,
         talk: () => [['', K().TALK[o.script] || 'Bonjour ! Belle journée pour une balade avec ses Pokémon.']] };
     }).filter(n => !story.some(s2 => s2.x === n.x && s2.y === n.y));
@@ -315,7 +326,8 @@ G.Overworld = (() => {
     if (door && bg.complete) c.drawImage(bg, 4 * 16, 8 * 16, 48, 32, 4 * TS, 6 * TS, 3 * TS, 2 * TS);
     const list = [];
     for (const n of npcs) if (!n.inv) list.push({ y: n.py, draw: x => {
-      if (n.anim) { G.Sprites.drawShadow(x, n.mon, n.px, n.py - 6, 1); n.anim.draw(x, n.px, n.py - 6); }
+      if (n.anim && n.ghost) { x.globalAlpha = 0.45 + Math.sin(time * 3) * 0.15; n.anim.draw(x, n.px, n.py - 6 - Math.sin(time * 2) * 4); x.globalAlpha = 1; }
+      else if (n.anim) { G.Sprites.drawShadow(x, n.mon, n.px, n.py - 6, 1); n.anim.draw(x, n.px, n.py - 6); }
       else G.People.draw(x, n.look, n.px, n.py, n.d, n.walkT, n.moving);
       if (n.bubble) { x.fillStyle = '#fff'; x.fillRect(n.px - 7, n.py - 66, 14, 16); x.fillStyle = '#e03030'; x.fillRect(n.px - 2, n.py - 63, 4, 7); x.fillRect(n.px - 2, n.py - 54, 4, 3); }
     } });
@@ -336,6 +348,16 @@ G.Overworld = (() => {
       c.save();
       if (door) { c.beginPath(); c.rect(0, 0, art.w * TS, art.h * TS); c.rect(4 * TS, 6 * TS, 3 * TS, 2 * TS); c.clip('evenodd'); }
       c.drawImage(top, 0, 0, art.w * TS, art.h * TS);
+      c.restore();
+    }
+    if (def.dark && !G.AdvBattle.active) {
+      // La Grotte sans Flash : on ne voit qu'autour de soi.
+      c.save();
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const sx = vw / 2 + (pl.x - cam.x) * zoom, sy = vh / 2 + (pl.y - 20 - cam.y) * zoom, r = TS * 3.2 * zoom;
+      const gr = c.createRadialGradient(sx, sy, r * 0.35, sx, sy, r);
+      gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.93)');
+      c.fillStyle = gr; c.fillRect(0, 0, vw, vh);
       c.restore();
     }
     G.AdvBattle.drawBall(c);
@@ -420,6 +442,14 @@ G.Overworld = (() => {
     if (n.event === 'ondine') { await ondine(n); return; }
     if (n.event === 'leo') { await leo(); return; }
     if (n.event === 'surge') { await surge(n); return; }
+    if (n.event === 'regis3') { await regis3(); return; }
+    if (n.event === 'rocket2') { await rocket2(); return; }
+    if (n.event === 'captain') { await captain(); return; }
+    if (n.event === 'cut') { await cutTree(); return; }
+    if (n.event === 'regis4') { await regis4(); return; }
+    if (n.event === 'ghost') { await ghost(); return; }
+    if (n.event === 'fuji') { await fuji(); return; }
+    if (n.event === 'fujiHome') { await talk([['M. Fuji', 'Merci encore, jeune dresseur. Les Pokémon de cette maison sont heureux grâce à toi.']]); return; }
     if (n.talk) await talk(n.talk(S.flags));
   }
 
@@ -538,7 +568,7 @@ G.Overworld = (() => {
     const wild = def.wild || (art.wild.length ? art.wild : null);
     const grassy = at(tx, ty) === 'g';
     if (grassy) G.AdvFX.burst('grass', pl.x, pl.y - 8, 5, 0.35);
-    if (wild && canFight() && (grassy ? Math.random() < 1 / 10 : art.cave && Math.random() < 1 / 16)) {
+    if (wild && canFight() && (grassy ? Math.random() < 1 / 10 : (art.cave || art.inside) && Math.random() < 1 / 16)) {
       const [dex, a, b] = G.U.pick(wild);
       run(() => battle({ wild: [dex, a + Math.floor(Math.random() * (b - a + 1))] }));
     }
@@ -572,6 +602,7 @@ G.Overworld = (() => {
     commit();
     if (e.map === 'argenta' && S.ch === 2) await chapterEnd();
     if (e.map === 'azuria' && S.ch === 4) await chapterEnd();
+    if (e.map === 'lavanville' && S.ch === 8) await chapterEnd();
   }
   function fade(fn) {
     const el = $('world-fade');
@@ -804,16 +835,128 @@ G.Overworld = (() => {
     if (S.ch === 6) await chapterEnd();
   }
 
+  // ---------------- chapitres 7 à 9 ----------------
+  /** Régis sur l'Océane, devant la cabine du capitaine. */
+  async function regis3() {
+    const n = npcs.find(x => x.id === 'regis3');
+    await talk([['Régis', 'Hé, le nul ! Toi aussi tu es invité à la fête ? On ne laisse vraiment monter n\'importe qui…'],
+                ['Régis', 'Le capitaine a le mal de mer. Moi je l\'ai déjà vu, il m\'a même montré sa technique secrète. Voyons si tu as progressé !']]);
+    const res = await battle({ trainer: { name: 'Régis', team: [[17, 22], [63, 20], [58, 21], [133, 23]], smart: true, potions: 1 } }, n);
+    if (res !== 'win') return;
+    S.flags.regis3 = 1; S.money += 900;
+    await talk([['Régis', 'Pff ! Tu as eu de la chance. Bon, je file, la fête m\'ennuie. À la revoyure, le nul !'], ['', 'Tu gagnes 900 pièces.']]);
+    loadNpcs();
+  }
+  /** Jessie et James déguisés en serveurs sur le pont de l'Océane. */
+  async function rocket2() {
+    if (S.flags.rocket2) return;
+    const jessie = npcs.find(n => n.id === 'jessie2');
+    await talk([['Serveuse', 'Bienvenue à la fête ! Donnez-nous vos Pokémon, on va… euh… les laver !'],
+                ['Serveur', 'Jessie, il nous a reconnus !'], ['Jessie', 'Nous sommes de retour !'], ['James', 'Pour vous jouer un mauvais tour !'],
+                ['Jessie et James', 'La Team Rocket plus rapide que la lumière !'], ['Miaouss', 'Rendez-vous tous, ou ce sera la guerre !'],
+                ['James', 'Tous les Pokémon des passagers seront à nous !']]);
+    const res = await battle({ trainer: { name: 'Jessie et James', team: [[23, 21], [109, 21], [52, 22]], smart: true, potions: 1 } }, jessie);
+    if (res !== 'win') return;
+    S.flags.rocket2 = 1; S.money += 800;
+    await talk([['Miaouss', 'On aurait dû rester à la cuisine…'], ['Jessie, James et Miaouss', 'La Team Rocket s\'envole vers d\'autres cieux !'],
+                ['', 'Ils sautent par-dessus bord ! Les passagers t\'applaudissent et te donnent 800 pièces.']]);
+    loadNpcs();
+  }
+  /** Le capitaine qui a le mal de mer, puis le naufrage de l'Océane. */
+  async function captain() {
+    if (!S.flags.rocket2) { await talk([['Capitaine', 'Ooh… J\'ai le mal de mer… Et j\'entends du grabuge sur le pont supérieur. Quelqu\'un peut aller voir ?']]); return; }
+    if (S.flags.coupe) { await talk([['Capitaine', 'Merci encore, petit. Utilise bien Coupe !']]); return; }
+    await talk([['Capitaine', 'Ooh… Le mal de mer… Un capitaine qui a le mal de mer, tu te rends compte ?'],
+                ['', 'Tu lui frottes le dos…'], ['Capitaine', 'Ah ! Ça va mieux, merci ! Pour te remercier, je t\'apprends la technique Coupe. Tes Pokémon pourront couper les petits arbres !'],
+                ['', 'Tu obtiens la CS Coupe !']]);
+    S.flags.coupe = 1;
+    G.Audio.sfx('legend');
+    await shipwreck();
+  }
+  async function shipwreck() {
+    await talk([['', 'BOUM ! Une énorme vague frappe l\'Océane !'], ['Capitaine', 'Une tempête ! Le bateau se renverse ! Tout le monde dehors !'],
+                ['', 'Tout tourne… L\'eau entre partout…']]);
+    // Comme le Magicarpe de James dans l'animé : le naufrage le fait évoluer en Léviator !
+    const karp = S.team.concat(S.box).find(m => m.dex === 129);
+    await fade(() => setMap('carmin', 23, 32, 'down'));
+    S.flags.naufrage = 1;
+    commit();
+    await talk([['', 'Tu te réveilles sur le quai de Carmin sur Mer. L\'Océane a disparu au large…']]);
+    if (karp) {
+      const n = M().make(130, Math.max(20, karp.lv));
+      Object.assign(karp, n);
+      G.DB.grant(130, 'adv');
+      refreshFollowers();
+      G.Audio.sfx('legend');
+      await talk([['', 'Ton Magicarpe a nagé jusqu\'au rivage en te tirant hors de l\'eau… et il brille ! Il a évolué en Léviator !'],
+                  ['Ondine', 'Un Léviator ! Ton Magicarpe à 500 pièces t\'a sauvé la vie !']]);
+    }
+    if (S.ch === 7) await chapterEnd();
+  }
+  async function cutTree() {
+    if (!S.flags.coupe) { await talk([['', 'Un petit arbre bloque le passage. Il faudrait la technique Coupe…']]); return; }
+    const m = S.team.find(m => m.hp > 0) || S.team[0];
+    await talk([['', (m ? M().name(m) : 'Ton Pokémon') + ' utilise Coupe ! L\'arbre est coupé.']]);
+    S.flags.cut_route9 = 1;
+    G.Audio.sfx('select');
+    loadNpcs();
+  }
+  /** Régis au 2e étage de la Tour Pokémon. */
+  async function regis4() {
+    const n = npcs.find(x => x.id === 'regis4');
+    await talk([['Régis', 'Tiens, le nul. Je suis venu dire au revoir à un vieux Pokémon… Ne pose pas de questions.'],
+                ['Régis', 'Tes Pokémon sont encore vivants, toi ? Voyons ça !']]);
+    const res = await battle({ trainer: { name: 'Régis', team: [[18, 25], [64, 23], [58, 24], [133, 26]], smart: true, potions: 2 } }, n);
+    if (res !== 'win') return;
+    S.flags.regis4 = 1; S.money += 1000;
+    await talk([['Régis', 'Encore perdu… Je dois m\'entraîner plus dur. La Team Rocket est en haut, fais attention. À la revoyure !'], ['', 'Tu gagnes 1000 pièces.']]);
+    loadNpcs();
+  }
+  /** Le fantôme de la maman Ossatueur, au 6e étage. */
+  async function ghost() {
+    const n = npcs.find(x => x.id === 'ghost');
+    G.Audio.sfx('select');
+    await talk([['Fantôme', 'Va-t\'en… VA-T\'EN…'], ['', 'Une silhouette blanche flotte devant l\'escalier. Impossible de voir de quel Pokémon il s\'agit !'],
+                ['', 'Soudain, un Spectrum farceur surgit du mur et fait une grimace au fantôme… La silhouette se dévoile : c\'est un Ossatueur !']]);
+    const res = await battle({ wild: [105, 28] }, n);
+    if (res === 'lose') return;
+    S.flags.ossatueur = 1;
+    await talk([['', 'Le fantôme d\'Ossatueur s\'apaise… C\'était la maman de l\'Osselait de Lavanville. Elle monte doucement vers le ciel.'],
+                ['', 'Le Spectrum te fait un clin d\'œil et disparaît en rigolant.']]);
+    loadNpcs();
+  }
+  /** M. Fuji, prisonnier de la Team Rocket au sommet de la Tour. */
+  async function fuji() {
+    const grunts = Object.keys(S.flags).filter(k => k.startsWith('tr_tour7_')).length;
+    if (grunts < 3) { await talk([['M. Fuji', 'Jeune dresseur… La Team Rocket me retient ici. Attention à eux !']]); return; }
+    S.flags.fuji = 1;
+    G.Audio.sfx('legend');
+    await talk([['M. Fuji', 'Tu m\'as sauvé ! La Team Rocket voulait vendre les Pokémon de la Tour… Merci du fond du cœur.'],
+                ['M. Fuji', 'Je recueille les Pokémon abandonnés dans ma maison de Lavanville. Le petit Osselait aussi, maintenant qu\'il est seul…'],
+                ['M. Fuji', 'Prends ceci : 3 Total Soin et 1000 pièces. Les Pokémon de la Tour reposent en paix grâce à toi.'],
+                ['', 'Tu reçois 3 Total Soin et 1000 pièces.']]);
+    S.cures = (S.cures || 0) + 3; S.money += 1000;
+    loadNpcs();
+    if (S.ch === 9) await chapterEnd();
+  }
+
   /** Passer une porte, une échelle ou l'entrée d'une grotte : on arrive sur la vraie carte, à la porte qui y mène. */
   async function go(w) {
+    if (w.dest === 'ssanne' && mapKey === 'carmin') {
+      if (S.flags.naufrage) { await talk([['Marin', 'L\'Océane ? Elle a pris la mer… enfin, ce qu\'il en reste !']]); return; }
+      if (!S.flags.leo) { await ssanne(); return; }
+      if (!S.flags.surge) { await talk([['Marin', 'La fête des dresseurs commence ce soir. Va d\'abord défier le Major Bob, petit !']]); return; }
+      if (!S.flags.ssanne) { S.flags.ssanne = 1; await talk([['Marin', 'Un Passe Océane ! Bienvenue à bord, la fête des dresseurs va commencer !']]); }
+    }
     const to = G.KantoArt.maps[w.dest];
     // La porte d'arrivée (celle donnée par le jeu, sinon une qui ramène ici).
     let t = to.warps[w.id];
     if (!t || t.dest !== mapKey) t = to.warps.find(x => x.dest === mapKey) || t || to.warps[0];
     let x = t.x, y = t.y, dir = pl.dir;
-    if (to.inside && !art.inside) { y = t.y - 1; dir = 'up'; }            // on entre : un pas dans la pièce
-    else if (!to.inside && art.inside) { y = t.y + 1; dir = 'down'; }     // on sort : un pas devant la porte
-    else if ((to.grid[y] || '')[x] === '#') { y += (to.grid[y + 1] || '')[x] === '.' ? 1 : -1; }
+    const free = yy => { const ch = (to.grid[yy] || '')[x]; return ch && ch !== '#' && ch !== 'w'; };
+    if (to.inside && !art.inside) { if (free(t.y - 1)) { y = t.y - 1; dir = 'up'; } else { y = t.y + 1; dir = 'down'; } }       // on entre : un pas dans la pièce
+    else if (!to.inside && art.inside) { if (free(t.y + 1)) { y = t.y + 1; dir = 'down'; } else { y = t.y - 1; dir = 'up'; } }  // on sort : un pas devant la porte
+    else if (!free(y)) { y += free(y + 1) ? 1 : -1; }
     await fade(() => setMap(w.dest, x, y, dir));
     commit();
   }

@@ -195,7 +195,6 @@ G.Kanto = (() => {
   /** Les cartes voisines pas encore faites : pourquoi on ne passe pas. */
   const CLOSED = {
     SaffronCityConnection: 'Un garde bloque le chemin de Safrania : « J\'ai si soif… Je ne laisse passer personne ! »',
-    Route9: 'Un arbre bloque le passage vers la Route 9. Il faudrait la capacité Coupe…',
     Route11: 'La Route 11 est fermée pour travaux. La suite de l\'aventure arrive bientôt !'
   };
   const DOORS = {
@@ -375,6 +374,137 @@ G.Kanto = (() => {
               ['', 'Au sud d\'Azuria, la Route 5 et le Souterrain mènent à Carmin sur Mer, la ville du port.']] },
     { title: 'À suivre…', goal: 'La suite de l\'aventure (l\'Océane, Safrania…) arrive bientôt !',
       intro: [['', 'Chapitre 7 · À suivre'], ['', 'Bravo ! Trois badges ! La suite arrive bientôt : la grande fête de l\'Océane et la ville de Safrania.']] });
+
+  // ---------------- Chapitres 7 à 9 : l'Océane, la Grotte, Lavanville et la Tour Pokémon ----------------
+  Object.assign(MAPS, {
+    route9: { name: 'Route 9', ch: 8, music: 'forest', doors: {} },
+    route10: { name: 'Route 10', ch: 8, music: 'forest', doors: { POWER_PLANT: 'centrale' } },
+    grotte1: { name: 'Grotte', ch: 8, music: 'cave', doors: {}, dark: true },
+    grotte2: { name: 'Grotte · Sous-sol', ch: 8, music: 'cave', doors: {}, dark: true },
+    lavanville: { name: 'Lavanville', ch: 9, music: 'cave', wild: null, doors: {} }
+  });
+  const ROOMS3 = {
+    ssanne: ['Quai de l\'Océane', 7], ssanne_1f: ['L\'Océane · Pont 1', 7], ssanne_2f: ['L\'Océane · Pont 2', 7], ssanne_3f: ['L\'Océane · Pont 3', 7],
+    ssanne_b1f: ['L\'Océane · Cale', 7], ssanne_pont: ['L\'Océane · Pont supérieur', 7], ssanne_cuisine: ['L\'Océane · Cuisines', 7], ssanne_capitaine: ['Cabine du capitaine', 7],
+    route10_centre: ['Centre Pokémon de la Grotte', 8], lavanville_centre: ['Centre Pokémon de Lavanville', 9], lavanville_boutique: ['Boutique de Lavanville', 9],
+    lavanville_fuji: ['Maison de M. Fuji', 9], lavanville_maison1: ['Maison de Lavanville', 9], lavanville_maison2: ['Maison du Sage', 9]
+  };
+  for (let i = 1; i <= 7; i++) ROOMS3['ssanne_1f_c' + i] = ['L\'Océane · Cabine', 7];
+  for (let i = 1; i <= 6; i++) ROOMS3['ssanne_2f_c' + i] = ['L\'Océane · Cabine', 7];
+  for (let i = 1; i <= 5; i++) ROOMS3['ssanne_b1f_c' + i] = ['L\'Océane · Cabine des marins', 7];
+  for (let i = 1; i <= 7; i++) ROOMS3['tour' + i] = ['Tour Pokémon · ' + i + (i === 1 ? 'er' : 'e') + ' étage', 9];
+  for (const k in ROOMS3) MAPS[k] = { name: ROOMS3[k][0], ch: ROOMS3[k][1], music: /^tour/.test(k) ? 'cave' : 'village', wild: null, doors: {}, inside: true };
+  CLOSED.Route12 = 'Un énorme Ronflex dort au milieu de la Route 12. Impossible de passer !';
+  CLOSED.Route8 = 'La Route 8 mène à Céladopole. La suite de l\'aventure arrive bientôt !';
+  DOORS.centrale = 'La Centrale électrique est fermée. On y entend des grésillements… un Pokémon Électrik légendaire ?';
+
+  Object.assign(SIGNS, {
+    Route9_EventScript_RouteSign: 'Route 9 — Azuria ↔ Grotte',
+    Route10_EventScript_NorthRockTunnelSign: 'Grotte — Il fait très noir à l\'intérieur !',
+    Route10_EventScript_SouthRockTunnelSign: 'Grotte — Sortie sud, Lavanville est tout près.',
+    Route10_EventScript_PowerPlantSign: 'Centrale électrique',
+    Route10_EventScript_NorthRouteSign: 'Route 10 — Azuria ↔ Lavanville',
+    Route10_EventScript_SouthRouteSign: 'Route 10 — Lavanville',
+    LavenderTown_EventScript_TownSign: 'Lavanville — La ville noble et violette.',
+    LavenderTown_EventScript_SilphScopeNotice: 'Avis : des fantômes ont été vus dans la Tour Pokémon. Âmes sensibles, s\'abstenir !',
+    LavenderTown_EventScript_VolunteerHouseSign: 'Maison des Pokémon de M. Fuji',
+    LavenderTown_EventScript_PokemonTowerSign: 'Tour Pokémon — Ici reposent les Pokémon disparus.'
+  });
+  Object.assign(TALK, {
+    SSAnne_1F_Corridor_EventScript_Sailor: 'Bienvenue à bord de l\'Océane ! Ce soir, grande fête pour tous les dresseurs !',
+    SSAnne_1F_Corridor_EventScript_WorkerM: 'Il paraît que deux serveurs bizarres et un Miaouss se sont glissés à bord…',
+    SSAnne_2F_Corridor_EventScript_Sailor: 'Le capitaine est dans sa cabine, au bout du couloir. Il n\'a pas l\'air bien…',
+    SSAnne_3F_Corridor_EventScript_Sailor: 'Le pont supérieur est par là. Attention, ça tangue !',
+    SSAnne_Deck_EventScript_BaldingMan: 'Je n\'aime pas ce ciel… Une tempête approche.',
+    SSAnne_Deck_EventScript_Sailor: 'Ahoy ! Les Pokémon Eau adorent sauter près du bateau.',
+    SSAnne_Deck_EventScript_Youngster: 'Je suis venu pour la fête, mais j\'ai le mal de mer…',
+    SSAnne_Kitchen_EventScript_Chef1: 'Ce soir au menu : Magicarpe à la crème ! … Je plaisante !',
+    SSAnne_Kitchen_EventScript_Chef2: 'Le capitaine ne mange plus rien. Il a le mal de mer, le pauvre.',
+    SSAnne_Kitchen_EventScript_Chef3: 'Sors de ma cuisine ! … Bon, d\'accord, prends un petit gâteau.',
+    SSAnne_Kitchen_EventScript_Chef4: 'Un Miaouss a volé du poisson tout à l\'heure. Et il parlait !',
+    SSAnne_Kitchen_EventScript_Chef5: 'Les dresseurs mangent beaucoup. Leurs Pokémon encore plus !',
+    SSAnne_Kitchen_EventScript_Chef6: 'Je prépare la fête des dresseurs. Tout doit être parfait !',
+    SSAnne_Kitchen_EventScript_Chef7: 'Psst ! Le capitaine a appris Coupe à son Pokémon. Pratique pour couper les arbres !',
+    SSAnne_1F_Room1_EventScript_Gentleman: 'Un dresseur m\'a échangé son Papilusion contre mon Rattata… On a tous les deux pleuré en se quittant !',
+    SSAnne_1F_Room2_EventScript_Woman: 'Les dresseurs de l\'Océane viennent du monde entier !',
+    SSAnne_1F_Room3_EventScript_LittleGirl: 'Mon Grodoudou fait des bulles quand il dort !',
+    SSAnne_1F_Room3_EventScript_Wigglytuff: 'Grodoudou : Grooo… (Il est tout doux.)',
+    SSAnne_1F_Room3_EventScript_BaldingMan: 'Ma fille adore son Grodoudou.',
+    SSAnne_1F_Room4_EventScript_Woman: 'J\'ai vu un vendeur de Magicarpe sur le quai… Méfie-toi des bonnes affaires !',
+    SSAnne_1F_Room6_EventScript_Woman: 'La croisière dure une semaine. J\'espère qu\'il fera beau !',
+    SSAnne_2F_Room1_EventScript_Gentleman: 'Le capitaine est un grand dresseur. Mais un piètre marin !',
+    SSAnne_2F_Room3_EventScript_Gentleman: 'J\'ai un Pokémon de chaque type. Enfin, presque !',
+    SSAnne_2F_Room3_EventScript_OldMan: 'Dans ma jeunesse, on voyageait en Lokhlass sur la mer !',
+    SSAnne_2F_Room5_EventScript_Gentleman: 'Les Pokémon d\'ici sont si raffinés…',
+    SSAnne_2F_Room5_EventScript_LittleBoy: 'Je veux être capitaine plus tard ! Ou dresseur !',
+    SSAnne_2F_Room6_EventScript_Woman1: 'Quelle belle fête ! On danse avec ses Pokémon !',
+    SSAnne_2F_Room6_EventScript_Woman2: 'Mon Pokémon a mangé tout le buffet…',
+    SSAnne_B1F_Room5_EventScript_Boy: 'Mon Machopeur soulève les caisses de la cale. Il est super fort !',
+    SSAnne_B1F_Room5_EventScript_Machoke: 'Machopeur : Machoo ! (Il porte trois caisses à la fois.)',
+    Route10_PokemonCenter_1F_EventScript_Gentleman: 'La Grotte est noire comme la nuit. Avance doucement !',
+    Route10_PokemonCenter_1F_EventScript_FatMan: 'Il paraît qu\'un Électhor dort dans la Centrale électrique…',
+    Route10_PokemonCenter_1F_EventScript_Youngster: 'Après la Grotte, c\'est Lavanville. Une ville un peu triste…',
+    Route10_PokemonCenter_1F_EventScript_Aide: 'Je travaille pour le Prof. Chen. Il dit que ton Pokédex avance bien !',
+    LavenderTown_EventScript_LittleGirl: 'Tu crois aux fantômes ? Moi, j\'en ai vu un dans la Tour Pokémon !',
+    LavenderTown_EventScript_WorkerM: 'La Team Rocket est montée dans la Tour Pokémon ! M. Fuji a disparu…',
+    LavenderTown_EventScript_Boy: 'Les gens de Lavanville viennent prier pour leurs Pokémon dans la Tour.',
+    LavenderTown_PokemonCenter_1F_EventScript_Gentleman: 'Le soir, on entend des rires dans la Tour Pokémon… Ce sont des Spectrum, paraît-il.',
+    LavenderTown_PokemonCenter_1F_EventScript_Lass: 'Un Spectrum adore faire des farces. Il a fait rire une petite fille toute la nuit !',
+    LavenderTown_PokemonCenter_1F_EventScript_Youngster: 'Les Pokémon Spectre ne craignent pas les attaques Normal !',
+    LavenderTown_PokemonCenter_1F_EventScript_BaldingMan: 'M. Fuji est un homme bon. Il s\'occupe des Pokémon abandonnés.',
+    LavenderTown_Mart_EventScript_BaldingMan: 'Les Total Soin, c\'est utile contre les Pokémon qui endorment.',
+    LavenderTown_Mart_EventScript_Rocker: 'Les fantômes, ça n\'existe pas… Hein ? C\'était quoi ce bruit ?!',
+    LavenderTown_Mart_EventScript_Youngster: 'Je vends des souvenirs de la Tour Pokémon. Brr…',
+    LavenderTown_House1_EventScript_CooltrainerF: 'Cet Osselait a perdu sa maman à cause de la Team Rocket… Il pleure souvent sous son crâne.',
+    LavenderTown_House1_EventScript_Cubone: 'Osselait : Osse… (Il serre son os très fort.)',
+    LavenderTown_House2_EventScript_NameRater: 'Je suis le Sage des noms. Ton Pokémon a un très joli nom !',
+    LavenderTown_VolunteerPokemonHouse_EventScript_Nidorino: 'Nidorino : Nido ! (Il joue avec les enfants.)',
+    LavenderTown_VolunteerPokemonHouse_EventScript_Psyduck: 'Psykokwak : Psy ? (Encore un mal de tête.)',
+    LavenderTown_VolunteerPokemonHouse_EventScript_LittleBoy: 'M. Fuji nous a recueillis, moi et ces Pokémon.',
+    LavenderTown_VolunteerPokemonHouse_EventScript_Youngster: 'M. Fuji est parti à la Tour Pokémon… Il n\'est pas revenu !',
+    LavenderTown_VolunteerPokemonHouse_EventScript_LittleGirl: 'Les Pokémon abandonnés trouvent une famille ici.',
+    PokemonTower_1F_EventScript_WorkerF: 'Ici reposent les Pokémon disparus. Prie pour eux en silence.',
+    PokemonTower_1F_EventScript_Channeler: 'Je sens des esprits… Ils sont nombreux, plus haut dans la Tour.',
+    PokemonTower_1F_EventScript_Woman1: 'Mon Rattata… Tu me manques tellement.',
+    PokemonTower_1F_EventScript_Woman2: 'On dit que l\'esprit d\'un Ossatueur hante le 6e étage.',
+    PokemonTower_1F_EventScript_BaldingMan: 'Je viens chaque jour pour mon vieux Caninos. Il était si fidèle.',
+    PokemonTower_2F_EventScript_Channeler: 'Les fantômes de la Tour aiment jouer des tours… comme un certain Spectrum.',
+    PokemonTower_5F_EventScript_Channeler: 'Ce cercle est sacré. Tes Pokémon y retrouvent leurs forces.'
+  });
+  Object.assign(CLASSES, { channeler: 'Mystimaniac', poke_maniac: 'Pokémaniac', fisher: 'Pêcheur', chef: 'Cuisinier', worker_m: 'Ouvrier' });
+
+  Object.assign(NPCS, {
+    ssanne_2f: [{ id: 'regis3', look: 'blue', x: 30, y: 3, dir: 'down', event: 'regis3', when: f => !f.regis3 }],
+    ssanne_pont: [
+      { id: 'jessie2', look: 'rocket_f', x: 10, y: 6, dir: 'down', event: 'rocket2', when: f => !f.rocket2 },
+      { id: 'james2', look: 'rocket_m', x: 11, y: 6, dir: 'down', event: 'rocket2', when: f => !f.rocket2 },
+      { id: 'meowth2', mon: 52, x: 12, y: 6, dir: 'down', event: 'rocket2', when: f => !f.rocket2 }
+    ],
+    ssanne_capitaine: [{ id: 'captain', look: 'captain', x: 5, y: 4, dir: 'down', event: 'captain' }],
+    tour2: [{ id: 'regis4', look: 'blue', x: 16, y: 5, dir: 'down', event: 'regis4', when: f => !f.regis4 }],
+    tour6: [{ id: 'ghost', mon: 105, ghost: true, x: 12, y: 14, dir: 'up', event: 'ghost', when: f => !f.ossatueur }],
+    tour7: [{ id: 'fuji', look: 'mr_fuji', x: 11, y: 4, dir: 'down', event: 'fuji', when: f => !f.fuji }],
+    lavanville_fuji: [{ id: 'fuji2', look: 'mr_fuji', x: 3, y: 3, dir: 'down', event: 'fujiHome', when: f => !!f.fuji }]
+  });
+  Object.assign(ZONES, {
+    ssanne_2f: [{ x0: 29, y0: 5, x1: 32, y1: 7, ev: 'regis3', when: f => !f.regis3 }],
+    ssanne_pont: [{ x0: 3, y0: 5, x1: 15, y1: 11, ev: 'rocket2', when: f => !f.rocket2 }],
+    tour2: [{ x0: 13, y0: 3, x1: 19, y1: 8, ev: 'regis4', when: f => !f.regis4 }],
+    tour6: [{ x0: 10, y0: 11, x1: 13, y1: 15, ev: 'ghost', when: f => !f.ossatueur }]
+  });
+
+  CHAPTERS.splice(7, 1,
+    { title: 'L\'Océane', goal: 'Monte à bord de l\'Océane avec le billet de Léo et trouve le capitaine du bateau.',
+      intro: [['', 'Chapitre 7 · L\'Océane'], ['Ondine', 'Une fête sur un bateau de croisière ? Et c\'est gratuit avec le billet de Léo ? On y va !'],
+              ['', 'L\'Océane est amarrée au port de Carmin sur Mer, au sud de la ville.']] },
+    { title: 'La Grotte et Lavanville', goal: 'Coupe l\'arbre à l\'est d\'Azuria, prends la Route 9 et traverse la Grotte jusqu\'à Lavanville.',
+      intro: [['', 'Chapitre 8 · La Grotte et Lavanville'], ['Pierre', 'Me revoilà ! Pour aller à Lavanville, il faut passer par la Grotte, à l\'est d\'Azuria. Il y fait noir comme dans un four !'],
+              ['Ondine', 'Et l\'arbre qui bloque la Route 9 ? … Ah, mais tu as appris Coupe sur l\'Océane !']] },
+    { title: 'La Tour Pokémon', goal: 'Monte au sommet de la Tour Pokémon de Lavanville et sauve M. Fuji de la Team Rocket.',
+      intro: [['', 'Chapitre 9 · La Tour Pokémon'], ['Petite fille', 'Tu vas dans la Tour Pokémon ? Il y a des fantômes là-haut… et la Team Rocket a enlevé M. Fuji !'],
+              ['Ondine', 'D… des fantômes ? Je… je t\'attends ici, d\'accord ?']] },
+    { title: 'À suivre…', goal: 'La suite de l\'aventure (Céladopole, Érika…) arrive bientôt !',
+      intro: [['', 'Chapitre 10 · À suivre'], ['', 'Bravo ! La suite arrive bientôt : Céladopole, son grand magasin et la championne Érika.']] });
 
   return { MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
 })();
