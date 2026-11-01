@@ -26,12 +26,26 @@ MAPS = {  # clé du jeu de Nika : nom pret
     'jadielle_centre': 'ViridianCity_PokemonCenter_1F', 'jadielle_boutique': 'ViridianCity_Mart', 'jadielle_maison': 'ViridianCity_House',
     'jadielle_ecole': 'ViridianCity_School', 'argenta_centre': 'PewterCity_PokemonCenter_1F', 'argenta_boutique': 'PewterCity_Mart',
     'argenta_arene': 'PewterCity_Gym', 'argenta_maison1': 'PewterCity_House1', 'argenta_maison2': 'PewterCity_House2',
-    'argenta_musee': 'PewterCity_Museum_1F'
+    'argenta_musee': 'PewterCity_Museum_1F',
+    # Chapitre 4 : Route 3, le Mont Sélénite, Route 4.
+    'route3': 'Route3', 'mont1': 'MtMoon_1F', 'mont2': 'MtMoon_B1F', 'mont3': 'MtMoon_B2F', 'route4': 'Route4',
+    'route4_centre': 'Route4_PokemonCenter_1F',
+    # Chapitre 5 : Azuria, Routes 24 et 25 (le Pont Pépite, la maison de Léo).
+    'azuria': 'CeruleanCity', 'azuria_centre': 'CeruleanCity_PokemonCenter_1F', 'azuria_boutique': 'CeruleanCity_Mart',
+    'azuria_arene': 'CeruleanCity_Gym', 'azuria_velo': 'CeruleanCity_BikeShop', 'azuria_maison1': 'CeruleanCity_House1',
+    'azuria_maison2': 'CeruleanCity_House2', 'azuria_maison3': 'CeruleanCity_House3', 'azuria_maison4': 'CeruleanCity_House4',
+    'azuria_maison5': 'CeruleanCity_House5', 'route24': 'Route24', 'route25': 'Route25', 'route25_leo': 'Route25_SeaCottage',
+    # Chapitre 6 : Route 5, le Souterrain, Route 6, Carmin sur Mer.
+    'route5': 'Route5', 'route5_pension': 'Route5_PokemonDayCare', 'souterrain_n': 'UndergroundPath_NorthEntrance',
+    'souterrain': 'UndergroundPath_NorthSouthTunnel', 'souterrain_s': 'UndergroundPath_SouthEntrance', 'route6': 'Route6',
+    'carmin': 'VermilionCity', 'carmin_centre': 'VermilionCity_PokemonCenter_1F', 'carmin_boutique': 'VermilionCity_Mart',
+    'carmin_arene': 'VermilionCity_Gym', 'carmin_club': 'VermilionCity_PokemonFanClub', 'carmin_maison1': 'VermilionCity_House1',
+    'carmin_maison2': 'VermilionCity_House2', 'carmin_maison3': 'VermilionCity_House3'
 }
 PEOPLE = ['red_normal', 'prof_oak', 'blue', 'mom', 'nurse', 'brock', 'bug_catcher', 'black_belt', 'clerk',
           'old_man_1', 'boy', 'little_boy', 'youngster', 'camper', 'woman_1', 'fat_man', 'lass', 'gym_guy',
           'little_girl', 'woman_2', 'old_woman', 'scientist', 'gentleman', 'woman_3', 'worker_f', 'worker_m', 'man',
-          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'misc/item_ball']
+          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'rocket_f', 'misc/item_ball']
 
 NUM_PRI_TILES, NUM_PRI_MT, NUM_PRI_PALS = 640, 640, 7
 
@@ -143,6 +157,29 @@ def render(layout, pri, sec):
     return base, top, grid
 
 
+def wild_tables():
+    """Pokémon sauvages de Rouge Feu par carte : [[n° Pokédex, niv. min, niv. max], ...] (herbes / grottes)."""
+    dex = {}
+    req = urllib.request.urlopen('https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon_species.csv', timeout=60)
+    import csv
+    for r in csv.DictReader(io.StringIO(req.read().decode())):
+        dex[r['identifier']] = int(r['id'])
+    out = {}
+    for g in json.loads(fetch('src/data/wild_encounters.json'))['wild_encounter_groups']:
+        for e in g.get('encounters', []):
+            if not e.get('base_label', '').endswith('FireRed') or 'land_mons' not in e:
+                continue
+            seen = {}
+            for m in e['land_mons']['mons']:
+                d = dex.get(m['species'][8:].lower().replace('_', '-'))
+                if not d:
+                    continue
+                a = seen.setdefault(d, [d, m['min_level'], m['max_level']])
+                a[1], a[2] = min(a[1], m['min_level']), max(a[2], m['max_level'])
+            out[e['map']] = list(seen.values())
+    return out
+
+
 def uri(im):
     b = io.BytesIO()
     im.save(b, 'PNG', optimize=True)
@@ -157,6 +194,7 @@ def main():
     ids = {}
     for key, name in MAPS.items():
         ids[json.loads(fetch('data/maps/%s/map.json' % name))['id'][4:]] = key
+    wild = wild_tables()
     for key, name in MAPS.items():
         mj = json.loads(fetch('data/maps/%s/map.json' % name))
         lay = layouts[mj['layout']]
@@ -176,10 +214,12 @@ def main():
                  'trainer': o.get('trainer_type') not in (None, 'TRAINER_TYPE_NONE'), 'sight': o.get('trainer_sight_or_berry_tree_id'),
                  'script': o.get('script')} for o in mj.get('object_events', []) if o.get('type', 'object') == 'object']
         signs = [{'x': b['x'], 'y': b['y'], 'script': b.get('script')} for b in mj.get('bg_events', []) if b.get('type') == 'sign']
-        out['maps'][key] = {'name': name, 'inside': mj.get('map_type') == 'MAP_TYPE_INDOOR', 'w': lay['width'], 'h': lay['height'], 'base': uri(base), 'top': uri(top),
+        out['maps'][key] = {'name': name, 'inside': mj.get('map_type') == 'MAP_TYPE_INDOOR', 'cave': mj.get('map_type') == 'MAP_TYPE_UNDERGROUND',
+                            'wild': wild.get(mj['id'], []), 'w': lay['width'], 'h': lay['height'], 'base': uri(base), 'top': uri(top),
                             'grid': grid, 'conns': conns, 'warps': warps, 'objs': objs, 'signs': signs}
         print(key, lay['width'], 'x', lay['height'], len(out['maps'][key]['base']) // 1024, 'Ko')
-    for p in PEOPLE:
+    used = {o['gfx'] for m in out['maps'].values() for o in m['objs']}
+    for p in PEOPLE + sorted(g for g in used if g not in PEOPLE):
         try:
             im = Image.open(io.BytesIO(fetch('graphics/object_events/pics/%s.png' % (p if '/' in p else 'people/' + p))))
         except Exception as e:
