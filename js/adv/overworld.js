@@ -47,7 +47,7 @@ G.Overworld = (() => {
   let busy = false;          // dialogue, combat ou évènement en cours
   let cam = { x: 0, y: 0 };
   const pl = { x: 0, y: 0, dir: 'down', walkT: 0, moving: false, tile: '' };
-  let trail = [], followers = [], hiddenMon = null, fxs = [], bumpT = 0;
+  let trail = [], followers = [], hiddenMon = null, fxs = [], bumpT = 0, stuckT = 0, fly = null, calm = 0;
   let stick = null;          // joystick tactile { id, x0, y0, x, y }
   const keys = new Set();
 
@@ -136,17 +136,26 @@ G.Overworld = (() => {
     const ch = at(tx, ty), lg = LEDGE[ch];
     if (SOLID.has(ch)) return true;
     if (lg && !(lg[0] === Math.sign(dx) && lg[1] === Math.sign(dy) && (dx || dy))) return true;
+    // Un rebord qui retombe dans un mur, un arbre ou l'eau : on ne saute pas.
+    if (lg && !landOk(tx + lg[0], ty + lg[1])) return true;
     return npcs.some(n => Math.abs(n.px - wx) < 14 && wy > n.py - 14 && wy < n.py + 2);
   }
   function blocked(x, y, dx = 0, dy = 0) {
     return solidAt(x - 9, y - 1, dx, dy) || solidAt(x + 9, y - 1, dx, dy) || solidAt(x - 9, y - 9, dx, dy) || solidAt(x + 9, y - 9, dx, dy);
   }
-  /** Un rebord sous les pieds : petit saut par-dessus, jusqu'à la case d'après. */
+  const landOk = (x, y) => !inMap(x, y) ? !!connAt(x, y) : !SOLID.has(at(x, y)) && !LEDGE[at(x, y)] && !npcAt(x, y);
+  /** Touche un mur, un arbre, l'eau ou un personnage (pas les rebords) : coincé si c'est vrai là où on est. */
+  function hard(x, y) {
+    const c = (wx, wy) => { const tx = Math.floor(wx / TS), ty = Math.floor(wy / TS);
+      return inMap(tx, ty) && SOLID.has(at(tx, ty)); };
+    return c(x - 9, y - 1) || c(x + 9, y - 1) || c(x - 9, y - 9) || c(x + 9, y - 9);
+  }
+  /** Un rebord sous les pieds : petit saut par-dessus, jusqu'à la case d'après (au milieu de la case). */
   function ledgeJump() {
     const [x, y] = tileOf(), lg = LEDGE[at(x, y)];
     if (!lg) return false;
     const nx = x + lg[0], ny = y + lg[1];
-    pl.jump = { x0: pl.x, y0: pl.y, x1: lg[0] ? nx * TS + 16 : pl.x, y1: lg[1] ? ny * TS + 30 : pl.y, t: 0 };
+    pl.jump = { x0: pl.x, y0: pl.y, x1: nx * TS + 16, y1: ny * TS + 30, t: 0 };
     G.Audio.sfx('click');
     return true;
   }
@@ -195,6 +204,8 @@ G.Overworld = (() => {
     followers.forEach(f => { f.x = pl.x; f.y = pl.y; });
     G.Audio.music(def.music);
     $('world-place').textContent = def.name;
+    seen(key);
+    calm = 6;
     snapCam();
   }
 
@@ -274,10 +285,20 @@ G.Overworld = (() => {
       pl.dir = Math.abs(ax) > Math.abs(ay) ? (ax < 0 ? 'left' : 'right') : (ay < 0 ? 'up' : 'down');
       const v = SPEED * (running ? 1.7 : 1);
       pl.walkT += dt * (running ? 1.6 : 1);
-      const nx = pl.x + ax * v * dt, ny = pl.y + ay * v * dt;
+      const step = v * dt, nx = pl.x + ax * step, ny = pl.y + ay * step;
       let moved = false;
+      if (hard(pl.x, pl.y)) {
+        // Coincé dans un décor (ça ne devrait pas arriver) : on repart de la case libre la plus proche.
+        stuckT += dt;
+        if (stuckT > 0.25) { const [tx, ty] = freeNear(...tileOf()); pl.x = tx * TS + 16; pl.y = ty * TS + 30; stuckT = 0; }
+      } else stuckT = 0;
       if (ax && !blocked(nx, pl.y, ax, 0)) { pl.x = nx; moved = true; }
+      else if (ax && Math.abs(ax) >= Math.abs(ay)) moved = slide(0, Math.sign(ax), step) || moved;
       if (ay && !blocked(pl.x, ny, 0, ay)) { pl.y = ny; moved = true; }
+      else if (ay && Math.abs(ay) > Math.abs(ax)) moved = slide(1, Math.sign(ay), step) || moved;
+      // Une seule direction : on se recale doucement au milieu du couloir (pour passer entre deux arbres).
+      if (moved && Math.abs(ax) < 0.3) align(0, step * 0.6);
+      if (moved && Math.abs(ay) < 0.3) align(1, step * 0.6);
       if (!moved) bumpWall();
       afterMove();
     }
@@ -297,6 +318,7 @@ G.Overworld = (() => {
       } else f.anim.loop('Idle');
       f.anim.update(dt);
     }
+    if (fly) { fly.t += dt; fly.anim.update(dt); if (fly.t >= fly.dur && fly.res) { const r = fly.res; fly.res = null; r(); } }
     for (const n of npcs) { if (n.bubble) n.bubble = Math.max(0, n.bubble - dt); if (n.anim) n.anim.update(dt); }
     for (let i = fxs.length - 1; i >= 0; i--) { fxs[i].t += dt; if (fxs[i].t > 0.9) fxs.splice(i, 1); }
     // Caméra douce.
@@ -304,6 +326,30 @@ G.Overworld = (() => {
     snapCam();
     cam.x = c0.x + (cam.x - c0.x) * Math.min(1, dt * 8);
     cam.y = c0.y + (cam.y - c0.y) * Math.min(1, dt * 8);
+  }
+  /** Bloqué contre un coin : on glisse vers le couloir libre le plus proche (comme dans les jeux). axe 0 = on va en x. */
+  function slide(axisI, sg, step) {
+    const [tx, ty] = tileOf();
+    const cands = axisI === 0 ? [ty, ty - 1, ty + 1].map(r => r * TS + 30) : [tx, tx - 1, tx + 1].map(c => c * TS + 16);
+    const cur = axisI === 0 ? pl.y : pl.x;
+    for (const c of cands.sort((a, b) => Math.abs(a - cur) - Math.abs(b - cur))) {
+      const d = c - cur;
+      if (Math.abs(d) > 22) continue;
+      const ok = axisI === 0 ? !blocked(pl.x + sg * step, c, sg, 0) : !blocked(c, pl.y + sg * step, 0, sg);
+      if (!ok) continue;
+      if (Math.abs(d) < 0.5) return false;
+      const m = Math.sign(d) * Math.min(Math.abs(d), step);
+      if (axisI === 0) { if (blocked(pl.x, pl.y + m, 0, Math.sign(m))) return false; pl.y += m; }
+      else { if (blocked(pl.x + m, pl.y, Math.sign(m), 0)) return false; pl.x += m; }
+      return true;
+    }
+    return false;
+  }
+  /** Recale doucement au milieu de la case dans l'autre sens que la marche. */
+  function align(axisI, step) {
+    const [tx, ty] = tileOf();
+    if (axisI === 0) { const d = tx * TS + 16 - pl.x, m = Math.sign(d) * Math.min(Math.abs(d), step); if (m && !blocked(pl.x + m, pl.y, Math.sign(m), 0)) pl.x += m; }
+    else { const d = ty * TS + 30 - pl.y, m = Math.sign(d) * Math.min(Math.abs(d), step); if (m && !blocked(pl.x, pl.y + m, 0, Math.sign(m))) pl.y += m; }
   }
   function trailAt(dist) {
     let acc = 0;
@@ -333,10 +379,10 @@ G.Overworld = (() => {
       if (n.bubble) { x.fillStyle = '#fff'; x.fillRect(n.px - 7, n.py - 66, 14, 16); x.fillStyle = '#e03030'; x.fillRect(n.px - 2, n.py - 63, 4, 7); x.fillRect(n.px - 2, n.py - 54, 4, 3); }
     } });
     for (const f of followers) {
-      if (f.m === hiddenMon || f.m.hp <= 0) continue;
+      if (f.m === hiddenMon || f.m.hp <= 0 || fly) continue;
       list.push({ y: f.y, draw: x => { G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, 1); f.anim.draw(x, f.x, f.y); grass(x, f.x, f.y); } });
     }
-    list.push({ y: pl.y + 0.1, draw: x => {
+    if (!fly || fly.ground) list.push({ y: pl.y + 0.1, draw: x => {
       if (pl.hop) { x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(pl.x, pl.y - 2, 11, 4, 0, 0, 6.2832); x.fill(); }
       G.People.draw(x, 'hero', pl.x, pl.y - pl.hop, pl.dir, pl.walkT, pl.moving);
       if (!pl.hop) grass(x, pl.x, pl.y);
@@ -350,6 +396,7 @@ G.Overworld = (() => {
       c.drawImage(top, 0, 0, art.w * TS, art.h * TS);
       c.restore();
     }
+    if (fly) drawFly(c);
     // Pendant un combat : le décor s'assombrit autour, et les Pokémon passent devant tout (arbres, toits).
     const foc = G.AdvBattle.active && G.AdvBattle.focus;
     if (foc) {
@@ -383,6 +430,85 @@ G.Overworld = (() => {
       }
       c.globalAlpha = 1;
     }
+  }
+  /** Vol : le Pokémon arrive, on monte sur son dos, il s'envole (ou il se pose et repart). */
+  function drawFly(c) {
+    const f = fly, k = Math.min(1, f.t / f.dur), ease = u => u * u * (3 - 2 * u);
+    let bx = pl.x, bh = 18, alpha = 1, ride = true;
+    f.ground = false;
+    if (f.kind === 'up') {
+      if (k < 0.4) { const u = ease(k / 0.4); bx = pl.x - 200 * (1 - u); bh = 18 + 240 * (1 - u); ride = false; f.ground = true; }
+      else if (k < 0.55) { const u = (k - 0.4) / 0.15; bh = 18 + Math.sin(u * Math.PI) * 6; ride = u > 0.5; f.ground = !ride; }
+      else { const u = (k - 0.55) / 0.45; bh = 18 + u * u * 340; bx = pl.x + u * u * 40; }
+    } else {
+      if (k < 0.6) { const u = ease(k / 0.6); bh = 18 + 320 * (1 - u); }
+      else if (k < 0.7) { ride = false; f.ground = true; }
+      else { const u = (k - 0.7) / 0.3; bx = pl.x + 220 * u * u; bh = 18 + 260 * u * u; alpha = 1 - u * 0.6; ride = false; f.ground = true; }
+    }
+    // Le sens du vol pour le sprite.
+    const vx = bx - (f.px == null ? bx : f.px), vy = -(bh - (f.ph == null ? bh : f.ph));
+    if (Math.hypot(vx, vy) > 0.3) f.anim.dir = G.Sprites.dirFromAngle(Math.atan2(vy * 0.3 + 0.001, vx));
+    else if (ride) f.anim.dir = G.Sprites.dirFromAngle(Math.PI / 2);
+    f.px = bx; f.ph = bh;
+    const sh = Math.max(0.25, 1 - bh / 360);
+    c.globalAlpha = 0.8 * alpha;
+    G.Sprites.drawShadow(c, f.dex, bx, pl.y, 2.2 * sh);
+    c.globalAlpha = alpha;
+    f.anim.draw(c, bx, pl.y - bh);
+    if (ride) G.People.draw(c, 'hero', bx, pl.y - bh - 16, 'down', 0, false);
+    c.globalAlpha = 1;
+    // Le vent quand on prend de la hauteur.
+    if (bh > 60) {
+      c.strokeStyle = 'rgba(255,255,255,' + Math.min(0.7, (bh - 60) / 200) + ')';
+      c.lineWidth = 2;
+      for (let i = 0; i < 7; i++) {
+        const x = bx - 60 + ((i * 37 + f.t * 400) % 140) - 10, y = pl.y - bh - 40 + ((i * 53) % 90);
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 26); c.stroke();
+      }
+    }
+  }
+  function flyAnim(kind, dur) { return new Promise(res => { fly.kind = kind; fly.t = 0; fly.dur = dur; fly.px = fly.ph = null; fly.res = res; }); }
+  /** Les Centres Pokémon où Vol peut nous poser (une fois qu'on y est passé). */
+  const FLY = [
+    { town: 'bourg', name: 'Bourg Palette', door: 'bourg_maison', desc: 'La maison' },
+    { town: 'jadielle', name: 'Jadielle', door: 'jadielle_centre' },
+    { town: 'argenta', name: 'Argenta', door: 'argenta_centre' },
+    { town: 'route4', name: 'Route 4', door: 'route4_centre', desc: 'Centre Pokémon du Mont Sélénite' },
+    { town: 'azuria', name: 'Azuria', door: 'azuria_centre' },
+    { town: 'carmin', name: 'Carmin-sur-Mer', door: 'carmin_centre' },
+    { town: 'route10', name: 'Route 10', door: 'route10_centre', desc: 'Centre Pokémon de la Centrale' },
+    { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' }
+  ];
+  function seen(key) {
+    const f = FLY.find(f => f.town === key || f.door === key);
+    if (f) (S.fly = S.fly || {})[f.town] = 1;
+  }
+  const flier = () => S.team.find(m => m.hp > 0 && G.DEX_BY[m.dex].types.includes('flying'));
+  async function flyMenu() {
+    const m = flier();
+    if (!m) { await talk([['', 'Il te faut un Pokémon de type Vol en forme dans ton équipe pour voler.']]); return; }
+    if (art.inside || art.cave) { await talk([['', 'Impossible de voler ici ! Sors d\'abord à l\'air libre.']]); return; }
+    const list = FLY.filter(f => S.fly && S.fly[f.town] && G.KantoArt.maps[f.town] && K().MAPS[f.town]);
+    const i = await G.AdvUI.choose(M().name(m) + ' peut t\'emmener à…', list.map(f => ({ icon: f.town === 'bourg' ? 'home' : 'heart', title: f.name,
+      desc: f.town === mapKey ? 'Tu es ici' : f.desc || 'Centre Pokémon' })).concat([{ title: 'Annuler', desc: '' }]));
+    if (i >= list.length || list[i].town === mapKey) return;
+    await flyTo(m, list[i]);
+  }
+  async function flyTo(m, f) {
+    const to = G.KantoArt.maps[f.town], w = to.warps.find(w => w.dest === f.door) || to.warps[0];
+    fly = { dex: m.dex, anim: new G.Sprites.Animator(m.dex, 2.2, G.DB.ownsShiny(m.dex)), t: 0, dur: 1 };
+    fly.anim.loop('Walk', 1.6);
+    G.Sprites.preload([m.dex], 3000, false);
+    try {
+      G.Audio.sfx('select');
+      await talk([['', M().name(m) + ', Vol !']]);
+      await flyAnim('up', 2.2);
+      await fade(() => setMap(f.town, w.x, w.y + 1, 'down'));
+      G.Audio.sfx('confirm');
+      await flyAnim('down', 2.2);
+    } finally { fly = null; }
+    commit();
+    await talk([['', 'Bienvenue à ' + f.name + ' !']]);
   }
   /** Les hautes herbes cachent les pieds (on redessine le bas de la case par-dessus). */
   function grass(c, x, y) {
@@ -621,7 +747,10 @@ G.Overworld = (() => {
     const wild = def.wild || (art.wild.length ? art.wild : null);
     const grassy = at(tx, ty) === 'g';
     if (grassy) G.AdvFX.burst('grass', pl.x, pl.y - 8, 5, 0.35);
-    if (wild && canFight() && (grassy ? Math.random() < 1 / 10 : (art.cave || art.inside) && Math.random() < 1 / 16)) {
+    // Après un combat ou en arrivant sur une carte : quelques pas tranquilles. Dans les grottes, bien plus rare que dans les herbes.
+    if (calm > 0) calm--;
+    else if (wild && canFight() && (grassy ? Math.random() < 1 / 10 : (art.cave || art.inside) && Math.random() < 1 / 45)) {
+      calm = 8;
       const [dex, a, b] = G.U.pick(wild);
       run(() => battle({ wild: [dex, a + Math.floor(Math.random() * (b - a + 1))] }));
     }
@@ -1168,6 +1297,7 @@ G.Overworld = (() => {
         const i = await G.AdvUI.choose('Menu · ' + S.money + ' pièces · ' + S.potions + ' Potions', [
           { icon: 'pball', title: 'Équipe', desc: S.team.length + ' Pokémon' },
           { icon: 'up', title: 'Objectif', desc: K().CHAPTERS[S.ch].goal },
+          { icon: 'flying', title: 'Vol', desc: flier() ? M().name(flier()) + ' t\'emmène à un Centre Pokémon' : 'Il faut un Pokémon de type Vol' },
           { title: 'Quitter', desc: 'Sauvegarde et retour au menu' },
           { title: 'Fermer', desc: '' }
         ]);
@@ -1177,7 +1307,8 @@ G.Overworld = (() => {
             title: M().name(m) + (k === 0 ? ' (tête)' : ''), desc: 'N. ' + m.lv + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV' + (m.st ? ' · ' + G.AdvBattle.ST_NAME[m.st] : '') + ' · ' + m.moves.map(M().moveName).join(', ') })));
           if (j > 0) { const [m] = S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
-        else if (i === 2) { quit(); return; }
+        else if (i === 2) { await flyMenu(); return; }
+        else if (i === 3) { quit(); return; }
         else return;
       }
     });
@@ -1189,6 +1320,9 @@ G.Overworld = (() => {
     S = save();
     S.flags = S.flags || {};
     S.team.concat(S.box).forEach(M().migrate);
+    // Vol : les villes déjà traversées dans les parties d'avant.
+    S.fly = S.fly || {};
+    [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });
     G.UI.show('scr-world');
     open_ = true;
     resize();
