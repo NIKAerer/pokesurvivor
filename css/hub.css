@@ -300,3 +300,37 @@ body.touch .world-act { display: block; }
 .adv-otx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .adv-otx b { font-size: 16px; }
 .adv-otx small { font-size: 12px; opacity: .75; }
+
+/* Combats de l'Aventure : types, Poké Balls du dresseur, efficacité, entrée en combat */
+.advb-types { display: flex; gap: 4px; margin-top: 3px; }
+.advb-type { font-style: normal; font-size: 10px; font-weight: 800; color: #fff; padding: 1px 6px; border-radius: 5px; text-shadow: 0 1px 0 rgba(0,0,0,.35); }
+.advb-balls { display: flex; gap: 4px; margin-bottom: 3px; }
+.advb-balls i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #3a2a1c; background: linear-gradient(#e84040 0 45%, #3a2a1c 45% 55%, #fff 55%); }
+.advb-balls i.ko { background: #9a9a9a; opacity: .55; }
+.advb-eff { white-space: nowrap; font-style: normal; font-size: 10px; font-weight: 800; color: #fff; padding: 1px 5px; border-radius: 5px; margin-left: 6px; vertical-align: 2px; }
+.advb-eff.up { background: #2fa84f; } .advb-eff.down { background: #b07020; } .advb-eff.no { background: #707070; }
+#advb-intro { position: absolute; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+#advb-intro.on { pointer-events: auto; }
+#advb-intro.bars .ai-bar { position: absolute; left: 0; right: 0; height: 50%; background: #0c0c12; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+#advb-intro.bars .ai-bar.t { top: 0; transform: translateY(-100%); }
+#advb-intro.bars .ai-bar.b { bottom: 0; transform: translateY(100%); }
+#advb-intro.bars.on .ai-bar { transform: translateY(-62%); }
+#advb-intro.bars.on .ai-bar.b { transform: translateY(62%); }
+#advb-intro .ai-vs { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.6); opacity: 0; transition: .3s .15s; color: #fff; font-size: clamp(20px, 5vw, 34px); font-weight: 900; white-space: nowrap; text-shadow: 0 3px 0 #000; }
+#advb-intro.on .ai-vs { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#advb-intro.leader { background: rgba(8, 8, 14, 0); transition: background .3s; }
+#advb-intro.leader.on { background: rgba(8, 8, 14, .78); }
+#advb-intro .ai-stripes { position: absolute; left: -10%; right: -10%; top: 50%; height: 0; transform: translateY(-50%) rotate(-6deg);
+  background: repeating-linear-gradient(90deg, var(--tc) 0 40px, color-mix(in srgb, var(--tc) 70%, #000) 40px 80px); transition: height .35s cubic-bezier(.2,.8,.2,1); box-shadow: 0 0 0 6px #fff; }
+#advb-intro.leader.on .ai-stripes { height: min(300px, 56vh); animation: aiSlide 1.2s linear infinite; }
+@keyframes aiSlide { to { background-position: 80px 0; } }
+#advb-intro .ai-card { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: min(5vw, 40px); padding: 0 16px;
+  transform: translateX(60%); opacity: 0; transition: transform .45s .2s cubic-bezier(.2,.9,.2,1), opacity .3s .2s; }
+#advb-intro.on .ai-card { transform: none; opacity: 1; }
+#advb-intro .ai-pic { flex: none; width: min(26vw, 128px); aspect-ratio: 1 / 2; background-size: auto 100%; background-position: 0 0; background-repeat: no-repeat; image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 rgba(0,0,0,.45)); }
+#advb-intro .ai-txt { color: #fff; max-width: 420px; text-shadow: 0 2px 0 rgba(0,0,0,.6); }
+#advb-intro .ai-txt small { display: block; font-size: clamp(12px, 3.2vw, 15px); font-weight: 700; opacity: .9; }
+#advb-intro .ai-txt b { display: block; font-size: clamp(30px, 9vw, 54px); font-weight: 900; line-height: 1.05; }
+#advb-intro .ai-txt p { margin: 8px 0 10px; font-size: clamp(13px, 3.6vw, 17px); }
+#advb-intro .ai-badge { display: inline-block; background: #fff; color: #222; text-shadow: none; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 8px; }
