@@ -61,8 +61,28 @@ G.AdvMon = (() => {
     m.pp = m.moves.map((id, i) => (m.pp && m.pp[i] != null ? Math.min(m.pp[i], move(id).pp || 10) : move(id).pp || 10));
   }
   function restore(m) { m.hp = maxHp(m); m.st = ''; m.sleep = 0; m.pp = m.moves.map(id => move(id).pp || 10); }
+  /** Une attaque qui fait des dégâts (puissance, ou dégâts fixes comme Draco-Rage). */
+  const hurts = id => { const mv = move(id); return !!mv && !!mv.cls && (mv.power > 0 || !!FIXED[mv.key]); };
+  /**
+   * Version de Nika : chaque Pokémon a toujours au moins une attaque qui fait des dégâts
+   * (Dardargnan N. 12 n'avait que des attaques de statut). On prend la meilleure attaque à dégâts
+   * apprise jusqu'à son niveau (sa forme d'avant comprise), sinon la première qu'il apprendra, sinon Charge.
+   */
+  function ensureDamage(m) {
+    if (m.moves.some(hurts)) return false;
+    const pre = Object.keys(G.EVOS || {}).filter(d => (G.EVOS[d] || []).some(([to]) => to === m.dex)).map(Number);
+    const pool = [m.dex].concat(pre, pre.flatMap(p => Object.keys(G.EVOS || {}).filter(d => (G.EVOS[d] || []).some(([to]) => to === p)).map(Number)));
+    let best = 0, bp = -1;
+    for (const d of pool) for (const [l, id] of learnset(d)) if (l <= m.lv && hurts(id) && power(id) > bp) { best = id; bp = power(id); }
+    if (!best) { const next = learnset(m.dex).find(([, id]) => hurts(id)); best = next ? next[1] : 33; }
+    if (m.moves.length < 4) m.moves.push(best);
+    else m.moves[m.moves.length - 1] = best;
+    m.pp = null; fixPp(m);
+    return true;
+  }
   function make(dex, lv) {
     const m = { dex, lv, xp: xpAt(lv), hp: 0, moves: movesAt(dex, lv), st: '' };
+    ensureDamage(m);
     restore(m);
     return m;
   }
@@ -70,6 +90,7 @@ G.AdvMon = (() => {
   function migrate(m) {
     if (!m.moves || !m.moves.length || m.moves.some(id => !move(id))) { m.moves = movesAt(m.dex, m.lv); m.pp = null; }
     if (!m.pp || m.pp.length !== m.moves.length) fixPp(m);
+    ensureDamage(m);
     if (m.st == null) m.st = '';
     m.hp = Math.min(m.hp, maxHp(m));
   }
@@ -90,7 +111,7 @@ G.AdvMon = (() => {
     return k;
   }
 
-  return { base, maxHp, stat, xpAt, power, move, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
+  return { base, maxHp, stat, xpAt, power, move, ensureDamage, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
 })();
 
 G.AdvBattle = (() => {
@@ -793,6 +814,7 @@ G.AdvBattle = (() => {
       await G.AdvUI.talkP([['', 'Félicitations ! ' + before + ' a évolué en ' + G.DEX_BY[to].name + ' !']]);
       // Comme dans les jeux : l'attaque que la nouvelle forme apprend à ce niveau.
       for (const id of M.newMovesAt(to, m.lv)) if (!m.moves.includes(id)) await learn(m, id, false);
+      M.ensureDamage(m);
     }
   }
 
