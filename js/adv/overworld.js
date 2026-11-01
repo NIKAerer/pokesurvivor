@@ -324,6 +324,7 @@ G.Overworld = (() => {
     if (bg.complete) c.drawImage(bg, 0, 0, art.w * TS, art.h * TS);
     const door = mapKey === 'carmin_arene' && S.flags.surgeDoor;   // barrière électrique éteinte : on la recouvre de sol
     if (door && bg.complete) c.drawImage(bg, 4 * 16, 8 * 16, 48, 32, 4 * TS, 6 * TS, 3 * TS, 2 * TS);
+    G.AdvBattle.drawFloor(c);
     const list = [];
     for (const n of npcs) if (!n.inv) list.push({ y: n.py, draw: x => {
       if (n.anim && n.ghost) { x.globalAlpha = 0.45 + Math.sin(time * 3) * 0.15; n.anim.draw(x, n.px, n.py - 6 - Math.sin(time * 2) * 4); x.globalAlpha = 1; }
@@ -340,7 +341,6 @@ G.Overworld = (() => {
       G.People.draw(x, 'hero', pl.x, pl.y - pl.hop, pl.dir, pl.walkT, pl.moving);
       if (!pl.hop) grass(x, pl.x, pl.y);
     } });
-    for (const d of G.AdvBattle.drawables()) list.push(d);
     list.sort((a, b) => a.y - b.y);
     for (const d of list) d.draw(c);
     // Toits et cimes des arbres : devant les personnages.
@@ -349,6 +349,16 @@ G.Overworld = (() => {
       if (door) { c.beginPath(); c.rect(0, 0, art.w * TS, art.h * TS); c.rect(4 * TS, 6 * TS, 3 * TS, 2 * TS); c.clip('evenodd'); }
       c.drawImage(top, 0, 0, art.w * TS, art.h * TS);
       c.restore();
+    }
+    // Pendant un combat : le décor s'assombrit autour, et les Pokémon passent devant tout (arbres, toits).
+    const foc = G.AdvBattle.active && G.AdvBattle.focus;
+    if (foc) {
+      c.save();
+      const r = TS * 5.5, gr = c.createRadialGradient(foc.x, foc.y, r * 0.45, foc.x, foc.y, r * 1.6);
+      gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,.6)');
+      c.fillStyle = gr; c.fillRect(cam.x - vw / zoom, cam.y - vh / zoom, vw / zoom * 2, vh / zoom * 2);
+      c.restore();
+      for (const d of G.AdvBattle.drawables().sort((a, b) => a.y - b.y)) d.draw(c);
     }
     if (def.dark && !G.AdvBattle.active) {
       // La Grotte sans Flash : on ne voit qu'autour de soi.
@@ -524,6 +534,9 @@ G.Overworld = (() => {
     const mx = (pl.x + ox) / 2, my = (pl.y + oy) / 2, gap = 44, side = ul < 140 ? 64 : 28;
     const sx = -uy * side, sy = Math.abs(ux) * side;
     const place = { me: { x: mx - ux * gap + sx, y: my - uy * gap + sy }, foe: { x: mx + ux * gap + sx, y: my + uy * gap + sy } };
+    // Jamais dans un arbre, un mur, l'eau ou sous un toit : chaque Pokémon se pose sur une case libre et dégagée.
+    place.me = spot(place.me, null, n);
+    place.foe = spot(place.foe, place.me, n);
     $('world-hud').classList.add('dim');
     // Les Pokémon croisés pendant le chapitre (proposés à la capture en fin de chapitre).
     const met = opts.wild ? [opts.wild[0]] : opts.trainer.team.map(t => t[0]);
@@ -536,6 +549,46 @@ G.Overworld = (() => {
     await G.AdvBattle.evolutions();
     refreshFollowers();
     return res;
+  }
+
+  /** Les cases cachées par la couche du dessus (cimes des arbres, toits) : calculé une fois par carte. */
+  function covered(tx, ty) {
+    if (!art._cover) {
+      if (!top.complete || !top.naturalWidth) return false;
+      art._cover = new Uint8Array(art.w * art.h);
+      try {
+        const c = document.createElement('canvas');
+        c.width = art.w * 16; c.height = art.h * 16;
+        const x = c.getContext('2d');
+        x.drawImage(top, 0, 0);
+        const d = x.getImageData(0, 0, c.width, c.height).data;
+        for (let y = 0; y < art.h; y++) for (let xx = 0; xx < art.w; xx++) {
+          let n = 0;
+          for (let py = 0; py < 16; py += 2) for (let px = 0; px < 16; px += 2) if (d[((y * 16 + py) * c.width + xx * 16 + px) * 4 + 3] > 40) n++;
+          art._cover[y * art.w + xx] = n > 12 ? 1 : 0;
+        }
+      } catch (e) { /* rien */ }
+    }
+    return !!art._cover[ty * art.w + tx];
+  }
+  /** La meilleure case libre près de (x, y) pour un Pokémon en combat (pixels du monde, pieds). */
+  function spot(p, avoid, n) {
+    const [px, py] = tileOf(p.x, p.y), [mx, my] = tileOf();
+    const av = avoid ? tileOf(avoid.x, avoid.y) : null, nt = n ? tileOf(n.px, n.py) : null;
+    let best = null, bs = 1e9;
+    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+      const x = px + dx, y = py + dy;
+      if (!inMap(x, y)) continue;
+      const ch = at(x, y);
+      if (SOLID.has(ch) || LEDGE[ch] || npcAt(x, y) || Math.max(Math.abs(x - mx), Math.abs(y - my)) <= 1) continue;
+      if (nt && x === nt[0] && y === nt[1]) continue;
+      if (av && Math.abs(x - av[0]) + Math.abs(y - av[1]) < 2) continue;
+      // Pas collé à un mur juste au-dessus (la tête dans le décor).
+      const wallUp = SOLID.has(at(x, y - 1)) ? 0.6 : 0;
+      const sc = Math.hypot(dx, dy) + (ch === 'g' ? 1.2 : 0) + (covered(x, y) ? 6 : 0) + wallUp;
+      if (sc < bs) { bs = sc; best = [x, y]; }
+    }
+    return best ? { x: best[0] * TS + 16, y: best[1] * TS + 30 } : p;
   }
 
   async function blackout() {
@@ -684,7 +737,8 @@ G.Overworld = (() => {
   async function pierre(n) {
     if (S.flags.pierre) { await talk([['Pierre', 'Tu as mon Badge Roche. Continue ta route, tu iras loin !']]); return; }
     await talk([['Pierre', 'Je suis Pierre, le champion d\'Argenta. Ma défense est solide comme le roc !'], ['Pierre', 'Montre-moi ta détermination !']]);
-    const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]], smart: true } }, n);
+    const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]], smart: true,
+      leader: { look: 'brock', type: 'rock', badge: 'Roche', title: 'Champion de l\'arène d\'Argenta', quote: 'Ma défense est solide comme le roc !' } } }, n);
     if (res === 'win') {
       S.flags.pierre = 1; S.money += 500;
       G.Audio.sfx('legend');
@@ -766,7 +820,8 @@ G.Overworld = (() => {
     await talk([['Ondine', 'Je suis Ondine, la championne d\'Azuria ! Ma stratégie : l\'attaque totale avec les Pokémon Eau !'],
                 ['', 'Une Poké Ball s\'ouvre toute seule… Psykokwak en sort, l\'air perdu.'], ['Psykokwak', 'Psy… ?'],
                 ['Ondine', 'Psykokwak ! Retourne dans ta Ball, ce n\'est pas ton tour ! … Stari, en avant !']]);
-    const res = await battle({ trainer: { name: 'Ondine', team: [[120, 18], [121, 21]], smart: true } }, n);
+    const res = await battle({ trainer: { name: 'Ondine', team: [[120, 18], [121, 21]], smart: true,
+      leader: { look: 'misty', type: 'water', badge: 'Cascade', title: 'Championne de l\'arène d\'Azuria', quote: 'Ma stratégie : l\'attaque totale avec les Pokémon Eau !' } } }, n);
     if (res !== 'win') return;
     S.flags.ondine = 1; S.money += 800;
     G.Audio.sfx('legend');
@@ -826,7 +881,8 @@ G.Overworld = (() => {
     await talk([['Major Bob', 'Hé, petit ! Bienvenue dans mon arène ! Mes Pokémon Électrik m\'ont sauvé la vie pendant la guerre !'],
                 ['Major Bob', pika ? 'Un Pikachu ? Ha ha ha ! Tu devrais le faire évoluer, petit, sinon il n\'a aucune chance contre mon Raichu !'
                                    : 'Voyons si ton équipe supporte la décharge ! Raichu est mon meilleur soldat !']]);
-    const res = await battle({ trainer: { name: 'Major Bob', team: [[100, 21], [25, 18], [26, 24]], smart: true } }, n);
+    const res = await battle({ trainer: { name: 'Major Bob', team: [[100, 21], [25, 18], [26, 24]], smart: true,
+      leader: { look: 'lt_surge', type: 'electric', badge: 'Foudre', title: 'Champion de l\'arène de Carmin', quote: 'Mes Pokémon Électrik m\'ont sauvé la vie à la guerre !' } } }, n);
     if (res !== 'win') return;
     S.flags.surge = 1; S.money += 1000;
     G.Audio.sfx('legend');
@@ -959,7 +1015,17 @@ G.Overworld = (() => {
     else if (!free(y)) { y += free(y + 1) ? 1 : -1; }
     await fade(() => setMap(w.dest, x, y, dir));
     commit();
+    const gym = GYMS[w.dest];
+    if (gym) {
+      // Entrée dans une arène : la bannière du champion.
+      const el = $('world-banner');
+      el.innerHTML = `<small>${def.name}</small><b>${gym}</b>`;
+      el.classList.add('on');
+      G.Audio.sfx('select');
+      setTimeout(() => el.classList.remove('on'), 1800);
+    }
   }
+  const GYMS = { argenta_arene: 'Champion : Pierre', azuria_arene: 'Championne : Ondine', carmin_arene: 'Champion : Major Bob' };
 
   async function door(w) {
     const ev = w.ev;

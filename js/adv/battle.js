@@ -110,6 +110,7 @@ G.AdvBattle = (() => {
   }
   const wait = s => tween(s, () => {});
   function update(dt) {
+    if (B) B.t = (B.t || 0) + dt;
     for (let i = tweens.length - 1; i >= 0; i--) {
       const w = tweens[i];
       w.t += dt;
@@ -139,7 +140,9 @@ G.AdvBattle = (() => {
     const col = k > 0.5 ? '#3ad06a' : k > 0.2 ? '#f0c030' : '#e84040';
     const xpK = foe ? 0 : (m.xp - M.xpAt(m.lv)) / Math.max(1, M.xpAt(m.lv + 1) - M.xpAt(m.lv));
     const st = m.st ? `<em class="advb-st" style="background:${ST_COLOR[m.st]}">${ST_NAME[m.st]}</em>` : '';
-    el.innerHTML = `<div class="advb-nm"><b>${p.name}</b>${st}<span>N. ${m.lv}</span></div>
+    const tps = p.types.map(t => `<i class="advb-type" style="background:${G.U.TYPE_COLOR[t]}">${G.U.TYPE_NAME[t] || t}</i>`).join('');
+    const balls = foe && B.trainer ? `<div class="advb-balls">${B.foes.map(f => `<i class="${f.hp > 0 ? '' : 'ko'}"></i>`).join('')}</div>` : '';
+    el.innerHTML = `${balls}<div class="advb-nm"><b>${p.name}</b>${st}<span>N. ${m.lv}</span></div><div class="advb-types">${tps}</div>
       <div class="advb-hp"><small>PV</small><i><b style="width:${k * 100}%;background:${col}"></b></i></div>
       ${foe ? '' : `<div class="advb-hpn">${Math.max(0, Math.ceil(m.hp))} / ${mx}</div><div class="advb-xp"><b style="width:${clamp01(xpK) * 100}%"></b></div>`}`;
   }
@@ -182,7 +185,9 @@ G.AdvBattle = (() => {
       ]);
       const attacks = () => menu(B.me.moves.map((id, i) => {
         const mv = M.move(id), pw = M.power(id);
-        return { html: `<b>${mv.name}</b><small>${G.U.TYPE_NAME[mv.type] || mv.type} · ${pw ? 'Puiss. ' + pw : mv.cls ? 'Fixe' : 'Statut'} · PP ${B.me.pp[i]}/${mv.pp}</small>`,
+        const mul = mv.cls ? M.typeMul(mv.type, types(B.foe)) : 1;
+        const eff = !mv.cls ? '' : mul === 0 ? '<em class="advb-eff no">Aucun effet</em>' : mul > 1 ? '<em class="advb-eff up">Super efficace</em>' : mul < 1 ? '<em class="advb-eff down">Peu efficace</em>' : '';
+        return { html: `<b>${mv.name}${eff}</b><small>${G.U.TYPE_NAME[mv.type] || mv.type} · ${pw ? 'Puiss. ' + pw : mv.cls ? 'Fixe' : 'Statut'} · PP ${B.me.pp[i]}/${mv.pp}</small>`,
           color: G.U.TYPE_COLOR[mv.type], disabled: B.me.pp[i] <= 0, fn: () => res({ type: 'move', id, i }) };
       }).concat([{ html: 'Retour', cls: 'back', fn: main }]));
       const bag = () => {
@@ -236,11 +241,74 @@ G.AdvBattle = (() => {
       if (a.alpha <= 0) return;
       ctx.save();
       ctx.globalAlpha = a.alpha;
-      if (a.scale !== 1) { ctx.translate(a.x, a.y); ctx.scale(a.scale, a.scale); ctx.translate(-a.x, -a.y); }
+      const sc = a.scale * 1.3;   // un peu plus grands que sur la carte : on les voit bien pendant le combat
+      ctx.translate(a.x, a.y); ctx.scale(sc, sc); ctx.translate(-a.x, -a.y);
       G.Sprites.drawShadow(ctx, a.dex, a.x + a.ox, a.y + a.oy, 1);
       a.anim.draw(ctx, a.x + a.ox, a.y + a.oy, { flash: a.flash > 0 });
       ctx.restore();
     } }));
+  }
+
+  /** Le terrain de combat dessiné au sol (un vrai terrain de stade pour les champions d'arène). */
+  function drawFloor(ctx) {
+    if (!B || !B.slotMe) return;
+    const a = B.slotMe, b = B.slotFoe, cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2 - 4;
+    const ang = Math.atan2(b.y - a.y, b.x - a.x), len = Math.hypot(b.x - a.x, b.y - a.y);
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(ang);
+    const L = B.leader;
+    if (L) {
+      // Terrain du champion : rectangle aux couleurs de son type, ligne et rond central.
+      const col = G.U.TYPE_COLOR[L.type] || '#c03030', W = len / 2 + 56, H = 62, t = B.t || 0;
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(-W - 6, -H - 6, W * 2 + 12, H * 2 + 12);
+      ctx.fillStyle = col; ctx.globalAlpha = 0.32; ctx.fillRect(-W, -H, W * 2, H * 2);
+      ctx.globalAlpha = 0.95; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+      ctx.strokeRect(-W, -H, W * 2, H * 2);
+      ctx.beginPath(); ctx.moveTo(0, -H); ctx.lineTo(0, H); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, 22, 0, 6.2832); ctx.stroke();
+      ctx.globalAlpha = 0.5 + Math.sin(t * 4) * 0.2; ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, 6.2832); ctx.fill();
+      // Les deux zones des Pokémon.
+      ctx.globalAlpha = 0.9; ctx.strokeStyle = '#fff';
+      for (const sx of [-len / 2, len / 2]) { ctx.beginPath(); ctx.ellipse(sx, 4, 30, 14, 0, 0, 6.2832); ctx.stroke(); }
+    } else {
+      // Combat normal : deux petits cercles lumineux sous les Pokémon.
+      ctx.globalAlpha = 0.5;
+      for (const [sx, c] of [[-len / 2, '#78b0ff'], [len / 2, '#ff7a6a']]) {
+        ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(sx, 4, 28, 11, 0, 0, 6.2832); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  /** L'entrée en combat : bandes noires comme dans les jeux, et une vraie présentation pour les champions d'arène. */
+  function intro(opts) {
+    const host = $('advb').parentNode;
+    let el = $('advb-intro');
+    if (!el) { el = document.createElement('div'); el.id = 'advb-intro'; host.appendChild(el); }
+    const L = opts.trainer && opts.trainer.leader, tr = opts.trainer;
+    if (L) {
+      const col = G.U.TYPE_COLOR[L.type] || '#c03030', src = G.KantoArt.people[L.look] || '';
+      el.className = 'leader';
+      el.style.setProperty('--tc', col);
+      el.innerHTML = `<div class="ai-stripes"></div><div class="ai-card">
+        <div class="ai-pic" style="background-image:url(${src})"></div>
+        <div class="ai-txt"><small>${L.title}</small><b>${tr.name}</b><p>« ${L.quote} »</p>
+        <span class="ai-badge">Badge ${L.badge} · type ${G.U.TYPE_NAME[L.type] || L.type}</span></div></div>`;
+    } else {
+      el.className = 'bars';
+      el.innerHTML = `<div class="ai-bar t"></div><div class="ai-bar b"></div>${tr ? `<div class="ai-vs">${tr.name} veut se battre !</div>` : ''}`;
+    }
+    void el.offsetWidth;
+    el.classList.add('on');
+    G.Audio.sfx(L ? 'legend' : 'select');
+    const dur = L ? 3200 : tr ? 1300 : 800;
+    return new Promise(res => {
+      let done = false;
+      const fin = () => { if (done) return; done = true; el.classList.remove('on'); el.onclick = null; setTimeout(() => { el.className = ''; el.innerHTML = ''; res(); }, 250); };
+      el.onclick = e => { e.stopPropagation(); fin(); };
+      setTimeout(fin, dur);
+    });
   }
 
   // ---------------- règles des jeux ----------------
@@ -636,7 +704,7 @@ G.AdvBattle = (() => {
   async function start(opts, place) {
     const s = G.Overworld.save();
     active = true;
-    B = { wild: !!opts.wild, trainer: opts.trainer || null, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
+    B = { wild: !!opts.wild, trainer: opts.trainer || null, leader: opts.trainer && opts.trainer.leader, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
     B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1])] : opts.trainer.team.map(([d, l]) => M.make(d, l));
     B.foePotions = opts.trainer ? (opts.trainer.potions != null ? opts.trainer.potions : opts.trainer.smart ? 1 : 0) : 0;
     s.team.forEach(M.migrate);
@@ -645,6 +713,7 @@ G.AdvBattle = (() => {
     $('advb-foe').innerHTML = ''; $('advb-me').innerHTML = '';
     $('advb').onclick = () => { if (tapRes) tapRes(); };
     G.Audio.music('boss');
+    await intro(opts);
     await foeOut(0);
     await say(B.wild ? 'Un ' + M.name(B.foe) + ' sauvage apparaît !' : B.trainer.name + ' envoie ' + M.name(B.foe) + ' !', 1.4);
     const first = s.team.findIndex(m => m.hp > 0);
@@ -727,6 +796,6 @@ G.AdvBattle = (() => {
     }
   }
 
-  return { start, update, drawables, drawBall, evolutions, learn, levelUp, ST_NAME, get active() { return active; },
+  return { start, update, drawables, drawFloor, drawBall, evolutions, learn, levelUp, ST_NAME, get active() { return active; },
            get focus() { return B ? { x: (B.slotMe.x + B.slotFoe.x) / 2, y: (B.slotMe.y + B.slotFoe.y) / 2 } : null } };
 })();
