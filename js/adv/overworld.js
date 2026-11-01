@@ -1086,13 +1086,32 @@ G.Overworld = (() => {
     const owned = d => S.team.some(m => m.dex === d) || S.box.some(m => m.dex === d);
     const ok = d => G.DEX_BY[d] && !G.DEX_BY[d].leg && !owned(d);
     const shuffle = a => [...new Set(a)].filter(ok).sort(() => Math.random() - 0.5);
-    const met = shuffle((S.seen && S.seen[ch]) || []);
-    let picks = met.slice(0, 1);
-    for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(shuffle(HABITAT[c] || []).filter(d => !picks.includes(d))).slice(0, 3);
-    if (picks.length < 3) picks = picks.concat(met.filter(d => !picks.includes(d))).slice(0, 3);
-    if (!picks.length) picks = [16, 19, 21];
-    const i = await G.AdvUI.choose('Un Pokémon veut te rejoindre ! Lequel captures-tu ?',
-      picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + avg + ' · ' + M().movesAt(d, avg).map(M().moveName).join(', ') })));
+    const met0 = (S.seen && S.seen[ch]) || [];
+    const shown = new Set();
+    // 3 Pokémon : un croisé pendant le chapitre, les autres du coin (on évite de remontrer ceux déjà proposés).
+    const draw = () => {
+      const fresh = a => { const f = a.filter(d => !shown.has(d)); return f.length ? f : a; };
+      const met = fresh(shuffle(met0));
+      let picks = met.slice(0, 1);
+      for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(fresh(shuffle(HABITAT[c] || [])).filter(d => !picks.includes(d))).slice(0, 3);
+      for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(shuffle(HABITAT[c] || []).filter(d => !picks.includes(d))).slice(0, 3);
+      if (!picks.length) picks = [16, 19, 21];
+      picks.forEach(d => shown.add(d));
+      return picks;
+    };
+    // Version de Nika : une relance gratuite, puis des relances payées en pièces (de plus en plus chères).
+    let picks = draw(), rolls = 0, i;
+    for (;;) {
+      const cost = rolls === 0 ? 0 : 100 + 100 * rolls;
+      i = await G.AdvUI.choose('Un Pokémon veut te rejoindre ! Lequel captures-tu ?',
+        picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + avg + ' · ' + M().movesAt(d, avg).map(M().moveName).join(', ') }))
+          .concat([{ icon: 'up', title: 'Relancer', desc: cost ? cost + ' pièces · tu as ' + S.money + ' pièces' : 'Gratuit : 3 autres Pokémon du coin', off: cost > S.money }]));
+      if (i < picks.length) break;
+      if (cost > S.money) { await talk([['', 'Tu n\'as pas assez de pièces pour relancer.']]); continue; }
+      S.money -= cost; rolls++;
+      G.Audio.sfx('select');
+      picks = draw();
+    }
     const dex = picks[i];
     const m = M().make(dex, avg);
     if (S.team.length < 6) S.team.push(m); else S.box.push(m);
