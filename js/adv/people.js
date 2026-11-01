@@ -139,6 +139,13 @@ G.People = (() => {
   /** Dessine un personnage, pieds en (x, y) (pixels du monde). dir : 'up' | 'down' | 'left' | 'right'. */
   function draw(ctx, look, x, y, dir = 'down', walkT = 0, moving = false) {
     const sh = sheet(look);
+    if (sh && sh.naturalHeight >= 64) {
+      // Grand objet (l'Océane à quai) : dessiné entier, centré sur sa case, le bas sur la case.
+      ctx.save(); ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(sh, x - sh.naturalWidth, y + 2 - sh.naturalHeight * 2, sh.naturalWidth * 2, sh.naturalHeight * 2);
+      ctx.restore();
+      return;
+    }
     if (sh && sh.naturalHeight < 32) {
       // Objet de 16 × 16 (Poké Ball posée) : pas d'ombre, pas d'animation.
       ctx.save(); ctx.imageSmoothingEnabled = false;
