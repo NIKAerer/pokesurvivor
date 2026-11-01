@@ -1099,13 +1099,13 @@ G.Overworld = (() => {
       picks.forEach(d => shown.add(d));
       return picks;
     };
-    // Version de Nika : une relance gratuite, puis des relances payées en pièces (de plus en plus chères).
+    // Version de Nika : une seule relance par fin de chapitre, payée en pièces.
     let picks = draw(), rolls = 0, i;
     for (;;) {
-      const cost = rolls === 0 ? 0 : 100 + 100 * rolls;
+      const cost = 300;
       i = await G.AdvUI.choose('Un Pokémon veut te rejoindre ! Lequel captures-tu ?',
         picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + avg + ' · ' + M().movesAt(d, avg).map(M().moveName).join(', ') }))
-          .concat([{ icon: 'up', title: 'Relancer', desc: cost ? cost + ' pièces · tu as ' + S.money + ' pièces' : 'Gratuit : 3 autres Pokémon du coin', off: cost > S.money }]));
+          .concat(rolls ? [] : [{ icon: 'up', title: 'Relancer (une fois)', desc: cost + ' pièces · tu as ' + S.money + ' pièces', off: cost > S.money }]));
       if (i < picks.length) break;
       if (cost > S.money) { await talk([['', 'Tu n\'as pas assez de pièces pour relancer.']]); continue; }
       S.money -= cost; rolls++;
