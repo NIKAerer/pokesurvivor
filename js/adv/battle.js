@@ -444,6 +444,7 @@ G.AdvBattle = (() => {
     if (n < 0 && src && src !== side && (t === 'clear-body' || t === 'white-smoke' || (t === 'hyper-cutter' && k === 'atk') || (t === 'keen-eye' && k === 'acc'))) {
       await say(abName(t) + ' ' + dl(side) + ' empêche la baisse !', 1); return;
     }
+    if (n < 0 && src && src !== side && B.scr[side].mist) { await say('La Brume protège ' + label(side) + ' !', 1); return; }
     if (t === 'simple') n *= 2;
     if ((n > 0 && sg[k] >= 6) || (n < 0 && sg[k] <= -6)) { await say(STAT_NAME[k] + ' ' + dl(side) + ' ne peut plus ' + (n > 0 ? 'monter' : 'baisser') + ' !', 1); return; }
     sg[k] = Math.max(-6, Math.min(6, sg[k] + n));
@@ -560,6 +561,13 @@ G.AdvBattle = (() => {
       v.sub = cost;
       await tween(0.2, k => { ua.alpha = 1 - k * 0.4; });
       await say(label(side) + ' crée un clone !', 1);
+      return;
+    }
+    if (mv.key === 'mist') {
+      if (B.scr[side].mist) return fail();
+      B.scr[side].mist = 5;
+      FX().stat(ua.x, ua.y - 10, true);
+      await say((side === 'me' ? 'Ton équipe' : 'L\'équipe adverse') + ' est entourée de Brume !', 1.1);
       return;
     }
     if (SCREEN[mv.key]) {
@@ -805,6 +813,7 @@ G.AdvBattle = (() => {
       if (mv.key === 'protect' || mv.key === 'detect') v = B.vol[us].protN ? 0 : 12;
       if (mv.key === 'substitute') v = !B.vol[us].sub && user.hp > M.maxHp(user) * 0.6 ? 30 : 0;
       if (SCREEN[mv.key]) v = B.scr[us][SCREEN[mv.key][0]] ? 0 : 28;
+      if (mv.key === 'mist') v = B.scr[us].mist ? 0 : 15;
       if (mv.key === 'rest') v = user.hp < M.maxHp(user) * 0.4 && !user.st ? 65 : 0;
       if ((mv.key === 'sleep-talk') && user.st !== 'slp') v = 0;
       if (mv.stats.length) {
@@ -935,6 +944,8 @@ G.AdvBattle = (() => {
     B.vol.foe = {}; B.vol.me.bind = 0;
     B.aFoe = actor(B.foe, B.slotFoe.x, B.slotFoe.y, B.slotMe);
     B.aFoe.face.foe = true;
+    B.aFoe.anim.shiny = !!B.foe.shiny && G.Sprites.hasShiny(B.foe.dex);
+    if (B.aFoe.anim.shiny) G.Sprites.preload([B.foe.dex], 6000, true);
     B.aFoe.alpha = 0;
     await tween(0.3, k => { B.aFoe.alpha = k; });
     cards();
@@ -1000,6 +1011,7 @@ G.AdvBattle = (() => {
     active = true;
     B = { wild: !!opts.wild, trainer: opts.trainer || null, leader: opts.trainer && opts.trainer.leader, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, scr: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
     B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1])] : opts.trainer.team.map(([d, l]) => M.make(d, l));
+    if (opts.shiny) B.foes[0].shiny = true;
     B.foePotions = opts.trainer ? (opts.trainer.potions != null ? opts.trainer.potions : opts.trainer.smart ? 1 : 0) : 0;
     s.team.forEach(M.migrate);
     G.Sprites.preload(B.foes.map(f => f.dex), 6000, false);
@@ -1010,6 +1022,11 @@ G.AdvBattle = (() => {
     await intro(opts);
     await foeOut(0);
     await say(B.wild ? 'Un ' + M.name(B.foe) + ' sauvage apparaît !' : B.trainer.name + ' envoie ' + M.name(B.foe) + ' !', 1.4);
+    if (B.foe.shiny) {
+      G.Audio.sfx('legend');
+      for (let i = 0; i < 4; i++) { FX().stat(B.aFoe.x + (i - 1.5) * 12, B.aFoe.y - 20 - (i % 2) * 14, true); await wait(0.12); }
+      await say('Incroyable ! Il est chromatique ! Bats-le pour pouvoir le capturer.', 1.6);
+    }
     const first = s.team.findIndex(m => m.hp > 0);
     await sendOut(first);
     await say('Vas-y, ' + M.name(B.me) + ' !', 1);
@@ -1040,10 +1057,10 @@ G.AdvBattle = (() => {
       }
       if (!result) for (const side of B.order) await endTurn(side);
       // Protection et Mur Lumière durent 5 tours.
-      if (!result) for (const side of ['me', 'foe']) for (const k of ['reflect', 'light']) {
+      if (!result) for (const side of ['me', 'foe']) for (const k of ['reflect', 'light', 'mist']) {
         if (B.scr[side][k] && --B.scr[side][k] <= 0) {
           B.scr[side][k] = 0;
-          await say((k === 'reflect' ? 'La Protection' : 'Le Mur Lumière') + (side === 'me' ? ' de ton équipe' : ' adverse') + ' disparaît.', 1);
+          await say(({ reflect: 'La Protection', light: 'Le Mur Lumière', mist: 'La Brume' })[k] + (side === 'me' ? ' de ton équipe' : ' adverse') + ' disparaît.', 1);
         }
       }
       // K.O.
