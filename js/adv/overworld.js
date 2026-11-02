@@ -728,6 +728,14 @@ G.Overworld = (() => {
     await talk([[h.map.startsWith('bourg') ? 'Maman' : 'Infirmière Joëlle', 'Tes Pokémon sont en pleine forme. Fais attention à toi !']]);
   }
 
+  /** Bouton Débloquer du menu : on se retrouve au dernier Centre Pokémon (ou à la maison), sans rien perdre. */
+  async function rescue() {
+    let h = S.heal || {};
+    if (!G.KantoArt.maps[h.map] || !K().MAPS[h.map]) h = { map: 'bourg_maison', x: 8, y: 5 };
+    await fade(() => setMap(h.map, h.x, h.y, 'up'));
+    commit();
+    await talk([['', 'Ouf ! Te voilà de retour au ' + (h.map.startsWith('bourg') ? 'chaud à la maison.' : 'Centre Pokémon.')]]);
+  }
   function afterMove() {
     // Sortie de la carte par un bord.
     if (pl.y - 4 < 0 || pl.y > art.h * TS || pl.x < 0 || pl.x > art.w * TS) {
@@ -1357,6 +1365,7 @@ G.Overworld = (() => {
           { icon: 'pball', title: 'Équipe', desc: S.team.length + ' Pokémon' },
           { icon: 'up', title: 'Objectif', desc: K().CHAPTERS[S.ch].goal },
           { icon: 'flying', title: 'Vol', desc: flier() ? M().name(flier()) + ' t\'emmène à un Centre Pokémon' : 'Il faut un Pokémon de type Vol' },
+          { icon: 'home', title: 'Débloquer', desc: 'Coincé ? Retour au dernier Centre Pokémon' },
           { title: 'Quitter', desc: 'Sauvegarde et retour au menu' },
           { title: 'Fermer', desc: '' }
         ]);
@@ -1367,7 +1376,11 @@ G.Overworld = (() => {
           if (j > 0) { const [m] = S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
         else if (i === 2) { await flyMenu(); return; }
-        else if (i === 3) { quit(); return; }
+        else if (i === 3) {
+          const y = await G.AdvUI.choose('Retourner au dernier Centre Pokémon visité ?', [{ icon: 'home', title: 'Oui, j\'y retourne', desc: '' }, { title: 'Non', desc: '' }]);
+          if (y === 0) { await rescue(); return; }
+        }
+        else if (i === 4) { quit(); return; }
         else return;
       }
     });
