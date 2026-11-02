@@ -203,8 +203,8 @@ G.AdvBattle = (() => {
       const main = () => menu([
         { html: 'Attaque', cls: 'big', color: '#e05040', fn: noPp ? () => res({ type: 'move', id: 0 }) : attacks },
         { html: 'Sac', cls: 'big', color: '#e0a020', fn: bag },
-        { html: 'Pokémon', cls: 'big', color: '#3ab060', fn: team },
-        { html: 'Fuite', cls: 'big', color: '#3a7ae0', disabled: !!B.trainer, fn: () => res({ type: 'run' }) }
+        { html: 'Pokémon', cls: 'big', color: '#3ab060', disabled: !!B.vol.me.bind, fn: team },
+        { html: 'Fuite', cls: 'big', color: '#3a7ae0', disabled: !!B.trainer || !!B.vol.me.bind, fn: () => res({ type: 'run' }) }
       ]);
       const attacks = () => menu(B.me.moves.map((id, i) => {
         const mv = M.move(id), pw = M.power(id);
@@ -217,6 +217,9 @@ G.AdvBattle = (() => {
         const s = G.Overworld.save();
         menu([
           { html: `<b>Potion</b><small>× ${s.potions} · +20 PV</small>`, color: '#a050d0', disabled: s.potions <= 0 || B.me.hp >= M.maxHp(B.me), fn: () => res({ type: 'potion' }) },
+          { html: `<b>Super Potion</b><small>× ${s.superpo || 0} · +50 PV</small>`, color: '#d05090', disabled: !(s.superpo > 0) || B.me.hp >= M.maxHp(B.me), fn: () => res({ type: 'superpo' }) },
+          { html: `<b>Antidote</b><small>× ${s.antidote || 0} · soigne le poison</small>`, color: '#8a50c0', disabled: !(s.antidote > 0) || !(B.me.st === 'psn' || B.me.st === 'tox'), fn: () => res({ type: 'antidote' }) },
+          { html: `<b>Réveil</b><small>× ${s.awake || 0} · réveille</small>`, color: '#4a90d0', disabled: !(s.awake > 0) || B.me.st !== 'slp', fn: () => res({ type: 'awake' }) },
           { html: `<b>Total Soin</b><small>× ${s.cures || 0} · soigne le statut</small>`, color: '#e0a020', disabled: !(s.cures > 0) || !B.me.st, fn: () => res({ type: 'cure' }) },
           { html: 'Retour', cls: 'back', fn: main }
         ]);
@@ -340,6 +343,22 @@ G.AdvBattle = (() => {
   const accK = s => (s >= 0 ? (3 + s) / 3 : 3 / (3 - s));
   const fresh = () => ({ atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0, eva: 0 });
   const STAT_NAME = { atk: 'L\'Attaque', def: 'La Défense', spa: 'L\'Attaque Spéciale', spd: 'La Défense Spéciale', spe: 'La Vitesse', acc: 'La Précision', eva: 'L\'Esquive' };
+  // Les attaques spéciales des jeux : recharge, attaques en 2 tours, piège (Ligotage…).
+  const RECHARGE = new Set(['hyper-beam', 'giga-impact', 'blast-burn', 'hydro-cannon', 'frenzy-plant', 'rock-wrecker', 'roar-of-time']);
+  const TWO = { 'solar-beam': ' absorbe la lumière !', 'sky-attack': ' est entouré d\'une lumière intense !', 'skull-bash': ' baisse la tête !',
+    'razor-wind': ' crée un tourbillon !', fly: ' s\'envole très haut !', dig: ' creuse un trou !', dive: ' plonge sous l\'eau !',
+    bounce: ' bondit très haut !', 'shadow-force': ' disparaît !' };
+  const SEMI = { fly: ['gust', 'twister', 'thunder', 'sky-uppercut'], bounce: ['gust', 'twister', 'thunder', 'sky-uppercut'],
+    dig: ['earthquake', 'magnitude', 'fissure'], dive: ['surf', 'whirlpool'], 'shadow-force': [] };
+  const BIND = new Set(['wrap', 'bind', 'fire-spin', 'clamp', 'whirlpool', 'sand-tomb', 'magma-storm']);
+  const SCREEN = { reflect: ['reflect', 'Protection', 'physiques'], 'light-screen': ['light', 'Mur Lumière', 'spéciales'] };
+  /** L'action imposée : se recharger après Ultralaser, ou finir une attaque en 2 tours. */
+  function forced(side) {
+    const v = B.vol[side];
+    if (v.recharge) return { type: 'recharge' };
+    if (v.charge) return { type: 'move', id: v.charge };
+    return null;
+  }
   const other = side => (side === 'me' ? 'foe' : 'me');
   const mon = side => (side === 'me' ? B.me : B.foe);
   const act = side => (side === 'me' ? B.aMe : B.aFoe);
@@ -431,12 +450,26 @@ G.AdvBattle = (() => {
   async function useMove(side, id, called) {
     const user = mon(side), tside = other(side), target = mon(tside);
     const ua = act(side), ta = act(tside);
+    const v = B.vol[side], tv = B.vol[tside];
+    const unhide = () => { if (v.semi) { v.semi = ''; ua.alpha = v.sub ? 0.6 : 1; } };
     if (!called) B.lastBoom = null;
-    if (!called && !(await canAct(side, id))) return;
+    if (!called && !(await canAct(side, id))) { v.charge = 0; unhide(); return; }
     const struggle = !id;
     const mv = struggle ? { name: 'Lutte', type: 'normal', cls: 1, power: 50, acc: 0, stats: [], drain: -25, hitMin: 0, flinch: 0, crit: 0, key: 'struggle' } : M.move(id);
-    if (!struggle && !called) { const i = user.moves.indexOf(id); if (i >= 0 && user.pp[i] > 0) user.pp[i]--; }
-    await say(label(side) + ' utilise ' + mv.name + ' !', 0.9);
+    const second = v.charge === id && !!id;   // 2e tour d'une attaque en 2 tours : pas de PP en plus
+    if (!struggle && !called && !second) { const i = user.moves.indexOf(id); if (i >= 0 && user.pp[i] > 0) user.pp[i]--; }
+    if (mv.key !== 'protect' && mv.key !== 'detect') v.protN = 0;
+    if (second) { v.charge = 0; unhide(); }
+    else await say(label(side) + ' utilise ' + mv.name + ' !', 0.9);
+    // 1er tour d'une attaque en 2 tours : on se prépare (et on se cache pour Vol, Tunnel, Plongée…).
+    if (TWO[mv.key] && !second) {
+      v.charge = id;
+      await say(label(side) + TWO[mv.key], 1);
+      if (SEMI[mv.key]) { v.semi = mv.key; await tween(0.2, k => { ua.alpha = 1 - k * 0.85; }); }
+      if (mv.key === 'skull-bash') await changeStat(side, 'def', 1);
+      return;
+    }
+    if (second) await say(label(side) + ' lance ' + mv.name + ' !', 0.9);
     B.lastBoom = mv.key === 'self-destruct' || mv.key === 'explosion' ? side : null;
     const fail = async () => { await say('Mais cela échoue !', 1); };
     // Les attaques spéciales des jeux.
@@ -461,6 +494,37 @@ G.AdvBattle = (() => {
       return fail();
     }
 
+    if (mv.key === 'protect' || mv.key === 'detect') {
+      // Abri et Détection : de moins en moins de chances de réussir si on les enchaîne.
+      if (B.order[1] === side || Math.random() >= 1 / Math.pow(2, v.protN || 0)) { v.protN = 0; return fail(); }
+      v.protN = (v.protN || 0) + 1; v.protect = 1;
+      FX().stat(ua.x, ua.y - 10, true); G.Audio.sfx('levelup');
+      await say(label(side) + ' se protège !', 1);
+      return;
+    }
+    if (mv.key === 'substitute') {
+      const cost = Math.floor(M.maxHp(user) / 4);
+      if (v.sub) { await say(label(side) + ' a déjà un clone !', 1); return; }
+      if (user.hp <= cost) { await say('Trop faible pour créer un clone !', 1); return; }
+      await hpTo(user, user.hp - cost);
+      v.sub = cost;
+      await tween(0.2, k => { ua.alpha = 1 - k * 0.4; });
+      await say(label(side) + ' crée un clone !', 1);
+      return;
+    }
+    if (SCREEN[mv.key]) {
+      const [k, nm, cl] = SCREEN[mv.key];
+      if (B.scr[side][k]) return fail();
+      B.scr[side][k] = 5;
+      FX().stat(ua.x, ua.y - 10, true); G.Audio.sfx('levelup');
+      await say(nm + ' augmente la résistance aux attaques ' + cl + ' !', 1.1);
+      return;
+    }
+    // La cible se protège, ou elle est cachée (Vol, Tunnel…).
+    if (!mv.self && tv.protect) { await say(label(tside) + ' se protège !', 1); return; }
+    if (!mv.self && tv.semi && !SEMI[tv.semi].includes(mv.key)) { await say(label(tside) + ' évite l\'attaque !', 1); return; }
+    // Le clone bloque les attaques de statut.
+    if (!mv.cls && !mv.self && tv.sub && (mv.ail || mv.stats.length || mv.key === 'leech-seed' || mv.key === 'yawn')) return fail();
     // Précision (les attaques sur soi touchent toujours).
     if (mv.acc && !mv.self) {
       const k = accK(Math.max(-6, Math.min(6, B.stages[side].acc - B.stages[tside].eva)));
@@ -519,7 +583,7 @@ G.AdvBattle = (() => {
     // Dégâts.
     const mul = M.typeMul(mv.type, types(target));
     const hits = mv.hitMin ? mv.hitMin + Math.floor(Math.random() * (mv.hitMax - mv.hitMin + 1)) : 1;
-    let total = 0, n = 0, crits = 0;
+    let total = 0, n = 0, crits = 0, hitSub = false;
     const phys = mv.cls === 1;
     for (; n < hits && target.hp > 0; n++) {
       await FX().attack(mv.type, pt(ua), pt(ta), mv.cls);
@@ -534,7 +598,9 @@ G.AdvBattle = (() => {
         const def = M.stat(target, phys ? 'def' : 'spd') * stageK(crit ? Math.min(0, ds) : ds);
         const stab = types(user).includes(mv.type) ? 1.5 : 1;
         dmg = Math.floor(((2 * user.lv / 5 + 2) * (mv.power || 60) * atk / def) / 50 + 2);
-        dmg = Math.max(mul ? 1 : 0, Math.floor(dmg * stab * mul * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+        // Protection et Mur Lumière divisent les dégâts par 2 (sauf coup critique).
+        const scr = !crit && (phys ? B.scr[tside].reflect : B.scr[tside].light) ? 0.5 : 1;
+        dmg = Math.max(mul ? 1 : 0, Math.floor(dmg * stab * mul * scr * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
       }
       G.Audio.sfx(mul > 1 ? 'crit' : 'hit');
       ta.flash = 1;
@@ -542,6 +608,13 @@ G.AdvBattle = (() => {
       if (G.Overworld.fx && dmg) G.Overworld.fx(ta.x, ta.y - 22, G.U.TYPE_COLOR[mv.type] || '#fff', dmg);
       await tween(0.16, k => { if (n === 0) { ua.ox = dx / d * lunge * (1 - k); ua.oy = dy / d * lunge * (1 - k); } ta.ox = Math.sin(k * 25) * 5 * (1 - k); });
       ta.flash = 0; ta.ox = 0;
+      if (tv.sub && mul) {
+        // Le clone encaisse à la place du Pokémon.
+        dmg = Math.min(dmg, tv.sub); tv.sub -= dmg; total += dmg; hitSub = true;
+        if (n === 0) await say('Le clone encaisse les dégâts à la place de ' + label(tside) + ' !', 0.9);
+        if (tv.sub <= 0) { tv.sub = 0; ta.alpha = 1; await say('Le clone de ' + label(tside) + ' disparaît !', 1); break; }
+        continue;
+      }
       dmg = Math.min(dmg, Math.ceil(target.hp));
       total += dmg;
       await hpTo(target, Math.max(0, target.hp - dmg));
@@ -567,6 +640,13 @@ G.AdvBattle = (() => {
       await hpTo(user, Math.max(0, user.hp - r));
       await say(label(side) + ' subit le contrecoup !', 0.9);
     }
+    if (RECHARGE.has(mv.key) && user.hp > 0) v.recharge = 1;
+    if (hitSub) return;
+    // Ligotage, Danse Flamme, Étreinte… : la cible est piégée de 2 à 5 tours.
+    if (BIND.has(mv.key) && target.hp > 0 && !tv.bind) {
+      tv.bind = { n: 2 + Math.floor(Math.random() * 4), name: mv.name };
+      await say(label(tside) + ' est piégé par ' + mv.name + ' !', 1);
+    }
     // Effets secondaires.
     if (target.hp > 0 && mv.ail && Math.random() * 100 < (mv.ailCh || 100) && canAil(target, mv.ail) && !(mv.ail === 'cnf' && B.vol[tside].cnf)) await inflict(tside, mv.ail);
     // Triplattaque : 20 % de brûler, paralyser ou geler.
@@ -581,6 +661,7 @@ G.AdvBattle = (() => {
   /** Fin du tour : brûlure et poison. */
   async function endTurn(side) {
     const m = mon(side), v = B.vol[side];
+    if (v) v.protect = 0;
     if (!m || m.hp <= 0) return;
     const a = act(side), hurt = async n => { a.flash = 1; await wait(0.12); a.flash = 0; await hpTo(m, Math.max(0, m.hp - n)); };
     if (m.st === 'brn' || m.st === 'psn' || m.st === 'tox') {
@@ -599,6 +680,11 @@ G.AdvBattle = (() => {
       await hpTo(o, Math.min(M.maxHp(o), o.hp + n));
       await say('Vampigraine draine l\'énergie de ' + label(side) + ' !', 1);
     }
+    // Piégé (Ligotage…) : 1/16 des PV à chaque tour.
+    if (v.bind && m.hp > 0) {
+      if (--v.bind.n <= 0) { await say(label(side) + ' est libéré de ' + v.bind.name + ' !', 1); v.bind = 0; }
+      else { await hurt(Math.max(1, Math.floor(M.maxHp(m) / 16))); await say(label(side) + ' souffre de ' + v.bind.name + ' !', 1); }
+    }
     // Bâillement : il s'endort à la fin du tour suivant.
     if (v.yawn && m.hp > 0 && --v.yawn === 0 && canAil(m, 'slp')) await inflict(side, 'slp');
   }
@@ -615,6 +701,9 @@ G.AdvBattle = (() => {
         v = Math.max(v, { slp: 60, par: 50, psn: mv.key === 'toxic' ? 50 : 40, brn: 40, cnf: 35, frz: 30 }[mv.ail] * (mv.acc ? mv.acc / 100 : 1));
       if (mv.key === 'leech-seed' && !B.vol[ts].seed && !types(target).includes('grass')) v = Math.max(v, 40);
       if (mv.key === 'yawn' && !target.st && !B.vol[ts].yawn) v = Math.max(v, 35);
+      if (mv.key === 'protect' || mv.key === 'detect') v = B.vol[us].protN ? 0 : 12;
+      if (mv.key === 'substitute') v = !B.vol[us].sub && user.hp > M.maxHp(user) * 0.6 ? 30 : 0;
+      if (SCREEN[mv.key]) v = B.scr[us][SCREEN[mv.key][0]] ? 0 : 28;
       if (mv.key === 'rest') v = user.hp < M.maxHp(user) * 0.4 && !user.st ? 65 : 0;
       if ((mv.key === 'sleep-talk') && user.st !== 'slp') v = 0;
       if (mv.stats.length) {
@@ -627,7 +716,7 @@ G.AdvBattle = (() => {
     const mul = M.typeMul(mv.type, types(target));
     const stab = types(user).includes(mv.type) ? 1.5 : 1;
     const pw = M.FIXED[mv.key] ? 45 : (mv.power || 60) * (mv.hitMin ? (mv.hitMin + mv.hitMax) / 2 : 1);
-    return pw * mul * stab * (mv.acc ? mv.acc / 100 : 1);
+    return pw * mul * stab * (mv.acc ? mv.acc / 100 : 1) * (RECHARGE.has(mv.key) || TWO[mv.key] ? 0.6 : 1);
   }
   /** Ce que fait l'adversaire : attaque (les dresseurs visent juste), Potion ou changement (dresseurs malins). */
   function foeAction() {
@@ -639,7 +728,7 @@ G.AdvBattle = (() => {
       if (B.foePotions > 0 && f.hp < M.maxHp(f) * 0.3 && f.hp > 0 && Math.random() < 0.7) return { type: 'potion' };
       // Changer si le Pokémon en face le domine.
       const threat = Math.max(...B.me.moves.map(id => M.move(id).cls ? M.typeMul(M.move(id).type, types(f)) : 0));
-      if (threat >= 2 && !B.switched && Math.random() < 0.6) {
+      if (threat >= 2 && !B.switched && !B.vol.foe.bind && Math.random() < 0.6) {
         let best = -1, bv = 0;
         B.foes.forEach((o, i) => {
           if (i === B.fi || o.hp <= 0) return;
@@ -664,6 +753,7 @@ G.AdvBattle = (() => {
     await tween(0.5, k => { a.alpha = 1 - k; });
     await say(label(side) + ' est K.O. !', 1.1);
     B.vol[side] = {};
+    if (B.vol[other(side)]) B.vol[other(side)].bind = 0;
     if (side === 'me') m.st = '';
   }
 
@@ -729,7 +819,7 @@ G.AdvBattle = (() => {
     const team = G.Overworld.save().team;
     B.me = team[i];
     B.stages.me = fresh();
-    B.vol.me = {};
+    B.vol.me = {}; B.vol.foe.bind = 0;
     const pl = G.Overworld.player();
     B.aMe = actor(B.me, B.slotMe.x, B.slotMe.y, B.slotFoe);
     B.aMe.alpha = 0;
@@ -741,7 +831,7 @@ G.AdvBattle = (() => {
     B.fi = i;
     B.foe = B.foes[i];
     B.stages.foe = fresh();
-    B.vol.foe = {};
+    B.vol.foe = {}; B.vol.me.bind = 0;
     B.aFoe = actor(B.foe, B.slotFoe.x, B.slotFoe.y, B.slotMe);
     B.aFoe.face.foe = true;
     B.aFoe.alpha = 0;
@@ -776,8 +866,13 @@ G.AdvBattle = (() => {
       FX().heal(B.aMe.x, B.aMe.y - 20);
       await hpTo(B.me, Math.min(M.maxHp(B.me), B.me.hp + 20));
       await say(M.name(B.me) + ' récupère des PV !', 1);
-    } else if (a.type === 'cure') {
-      s.cures--;
+    } else if (a.type === 'superpo') {
+      s.superpo--;
+      FX().heal(B.aMe.x, B.aMe.y - 20);
+      await hpTo(B.me, Math.min(M.maxHp(B.me), B.me.hp + 50));
+      await say(M.name(B.me) + ' récupère des PV !', 1);
+    } else if (a.type === 'cure' || a.type === 'antidote' || a.type === 'awake') {
+      s[a.type === 'cure' ? 'cures' : a.type]--;
       B.me.st = ''; B.me.sleep = 0; cards();
       FX().heal(B.aMe.x, B.aMe.y - 20);
       await say(M.name(B.me) + ' est guéri !', 1);
@@ -798,7 +893,7 @@ G.AdvBattle = (() => {
   async function start(opts, place) {
     const s = G.Overworld.save();
     active = true;
-    B = { wild: !!opts.wild, trainer: opts.trainer || null, leader: opts.trainer && opts.trainer.leader, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
+    B = { wild: !!opts.wild, trainer: opts.trainer || null, leader: opts.trainer && opts.trainer.leader, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, scr: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
     B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1])] : opts.trainer.team.map(([d, l]) => M.make(d, l));
     B.foePotions = opts.trainer ? (opts.trainer.potions != null ? opts.trainer.potions : opts.trainer.smart ? 1 : 0) : 0;
     s.team.forEach(M.migrate);
@@ -816,8 +911,8 @@ G.AdvBattle = (() => {
 
     let result = null;
     while (!result) {
-      const mine = await chooseAction();
-      const theirs = foeAction();
+      const mine = forced('me') || await chooseAction();
+      const theirs = forced('foe') || foeAction();
       // Ordre : les actions qui ne sont pas des attaques d'abord, puis priorité, puis Vitesse.
       const prio = a => (a.type !== 'move' ? 10 : a.id ? M.move(a.id).prio : 0);
       const pm = prio(mine), pf = prio(theirs);
@@ -828,6 +923,7 @@ G.AdvBattle = (() => {
         if (mon(side).hp <= 0 || mon(other(side)).hp <= 0) continue;
         const a = plan[side];
         if (side === 'foe' && plan.me.type === 'switch' && a.type === 'switch') continue;
+        if (a.type === 'recharge') { B.vol[side].recharge = 0; await say(label(side) + ' doit se reposer !', 1); continue; }
         if (a.type === 'move') {
           await useMove(side, a.id);
           // Destruction et Explosion : le lanceur est K.O., même s'il rate.
@@ -837,6 +933,13 @@ G.AdvBattle = (() => {
         else { result = await doAction(side, a); if (result) break; }
       }
       if (!result) for (const side of B.order) await endTurn(side);
+      // Protection et Mur Lumière durent 5 tours.
+      if (!result) for (const side of ['me', 'foe']) for (const k of ['reflect', 'light']) {
+        if (B.scr[side][k] && --B.scr[side][k] <= 0) {
+          B.scr[side][k] = 0;
+          await say((k === 'reflect' ? 'La Protection' : 'Le Mur Lumière') + (side === 'me' ? ' de ton équipe' : ' adverse') + ' disparaît.', 1);
+        }
+      }
       // K.O.
       if (!result && B.foe.hp <= 0) {
         await faint('foe');
