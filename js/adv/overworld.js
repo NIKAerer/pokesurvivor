@@ -1245,19 +1245,25 @@ G.Overworld = (() => {
       commit();
     }
   }
+  // Les objets de la boutique : [clé de sauvegarde, nom, prix, effet].
+  const MART = [['potions', '3 Potions', 300, '+20 PV chacune', 3], ['superpo', 'Super Potion', 700, '+50 PV'],
+    ['antidote', 'Antidote', 100, 'soigne le poison'], ['awake', 'Réveil', 250, 'réveille un Pokémon endormi'],
+    ['cures', 'Total Soin', 600, 'soigne tous les statuts']];
   async function mart() {
     for (;;) {
-      const i = await G.AdvUI.choose('Boutique · ' + S.money + ' pièces', [
-        { title: '3 Potions', desc: '300 pièces · +20 PV chacune', icon: 'up', off: S.money < 300 },
+      const i = await G.AdvUI.choose('Boutique · ' + S.money + ' pièces', MART.map(([k, t, p, d]) =>
+        ({ title: t, desc: p + ' pièces · ' + d + ' · tu en as ' + (S[k] || 0), icon: 'up', off: S.money < p })).concat([
         { title: 'Pokémon', desc: 'Des Pokémon du coin, mais chers', icon: 'pball' },
         { title: 'Au revoir', desc: '' }
-      ]);
-      if (i === 2) return;
-      if (i === 1) { await buyMon(); continue; }
-      if (S.money < 300) { await talk([['Vendeur', 'Tu n\'as pas assez de pièces…']]); continue; }
-      S.money -= 300;
-      S.potions += 3;
+      ]));
+      if (i === MART.length + 1) return;
+      if (i === MART.length) { await buyMon(); continue; }
+      const [k, , p, , n] = MART[i];
+      if (S.money < p) { await talk([['Vendeur', 'Tu n\'as pas assez de pièces…']]); continue; }
+      S.money -= p;
+      S[k] = (S[k] || 0) + (n || 1);
       G.Audio.sfx('confirm');
+      commit();
     }
   }
 
