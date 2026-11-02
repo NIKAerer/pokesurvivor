@@ -506,5 +506,71 @@ G.Kanto = (() => {
     { title: 'À suivre…', goal: 'La suite de l\'aventure (Céladopole, Érika…) arrive bientôt !',
       intro: [['', 'Chapitre 10 · À suivre'], ['', 'Bravo ! La suite arrive bientôt : Céladopole, son grand magasin et la championne Érika.']] });
 
+  // ---------------- Chapitre 10 : Céladopole et Érika ----------------
+  const GRASS = [43, 44, 69, 70, 102, 114, 1, 2, 46, 47, 48, 12];
+  Object.assign(MAPS, {
+    route8: { name: 'Route 8', ch: 10, music: 'forest', doors: { WEST_ENTRANCE: 'safrania' } },
+    route7: { name: 'Route 7', ch: 10, music: 'forest', doors: { EAST_ENTRANCE: 'safrania' } },
+    celadopole: { name: 'Céladopole', ch: 10, music: 'village', wild: null, doors: { PRIZE_ROOM: 'prix' } }
+  });
+  const ROOMS4 = {
+    souterrain_e: ['Souterrain · Entrée est', 10], souterrain2: ['Souterrain Est-Ouest', 10], souterrain_o: ['Souterrain · Entrée ouest', 10],
+    celadopole_centre: ['Centre Pokémon de Céladopole', 10], celadopole_arene: ['Arène de Céladopole', 10], celadopole_magasin: ['Grand Magasin de Céladopole', 10],
+    celadopole_casino: ['Salle de jeux', 10], celadopole_resto: ['Restaurant de Céladopole', 10], celadopole_hotel: ['Hôtel de Céladopole', 10],
+    celadopole_maison: ['Maison de Céladopole', 10], celadopole_parfum: ['Résidence de Céladopole', 10]
+  };
+  for (const k in ROOMS4) MAPS[k] = { name: ROOMS4[k][0], ch: ROOMS4[k][1], music: /^souterrain/.test(k) ? 'cave' : 'village', wild: null, doors: {}, inside: true };
+  MAPS.celadopole_arene.pool = GRASS;
+  delete CLOSED.Route8;
+  CLOSED.Route16 = 'La Route 16 mène à la Piste Cyclable. Il faut un vélo… La suite de l\'aventure arrive bientôt !';
+  DOORS.prix = 'Le comptoir des lots de la Salle de jeux. Il faut des jetons… et tu n\'en as pas !';
+  Object.assign(CLASSES, { biker: 'Motard', old_man_1: 'Papi' });
+  Object.assign(SIGNS, {
+    Route8_EventScript_RouteSign: 'Route 8 — Lavanville ↔ Safrania',
+    Route8_EventScript_UndergroundPathSign: 'Souterrain — Route 7 ↔ Route 8',
+    Route7_EventScript_UndergroundPathSign: 'Souterrain — Route 7 ↔ Route 8',
+    CeladonCity_EventScript_CitySign: 'Céladopole — La ville des rêves aux couleurs de l\'arc-en-ciel.',
+    CeladonCity_EventScript_GymSign: 'Arène de Céladopole · Championne : Érika — La princesse de la nature.',
+    CeladonCity_EventScript_DeptStoreSign: 'Grand Magasin de Céladopole — Tout pour les dresseurs !',
+    CeladonCity_EventScript_GameCornerSign: 'Salle de jeux de Céladopole — Ouvert jour et nuit.',
+    CeladonCity_EventScript_MansionSign: 'Résidence de Céladopole',
+    CeladonCity_EventScript_TrainerTips1: 'Astuce : les Pokémon Plante craignent le Feu, la Glace, le Poison, le Vol et l\'Insecte !',
+    CeladonCity_EventScript_TrainerTips2: 'Astuce : Poudre Dodo et Para-Spore sont redoutables. Pense aux Réveil et aux Total Soin !'
+  });
+  Object.assign(TALK, {
+    CeladonCity_EventScript_LittleGirl: 'Érika fait les meilleurs parfums de Kanto ! Sa boutique sent si bon…',
+    CeladonCity_EventScript_Woman: 'Le Grand Magasin a cinq étages ! Enfin, il paraît. Moi je reste au premier.',
+    CeladonCity_EventScript_OldMan1: 'Mon Ptitard a évolué en Tartard ! Il nage dans la fontaine tous les matins.',
+    CeladonCity_EventScript_OldMan2: 'Les Pokémon de la Salle de jeux ? On dit que la Team Rocket s\'y cache…',
+    CeladonCity_EventScript_FatMan: 'Mon Tartard et moi, on fait de la gym ensemble ! Une, deux !',
+    CeladonCity_EventScript_Poliwrath: 'Tartard : Taaar ! (Il fait des pompes.)',
+    CeladonCity_EventScript_RocketGrunt1: 'Hé, gamin ! Tu n\'as rien vu, compris ? Circule !',
+    CeladonCity_EventScript_RocketGrunt2: 'La Salle de jeux est à nous… euh, je veux dire, j\'aime bien jouer, c\'est tout !',
+    CeladonCity_EventScript_SoftboiledTutor: 'Les Pokémon Plante d\'Érika adorent le soleil de Céladopole.',
+    CeladonCity_EventScript_Boy: 'Il paraît qu\'Érika s\'endort parfois pendant ses combats… mais elle est très forte !',
+    CeladonCity_EventScript_SilphCoScientist: 'Je travaille à Sylphe SARL, à Safrania. Mais le garde ne me laisse plus rentrer…',
+    CeladonCity_PokemonCenter_1F_EventScript_Gentleman: 'Céladopole est la plus grande ville de Kanto. On y trouve de tout !',
+    CeladonCity_PokemonCenter_1F_EventScript_CooltrainerF: 'Érika est si élégante… Ses Pokémon sentent bon les fleurs.',
+    CeladonCity_PokemonCenter_1F_EventScript_Youngster: 'Contre l\'arène d\'Érika, prends des Pokémon Feu ou Vol !',
+    CeladonCity_DepartmentStore_1F_EventScript_Receptionist: 'Bienvenue au Grand Magasin ! Les étages sont en travaux, désolée.',
+    CeladonCity_Condominiums_1F_EventScript_TeaWoman: 'Tu veux du thé ? Ah, il n\'en reste plus… Les gardes de Safrania ont tout bu !',
+    CeladonCity_Condominiums_1F_EventScript_Meowth: 'Miaouss : Miaou ! (Il ne parle pas, lui.)',
+    CeladonCity_Condominiums_1F_EventScript_Clefairy: 'Mélofée : Mélo mélo !',
+    CeladonCity_Condominiums_1F_EventScript_Nidoran: 'Nidoran : Nido ?',
+    CeladonCity_GameCorner_EventScript_InfoClerk: 'Bienvenue à la Salle de jeux ! Les machines sont en panne aujourd\'hui.',
+    CeladonCity_GameCorner_EventScript_CoinsClerk: 'Des jetons ? Désolé, il n\'y en a plus.',
+    CeladonCity_GameCorner_EventScript_GymGuy: 'Psst ! Le poster au fond de la salle… Il cache quelque chose, j\'en suis sûr.'
+  });
+  Object.assign(NPCS, {
+    celadopole_arene: [{ id: 'erika', look: 'erika', x: 6, y: 4, dir: 'down', event: 'erika' }]
+  });
+  CHAPTERS.splice(10, 1,
+    { title: 'Céladopole et Érika', goal: 'Prends la Route 8 à l\'ouest de Lavanville, passe par le Souterrain et la Route 7, puis défie Érika à Céladopole.',
+      intro: [['', 'Chapitre 10 · Céladopole et Érika'], ['Pierre', 'Prochaine étape : Céladopole ! Le garde de Safrania ne laisse passer personne, alors on passe par le Souterrain.'],
+              ['Ondine', 'Céladopole ! Le Grand Magasin, les parfums… et la championne Érika, qui adore les Pokémon Plante.'],
+              ['Pierre', 'Son arène est cachée derrière des petits arbres. Heureusement que tu connais Coupe !']] },
+    { title: 'À suivre…', goal: 'La suite de l\'aventure (la Team Rocket de la Salle de jeux, Safrania…) arrive bientôt !',
+      intro: [['', 'Chapitre 11 · À suivre'], ['', 'Bravo ! Quatre badges ! La suite arrive bientôt : la Team Rocket se cache sous la Salle de jeux…']] });
+
   return { MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
 })();
