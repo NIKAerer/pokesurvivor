@@ -59,6 +59,22 @@ G.AdvMon = (() => {
     const later = out.filter(id => !known.includes(id));
     return (later.length ? later : out).slice(0, n);
   }
+  /** Le Pokémon, sa forme d'avant et celle d'avant encore (Tortank → Carabaffe → Carapuce). */
+  function chain(dex) {
+    const pre = d => Object.keys(G.EVOS || {}).filter(k => (G.EVOS[k] || []).some(([to]) => to === d)).map(Number);
+    const out = [dex];
+    for (let i = 0; i < out.length && i < 4; i++) for (const p of pre(out[i])) if (!out.includes(p)) out.push(p);
+    return out;
+  }
+  /**
+   * Version de Nika : toutes les attaques que le Pokémon a pu apprendre jusqu'à son niveau (sa forme
+   * d'avant comprise), comme le Maître des capacités des jeux. Celles qu'il connaît déjà sont exclues.
+   */
+  function relearnable(m) {
+    const out = [];
+    for (const d of chain(m.dex)) for (const [l, id] of learnset(d)) if (l <= m.lv && !m.moves.includes(id) && !out.includes(id)) out.push(id);
+    return out;
+  }
   function fixPp(m) {
     m.pp = m.moves.map((id, i) => (m.pp && m.pp[i] != null ? Math.min(m.pp[i], move(id).pp || 10) : move(id).pp || 10));
   }
@@ -135,7 +151,7 @@ G.AdvMon = (() => {
     });
   }
 
-  return { scaleTeam, base, maxHp, stat, xpAt, power, move, ensureDamage, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
+  return { scaleTeam, relearnable, base, maxHp, stat, xpAt, power, move, ensureDamage, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
 })();
 
 G.AdvBattle = (() => {
