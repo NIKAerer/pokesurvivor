@@ -180,12 +180,13 @@ G.AdvUI = (() => {
         : `<div class="ad-evo">${step(root)}<div class="ad-branch">${rows.map(r => `<div class="ad-evo">${r.slice(1).map(([d, lv]) => `<span class="ad-arrow">→<small>N. ${lv}</small></span>` + step(d)).join('')}</div>`).join('')}</div></div>`;
       const nx = (G.EVOS[m.dex] || []).filter(e => G.DEX_BY[e[0]]);
       const next = nx.length ? 'Évolue au N. ' + Math.min(...nx.map(e => e[1])) + (nx.length > 1 ? ' (' + nx.length + ' évolutions possibles, au hasard)' : ' en ' + G.DEX_BY[nx[0][0]].name) : 'N\'évolue pas';
-      const learn = M.learnset(m.dex);
+      const learn = M.learnset(m.dex), ab = G.AdvBattle.abInfo(m.dex);
       const mv = learn.map(([lv, id]) => { const o = M.move(id), pw = M.power(id);
         return `<div class="ad-mv${m.moves.includes(id) ? ' on' : ''}${lv > m.lv ? ' later' : ''}" style="--c:${G.U.TYPE_COLOR[o.type]}"><span>N. ${lv || 1}</span><b>${o.name}</b><small>${G.U.TYPE_NAME[o.type] || o.type} · ${pw ? 'Puiss. ' + pw : o.cls ? 'Fixe' : 'Statut'}</small></div>`; }).join('');
       el.innerHTML = `<div class="ad-box"><button class="ad-x" aria-label="Fermer">Fermer</button>
         <div class="ad-head"><div class="ad-pic"></div><div><small>N° ${String(m.dex).padStart(3, '0')}</small><h3>${p.name}${m.nick ? ' · ' + m.nick : ''}</h3>
           <div>${G.UI.typeChips(p.types)}</div><p class="ad-lv">Niveau ${m.lv} · ${next}</p></div></div>
+        ${ab ? `<h4>Talent</h4><p class="ad-ab"><b>${ab.name}</b> · ${ab.desc}</p>` : ''}
         <h4>Statistiques de base</h4>${bar('PV', b[0])}${bar('Attaque', b[1])}${bar('Défense', b[2])}${bar('Att. Spé', b[3])}${bar('Déf. Spé', b[4])}${bar('Vitesse', b[5])}
         <h4>Évolutions</h4>${evoHtml}
         <h4>Attaques par niveau</h4><div class="ad-mvs">${mv}</div><small class="ad-note">En couleur : attaques qu'il connaît.</small></div>`;

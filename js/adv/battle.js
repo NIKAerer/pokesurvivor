@@ -203,8 +203,8 @@ G.AdvBattle = (() => {
       const main = () => menu([
         { html: 'Attaque', cls: 'big', color: '#e05040', fn: noPp ? () => res({ type: 'move', id: 0 }) : attacks },
         { html: 'Sac', cls: 'big', color: '#e0a020', fn: bag },
-        { html: 'Pokémon', cls: 'big', color: '#3ab060', disabled: !!B.vol.me.bind, fn: team },
-        { html: 'Fuite', cls: 'big', color: '#3a7ae0', disabled: !!B.trainer || !!B.vol.me.bind, fn: () => res({ type: 'run' }) }
+        { html: 'Pokémon', cls: 'big', color: '#3ab060', disabled: stuck('me'), fn: team },
+        { html: 'Fuite', cls: 'big', color: '#3a7ae0', disabled: !!B.trainer || (stuck('me') && ab('me') !== 'run-away'), fn: () => res({ type: 'run' }) }
       ]);
       const attacks = () => menu(B.me.moves.map((id, i) => {
         const mv = M.move(id), pw = M.power(id);
@@ -360,6 +360,42 @@ G.AdvBattle = (() => {
     return null;
   }
   const other = side => (side === 'me' ? 'foe' : 'me');
+  // ---------------- talents (comme dans les jeux, 3e et 4e génération) ----------------
+  /** « de Raichu », « d'Arbok ». */
+  const dl = side => { const t = label(side); return /^[AEIOUYÉÈÊÎaeiouyéèê]/.test(t) ? 'd\'' + t : 'de ' + t; };
+  const abOf = m => (G.Talents ? G.Talents.idOf(m.dex) : '') || '';
+  /** Le talent du Pokémon au combat de ce côté (Calque peut l'avoir copié). Brise Moule ignore celui de la cible. */
+  function ab(side) { const m = mon(side); if (!m) return ''; return B.vol[side].abil || abOf(m); }
+  function tab(side) { return B.breaker === other(side) ? '' : ab(side); }
+  const abName = id => (G.TALENT_NAMES && G.TALENT_NAMES[id]) || id;
+  async function abSay(side, txt) { FX().stat(act(side).x, act(side).y - 10, true); await say(abName(ab(side)) + ' ' + dl(side) + ' : ' + txt, 1.1); }
+  const AB_IMMUNE = { psn: ['immunity'], tox: ['immunity'], par: ['limber'], slp: ['insomnia', 'vital-spirit'], brn: ['water-veil'], frz: ['magma-armor'], cnf: ['own-tempo'] };
+  const SOUND = new Set(['growl', 'roar', 'sing', 'supersonic', 'screech', 'snore', 'uproar', 'metal-sound', 'grass-whistle', 'hyper-voice', 'bug-buzz', 'perish-song', 'heal-bell', 'chatter']);
+  const OHKO = new Set(['fissure', 'guillotine', 'horn-drill', 'sheer-cold']);
+  const PINCH = { overgrow: 'grass', blaze: 'fire', torrent: 'water', swarm: 'bug' };
+  /** À l'entrée en combat : Intimidation, Calque, Marque Ombre… */
+  async function entry(side) {
+    const o = other(side);
+    if (!mon(side) || !mon(o) || mon(side).hp <= 0) return;
+    if (ab(side) === 'trace' && abOf(mon(o)) && abOf(mon(o)) !== 'trace') {
+      B.vol[side].abil = abOf(mon(o));
+      await say('Calque ' + dl(side) + ' copie ' + abName(B.vol[side].abil) + ' !', 1.1);
+    }
+    if (ab(side) === 'intimidate' && mon(o).hp > 0) {
+      await abSay(side, 'il intimide ' + label(o) + ' !');
+      await changeStat(o, 'atk', -1, side);
+    }
+    if (ab(side) === 'pressure') await say(label(side) + ' exerce une Pression !', 1);
+    if (ab(side) === 'mold-breaker') await say(label(side) + ' brise le moule !', 1);
+  }
+  /** On ne peut ni fuir ni changer (Marque Ombre, Magnépiège contre un Acier, piégé). */
+  function stuck(side) {
+    const o = other(side);
+    if (B.vol[side].bind) return true;
+    if (ab(o) === 'shadow-tag' && ab(side) !== 'shadow-tag') return true;
+    if (ab(o) === 'magnet-pull' && types(mon(side)).includes('steel')) return true;
+    return false;
+  }
   const mon = side => (side === 'me' ? B.me : B.foe);
   const act = side => (side === 'me' ? B.aMe : B.aFoe);
   const label = side => (side === 'foe' ? (B.wild ? M.name(B.foe) + ' sauvage' : M.name(B.foe) + ' ennemi') : M.name(B.me));
@@ -372,6 +408,8 @@ G.AdvBattle = (() => {
 
   /** Peut-on lui infliger ce statut ? (immunités de type des jeux) */
   function canAil(m, st) {
+    const a = B && B.me === m ? tab('me') : B && B.foe === m ? tab('foe') : abOf(m);
+    if ((AB_IMMUNE[st] || []).includes(a)) return false;
     if (st === 'cnf') return true;
     if (m.st || m.hp <= 0) return false;
     const t = types(m);
@@ -400,20 +438,31 @@ G.AdvBattle = (() => {
     await say(label(side) + ({ par: ' est paralysé ! Il aura du mal à attaquer.', slp: ' s\'endort !', frz: ' est gelé !', brn: ' est brûlé !', psn: ' est empoisonné !', tox: ' est gravement empoisonné !' })[st], 1.2);
     return true;
   }
-  async function changeStat(side, k, n) {
-    const sg = B.stages[side], a = act(side);
-    if ((n > 0 && sg[k] >= 6) || (n < 0 && sg[k] <= -6)) { await say(STAT_NAME[k] + ' de ' + label(side) + ' ne peut plus ' + (n > 0 ? 'monter' : 'baisser') + ' !', 1); return; }
+  async function changeStat(side, k, n, src) {
+    const sg = B.stages[side], a = act(side), t = src && src !== side ? tab(side) : ab(side);
+    // Corps Sain, Écran Fumée, Hyper Cutter, Regard Vif : l'adversaire ne baisse pas ses stats.
+    if (n < 0 && src && src !== side && (t === 'clear-body' || t === 'white-smoke' || (t === 'hyper-cutter' && k === 'atk') || (t === 'keen-eye' && k === 'acc'))) {
+      await say(abName(t) + ' ' + dl(side) + ' empêche la baisse !', 1); return;
+    }
+    if (t === 'simple') n *= 2;
+    if ((n > 0 && sg[k] >= 6) || (n < 0 && sg[k] <= -6)) { await say(STAT_NAME[k] + ' ' + dl(side) + ' ne peut plus ' + (n > 0 ? 'monter' : 'baisser') + ' !', 1); return; }
     sg[k] = Math.max(-6, Math.min(6, sg[k] + n));
     FX().stat(a.x, a.y - 10, n > 0);
     G.Audio.sfx(n > 0 ? 'levelup' : 'select');
-    await say(STAT_NAME[k] + ' de ' + label(side) + (n > 0 ? (n > 1 ? ' augmente beaucoup !' : ' augmente !') : (n < -1 ? ' baisse beaucoup !' : ' baisse !')), 1);
+    await say(STAT_NAME[k] + ' ' + dl(side) + (n > 0 ? (n > 1 ? ' augmente beaucoup !' : ' augmente !') : (n < -1 ? ' baisse beaucoup !' : ' baisse !')), 1);
   }
 
   /** Avant d'agir : sommeil, gel, paralysie, peur, confusion. Rend false si le Pokémon ne peut pas agir. */
   async function canAct(side, id) {
     const m = mon(side), v = B.vol[side];
+    if (ab(side) === 'truant') {
+      // Absentéisme : un tour sur deux, il paresse.
+      v.loaf = !v.loaf;
+      if (!v.loaf) { await say(label(side) + ' paresse…', 1); return false; }
+    }
     if (m.st === 'slp') {
       const k = id && M.move(id).key;
+      if (ab(side) === 'early-bird') m.sleep--;   // Matinal : se réveille deux fois plus vite
       if (--m.sleep > 0) {
         FX().ail(act(side).x, act(side).y - 30, 'slp');
         await say(label(side) + ' dort profondément…', 1);
@@ -427,7 +476,7 @@ G.AdvBattle = (() => {
       if (Math.random() < 0.2) { m.st = ''; cards(); await say(label(side) + ' n\'est plus gelé !', 1); }
       else { await say(label(side) + ' est gelé ! Il ne peut pas bouger !', 1); return false; }
     }
-    if (v.flinch) { v.flinch = 0; await say(label(side) + ' a peur ! Il n\'attaque pas !', 1); return false; }
+    if (v.flinch) { v.flinch = 0; await say(label(side) + ' a peur ! Il n\'attaque pas !', 1); if (ab(side) === 'steadfast') await changeStat(side, 'spe', 1); return false; }
     if (v.cnf) {
       if (--v.cnf <= 0) { v.cnf = 0; await say(label(side) + ' n\'est plus confus !', 1); }
       else {
@@ -457,7 +506,8 @@ G.AdvBattle = (() => {
     const struggle = !id;
     const mv = struggle ? { name: 'Lutte', type: 'normal', cls: 1, power: 50, acc: 0, stats: [], drain: -25, hitMin: 0, flinch: 0, crit: 0, key: 'struggle' } : M.move(id);
     const second = v.charge === id && !!id;   // 2e tour d'une attaque en 2 tours : pas de PP en plus
-    if (!struggle && !called && !second) { const i = user.moves.indexOf(id); if (i >= 0 && user.pp[i] > 0) user.pp[i]--; }
+    if (!struggle && !called && !second) { const i = user.moves.indexOf(id); if (i >= 0 && user.pp[i] > 0) user.pp[i] -= ab(tside) === 'pressure' && user.pp[i] > 1 ? 2 : 1; }
+    B.breaker = ab(side) === 'mold-breaker' ? side : null;
     if (mv.key !== 'protect' && mv.key !== 'detect') v.protN = 0;
     if (second) { v.charge = 0; unhide(); }
     else await say(label(side) + ' utilise ' + mv.name + ' !', 0.9);
@@ -480,7 +530,7 @@ G.AdvBattle = (() => {
       return useMove(side, ids[Math.floor(Math.random() * ids.length)], true);
     }
     if (mv.key === 'rest') {
-      if (user.hp >= M.maxHp(user)) { await say('Les PV de ' + label(side) + ' sont au maximum !', 1); return; }
+      if (user.hp >= M.maxHp(user)) { await say('Les PV ' + dl(side) + ' sont au maximum !', 1); return; }
       user.st = 'slp'; user.sleep = 3; B.vol[side].tox = 0;
       FX().heal(ua.x, ua.y - 20); FX().ail(ua.x, ua.y - 30, 'slp');
       G.Audio.sfx('levelup');
@@ -520,6 +570,23 @@ G.AdvBattle = (() => {
       await say(nm + ' augmente la résistance aux attaques ' + cl + ' !', 1.1);
       return;
     }
+    if ((mv.key === 'self-destruct' || mv.key === 'explosion') && (tab(tside) === 'damp' || ab(side) === 'damp')) {
+      B.lastBoom = null; await say('Moiteur empêche l\'explosion !', 1); return;
+    }
+    // Talents qui protègent la cible : Lévitation, Absorbe-Eau, Absorbe-Volt, Torche, Motorisé, Anti-Bruit, Garde Mystik, Fermeté.
+    if (!mv.self && mv.key !== 'struggle') {
+      const t = tab(tside), immune = async txt => { await say(abName(t) + ' ' + dl(tside) + ' : ' + txt, 1.1); };
+      if (t === 'levitate' && mv.type === 'ground' && mv.cls) return immune('il flotte au-dessus du sol !');
+      if ((t === 'water-absorb' && mv.type === 'water') || (t === 'volt-absorb' && mv.type === 'electric')) {
+        if (target.hp < M.maxHp(target)) { FX().heal(ta.x, ta.y - 20); await hpTo(target, Math.min(M.maxHp(target), target.hp + Math.floor(M.maxHp(target) / 4))); }
+        return immune('il absorbe l\'attaque et récupère des PV !');
+      }
+      if (t === 'flash-fire' && mv.type === 'fire') { tv.flash = 1; return immune('ses attaques Feu deviennent plus fortes !'); }
+      if (t === 'motor-drive' && mv.type === 'electric') { await immune('il absorbe l\'électricité !'); return changeStat(tside, 'spe', 1); }
+      if (t === 'soundproof' && SOUND.has(mv.key)) return immune('il n\'entend rien !');
+      if (t === 'sturdy' && OHKO.has(mv.key)) return immune('il tient bon !');
+      if (t === 'wonder-guard' && mv.cls && !(M.typeMul(mv.type, types(target)) > 1)) return immune('l\'attaque n\'a aucun effet !');
+    }
     // La cible se protège, ou elle est cachée (Vol, Tunnel…).
     if (!mv.self && tv.protect) { await say(label(tside) + ' se protège !', 1); return; }
     if (!mv.self && tv.semi && !SEMI[tv.semi].includes(mv.key)) { await say(label(tside) + ' évite l\'attaque !', 1); return; }
@@ -527,7 +594,7 @@ G.AdvBattle = (() => {
     if (!mv.cls && !mv.self && tv.sub && (mv.ail || mv.stats.length || mv.key === 'leech-seed' || mv.key === 'yawn')) return fail();
     // Précision (les attaques sur soi touchent toujours).
     if (mv.acc && !mv.self) {
-      const k = accK(Math.max(-6, Math.min(6, B.stages[side].acc - B.stages[tside].eva)));
+      const k = accK(Math.max(-6, Math.min(6, B.stages[side].acc - B.stages[tside].eva))) * (ab(side) === 'compound-eyes' ? 1.3 : 1) * (ab(side) === 'hustle' && mv.cls === 1 ? 0.8 : 1);
       if (Math.random() * 100 >= mv.acc * k) { await say(label(side) + ' rate son attaque !', 1); return; }
     }
 
@@ -541,7 +608,7 @@ G.AdvBattle = (() => {
       await tween(0.16, k => { ua.ox = dx / d * lunge * (1 - k); ua.oy = dy / d * lunge * (1 - k); });
       let did = false;
       if (mv.heal > 0) {
-        if (user.hp >= M.maxHp(user)) { await say('Les PV de ' + label(side) + ' sont au maximum !', 1); return; }
+        if (user.hp >= M.maxHp(user)) { await say('Les PV ' + dl(side) + ' sont au maximum !', 1); return; }
         FX().heal(ua.x, ua.y - 20);
         G.Audio.sfx('levelup');
         await hpTo(user, Math.min(M.maxHp(user), user.hp + Math.round(M.maxHp(user) * mv.heal / 100)));
@@ -550,7 +617,7 @@ G.AdvBattle = (() => {
       }
       if (mv.stats.length) {
         if (!mv.self) await FX().attack(mv.type, pt(ua), pt(ta), 2);
-        for (const [k, n] of mv.stats) await changeStat(mv.self ? side : tside, k, n);
+        for (const [k, n] of mv.stats) await changeStat(mv.self ? side : tside, k, n, side);
         did = true;
       }
       if (mv.key === 'leech-seed') {
@@ -574,6 +641,7 @@ G.AdvBattle = (() => {
         await FX().attack(mv.type, pt(ua), pt(act(tgt)), 2);
         const st = mv.key === 'toxic' ? 'tox' : mv.ail;
         if (!(await inflict(tgt, st))) await say('Mais cela échoue !', 1);
+        else if (tgt !== side) await sync(tgt, st);
         did = true;
       }
       if (!did) await say('Mais rien ne se passe…', 1);
@@ -590,14 +658,22 @@ G.AdvBattle = (() => {
       let dmg;
       if (M.FIXED[mv.key]) dmg = mul ? M.FIXED[mv.key](user, target) : 0;
       else {
-        const crit = Math.random() < [1 / 16, 1 / 8, 1 / 4, 1 / 3, 1 / 2][Math.min(4, mv.crit || 0)];
+        const ta2 = tab(tside), ua2 = ab(side);
+        const crit = ta2 !== 'shell-armor' && ta2 !== 'battle-armor' && Math.random() < [1 / 16, 1 / 8, 1 / 4, 1 / 3, 1 / 2][Math.min(4, mv.crit || 0)];
         if (crit && mul) crits++;
         // Coup critique : on ignore les baisses de l'attaquant et les hausses de la cible.
         const as = B.stages[side][phys ? 'atk' : 'spa'], ds = B.stages[tside][phys ? 'def' : 'spd'];
-        const atk = M.stat(user, phys ? 'atk' : 'spa') * stageK(crit ? Math.max(0, as) : as) * (phys && user.st === 'brn' ? 0.5 : 1);
-        const def = M.stat(target, phys ? 'def' : 'spd') * stageK(crit ? Math.min(0, ds) : ds);
-        const stab = types(user).includes(mv.type) ? 1.5 : 1;
-        dmg = Math.floor(((2 * user.lv / 5 + 2) * (mv.power || 60) * atk / def) / 50 + 2);
+        const guts = ua2 === 'guts' && user.st;
+        const atk = M.stat(user, phys ? 'atk' : 'spa') * stageK(crit ? Math.max(0, as) : as) * (phys && user.st === 'brn' && !guts ? 0.5 : 1)
+          * (phys && guts ? 1.5 : 1) * (phys && ua2 === 'hustle' ? 1.5 : 1) * (phys && (ua2 === 'pure-power' || ua2 === 'huge-power') ? 2 : 1);
+        const def = M.stat(target, phys ? 'def' : 'spd') * stageK(crit ? Math.min(0, ds) : ds) * (phys && ta2 === 'marvel-scale' && target.st ? 1.5 : 1);
+        const stab = types(user).includes(mv.type) ? (ua2 === 'adaptability' ? 2 : 1.5) : 1;
+        let pow = mv.power || 60;
+        if (ua2 === 'technician' && pow <= 60) pow *= 1.5;
+        if (PINCH[ua2] === mv.type && user.hp <= M.maxHp(user) / 3) pow *= 1.5;   // Engrais, Brasier, Torrent, Essaim
+        if (B.vol[side].flash && mv.type === 'fire') pow *= 1.5;
+        if (ta2 === 'thick-fat' && (mv.type === 'fire' || mv.type === 'ice')) pow *= 0.5;
+        dmg = Math.floor(((2 * user.lv / 5 + 2) * pow * atk / def) / 50 + 2);
         // Protection et Mur Lumière divisent les dégâts par 2 (sauf coup critique).
         const scr = !crit && (phys ? B.scr[tside].reflect : B.scr[tside].light) ? 0.5 : 1;
         dmg = Math.max(mul ? 1 : 0, Math.floor(dmg * stab * mul * scr * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
@@ -611,8 +687,8 @@ G.AdvBattle = (() => {
       if (tv.sub && mul) {
         // Le clone encaisse à la place du Pokémon.
         dmg = Math.min(dmg, tv.sub); tv.sub -= dmg; total += dmg; hitSub = true;
-        if (n === 0) await say('Le clone encaisse les dégâts à la place de ' + label(tside) + ' !', 0.9);
-        if (tv.sub <= 0) { tv.sub = 0; ta.alpha = 1; await say('Le clone de ' + label(tside) + ' disparaît !', 1); break; }
+        if (n === 0) await say('Le clone encaisse les dégâts à la place ' + dl(tside) + ' !', 0.9);
+        if (tv.sub <= 0) { tv.sub = 0; ta.alpha = 1; await say('Le clone ' + dl(tside) + ' disparaît !', 1); break; }
         continue;
       }
       dmg = Math.min(dmg, Math.ceil(target.hp));
@@ -630,32 +706,54 @@ G.AdvBattle = (() => {
     if (target.st === 'frz' && mv.type === 'fire' && target.hp > 0) { target.st = ''; cards(); await say(label(tside) + ' n\'est plus gelé !', 1); }
 
     // Vol de vie / contrecoup.
-    if (mv.drain > 0 && user.hp > 0 && total) {
+    if (mv.drain > 0 && user.hp > 0 && total && tab(tside) === 'liquid-ooze') {
+      await hpTo(user, Math.max(0, user.hp - Math.max(1, Math.floor(total * mv.drain / 100))));
+      await say('Suintement : ' + label(side) + ' aspire un liquide toxique !', 1);
+    } else if (mv.drain > 0 && user.hp > 0 && total) {
       FX().heal(ua.x, ua.y - 20);
       await hpTo(user, Math.min(M.maxHp(user), user.hp + Math.max(1, Math.floor(total * mv.drain / 100))));
       await say(label(tside) + ' perd de l\'énergie !', 0.9);
-    } else if (mv.drain < 0 && total) {
+    } else if (mv.drain < 0 && total && (struggle || ab(side) !== 'rock-head')) {
       const r = struggle ? Math.max(1, Math.floor(M.maxHp(user) / 4)) : Math.max(1, Math.floor(total * -mv.drain / 100));
       ua.flash = 1; await wait(0.12); ua.flash = 0;
       await hpTo(user, Math.max(0, user.hp - r));
       await say(label(side) + ' subit le contrecoup !', 0.9);
     }
     if (RECHARGE.has(mv.key) && user.hp > 0) v.recharge = 1;
+    // Talents au contact (attaques physiques) : Statik, Point Poison, Corps Ardent, Pose Spore, Peau Dure, Boom Final.
+    if (phys && total && !hitSub && user.hp > 0) {
+      const t = tab(tside), CON = { static: 'par', 'poison-point': 'psn', 'flame-body': 'brn' };
+      let st = CON[t];
+      if (t === 'effect-spore') st = G.U.pick(['par', 'psn', 'slp']);
+      if (st && Math.random() < 0.3 && canAil(user, st)) { await say(abName(t) + ' ' + dl(tside) + ' !', 0.9); await inflict(side, st); }
+      if (t === 'rough-skin') { await hpTo(user, Math.max(0, user.hp - Math.max(1, Math.floor(M.maxHp(user) / 16)))); await say('Peau Dure ' + dl(tside) + ' blesse ' + label(side) + ' !', 1); }
+      if (t === 'aftermath' && target.hp <= 0) { await hpTo(user, Math.max(0, user.hp - Math.max(1, Math.floor(M.maxHp(user) / 4)))); await say('Boom Final ' + dl(tside) + ' !', 1); }
+    }
     if (hitSub) return;
     // Ligotage, Danse Flamme, Étreinte… : la cible est piégée de 2 à 5 tours.
     if (BIND.has(mv.key) && target.hp > 0 && !tv.bind) {
       tv.bind = { n: 2 + Math.floor(Math.random() * 4), name: mv.name };
       await say(label(tside) + ' est piégé par ' + mv.name + ' !', 1);
     }
-    // Effets secondaires.
-    if (target.hp > 0 && mv.ail && Math.random() * 100 < (mv.ailCh || 100) && canAil(target, mv.ail) && !(mv.ail === 'cnf' && B.vol[tside].cnf)) await inflict(tside, mv.ail);
+    // Effets secondaires (Écran Poudre les bloque, Sérénité double leurs chances).
+    if (tab(tside) === 'shield-dust') return;
+    const sg = ab(side) === 'serene-grace' ? 2 : 1;
+    if (target.hp > 0 && mv.ail && Math.random() * 100 < (mv.ailCh || 100) * sg && canAil(target, mv.ail) && !(mv.ail === 'cnf' && B.vol[tside].cnf) && (await inflict(tside, mv.ail))) await sync(tside, mv.ail);
     // Triplattaque : 20 % de brûler, paralyser ou geler.
     if (mv.key === 'tri-attack' && target.hp > 0 && Math.random() < 0.2) { const st = G.U.pick(['brn', 'par', 'frz']); if (canAil(target, st)) await inflict(tside, st); }
-    if (mv.stats.length && Math.random() * 100 < (mv.statCh || 100)) {
+    if (mv.stats.length && Math.random() * 100 < (mv.statCh || 100) * sg) {
       const who = mv.self ? side : tside;
-      if (mon(who).hp > 0) for (const [k, v] of mv.stats) await changeStat(who, k, v);
+      if (mon(who).hp > 0) for (const [k, v] of mv.stats) await changeStat(who, k, v, side);
     }
-    if (mv.flinch && target.hp > 0 && Math.random() * 100 < mv.flinch && B.order[0] === side) B.vol[tside].flinch = 1;
+    if (mv.flinch && target.hp > 0 && Math.random() * 100 < mv.flinch * sg && B.order[0] === side && tab(tside) !== 'inner-focus') B.vol[tside].flinch = 1;
+  }
+  /** Synchro : le statut reçu est renvoyé à l'adversaire. */
+  async function sync(side, st) {
+    if (ab(side) !== 'synchronize' || !['brn', 'par', 'psn', 'tox'].includes(st)) return;
+    const o = other(side);
+    if (!canAil(mon(o), st)) return;
+    await say('Synchro ' + dl(side) + ' !', 0.9);
+    await inflict(o, st);
   }
 
   /** Fin du tour : brûlure et poison. */
@@ -678,13 +776,16 @@ G.AdvBattle = (() => {
       await hurt(n);
       FX().heal(act(other(side)).x, act(other(side)).y - 20);
       await hpTo(o, Math.min(M.maxHp(o), o.hp + n));
-      await say('Vampigraine draine l\'énergie de ' + label(side) + ' !', 1);
+      await say('Vampigraine draine l\'énergie ' + dl(side) + ' !', 1);
     }
     // Piégé (Ligotage…) : 1/16 des PV à chaque tour.
     if (v.bind && m.hp > 0) {
       if (--v.bind.n <= 0) { await say(label(side) + ' est libéré de ' + v.bind.name + ' !', 1); v.bind = 0; }
       else { await hurt(Math.max(1, Math.floor(M.maxHp(m) / 16))); await say(label(side) + ' souffre de ' + v.bind.name + ' !', 1); }
     }
+    if (m.hp > 0 && m.st && ab(side) === 'shed-skin' && Math.random() < 1 / 3) { m.st = ''; v.tox = 0; cards(); await abSay(side, 'il guérit de son statut !'); }
+    if (m.hp > 0 && m.st === 'slp' && o && o.hp > 0 && ab(other(side)) === 'bad-dreams') { await hurt(Math.max(1, Math.floor(M.maxHp(m) / 8))); await say(label(side) + ' est tourmenté par un Mauvais Rêve !', 1); }
+    if (m.hp > 0 && ab(side) === 'speed-boost' && B.stages[side].spe < 6) await changeStat(side, 'spe', 1);
     // Bâillement : il s'endort à la fin du tour suivant.
     if (v.yawn && m.hp > 0 && --v.yawn === 0 && canAil(m, 'slp')) await inflict(side, 'slp');
   }
@@ -728,7 +829,7 @@ G.AdvBattle = (() => {
       if (B.foePotions > 0 && f.hp < M.maxHp(f) * 0.3 && f.hp > 0 && Math.random() < 0.7) return { type: 'potion' };
       // Changer si le Pokémon en face le domine.
       const threat = Math.max(...B.me.moves.map(id => M.move(id).cls ? M.typeMul(M.move(id).type, types(f)) : 0));
-      if (threat >= 2 && !B.switched && !B.vol.foe.bind && Math.random() < 0.6) {
+      if (threat >= 2 && !B.switched && !stuck('foe') && Math.random() < 0.6) {
         let best = -1, bv = 0;
         B.foes.forEach((o, i) => {
           if (i === B.fi || o.hp <= 0) return;
@@ -851,14 +952,16 @@ G.AdvBattle = (() => {
       } else if (a.type === 'switch') {
         B.switched = true;
         await say(B.trainer.name + ' rappelle ' + M.name(B.foe) + ' !', 1);
+        if (ab('foe') === 'natural-cure') B.foe.st = '';
         await tween(0.2, k => { B.aFoe.alpha = 1 - k; });
         await foeOut(a.i);
         await say(B.trainer.name + ' envoie ' + M.name(B.foe) + ' !', 1.1);
+        await entry('foe');
       }
       return null;
     }
     if (a.type === 'run') {
-      const ok = speed('me') >= speed('foe') || Math.random() < 0.6;
+      const ok = ab('me') === 'run-away' || speed('me') >= speed('foe') || Math.random() < 0.6;
       if (ok) { await say('Tu prends la fuite !', 1); return 'run'; }
       await say('Impossible de fuir !', 1);
     } else if (a.type === 'potion') {
@@ -878,10 +981,12 @@ G.AdvBattle = (() => {
       await say(M.name(B.me) + ' est guéri !', 1);
     } else if (a.type === 'switch') {
       await say('Reviens, ' + M.name(B.me) + ' !', 0.9);
+      if (ab('me') === 'natural-cure') B.me.st = '';
       G.Overworld.setFollowerHidden(null);
       await tween(0.2, k => { B.aMe.alpha = 1 - k; });
       await sendOut(a.i);
       await say('Vas-y, ' + M.name(B.me) + ' !', 0.9);
+      await entry('me');
     }
     return null;
   }
@@ -908,6 +1013,7 @@ G.AdvBattle = (() => {
     const first = s.team.findIndex(m => m.hp > 0);
     await sendOut(first);
     await say('Vas-y, ' + M.name(B.me) + ' !', 1);
+    await entry('foe'); await entry('me');
 
     let result = null;
     while (!result) {
@@ -948,6 +1054,7 @@ G.AdvBattle = (() => {
         if (B.trainer && next >= 0) {
           await foeOut(next);
           await say(B.trainer.name + ' envoie ' + M.name(B.foe) + ' !', 1.2);
+          await entry('foe');
         } else result = 'win';
       }
       if (!result && B.me.hp <= 0) {
@@ -957,10 +1064,15 @@ G.AdvBattle = (() => {
           const i = await chooseNext();
           await sendOut(i);
           await say('Vas-y, ' + M.name(B.me) + ' !', 0.9);
+          await entry('me');
         } else result = 'lose';
       }
     }
     if (result === 'win' && B.trainer) await say(B.trainer.name + ' est battu !', 1.2);
+    if (result === 'win') for (const m of s.team) if (m.hp > 0 && abOf(m) === 'pickup' && Math.random() < 0.1) {
+      s.potions++; await say('Ramassage : ' + M.name(m) + ' a trouvé une Potion !', 1.1);
+    }
+    for (const m of s.team) if (m.hp > 0 && abOf(m) === 'natural-cure') m.st = '';
     if (result === 'lose') await say('Tu n\'as plus de Pokémon en forme…', 1.4);
     await end();
     return result;
@@ -1000,6 +1112,39 @@ G.AdvBattle = (() => {
     }
   }
 
-  return { start, update, drawables, drawFloor, drawBall, evolutions, learn, levelUp, ST_NAME, get active() { return active; },
+  // Ce que fait chaque talent en Aventure (affiché dans le Pokédex).
+  const AB_DESC = {
+    overgrow: 'Attaques Plante ×1,5 quand il lui reste 1/3 de ses PV.', blaze: 'Attaques Feu ×1,5 quand il lui reste 1/3 de ses PV.',
+    torrent: 'Attaques Eau ×1,5 quand il lui reste 1/3 de ses PV.', swarm: 'Attaques Insecte ×1,5 quand il lui reste 1/3 de ses PV.',
+    intimidate: 'Baisse l\'Attaque de l\'adversaire en entrant au combat.', static: '30 % de paralyser au contact.',
+    'poison-point': '30 % d\'empoisonner au contact.', 'flame-body': '30 % de brûler au contact.', 'effect-spore': '30 % de paralyser, empoisonner ou endormir au contact.',
+    'rough-skin': 'Blesse l\'attaquant au contact (1/16 de ses PV).', aftermath: 'K.O. par un contact : blesse l\'attaquant (1/4 de ses PV).',
+    levitate: 'Immunisé contre les attaques Sol.', 'water-absorb': 'Les attaques Eau le soignent au lieu de le blesser.',
+    'volt-absorb': 'Les attaques Électrik le soignent au lieu de le blesser.', 'flash-fire': 'Immunisé contre le Feu ; ses attaques Feu deviennent plus fortes.',
+    'motor-drive': 'Les attaques Électrik augmentent sa Vitesse au lieu de le blesser.', soundproof: 'Immunisé contre les attaques sonores.',
+    'wonder-guard': 'Seules les attaques super efficaces le touchent.', sturdy: 'Immunisé contre les attaques K.O. en un coup.',
+    'thick-fat': 'Dégâts Feu et Glace divisés par 2.', 'marvel-scale': 'Défense ×1,5 quand il a un statut.',
+    guts: 'Attaque ×1,5 quand il a un statut (la brûlure ne la baisse plus).', hustle: 'Attaque ×1,5, mais ses attaques physiques sont moins précises.',
+    'pure-power': 'Attaque ×2.', 'huge-power': 'Attaque ×2.', technician: 'Attaques de puissance 60 ou moins ×1,5.', adaptability: 'Bonus de type ×2 au lieu de ×1,5.',
+    'compound-eyes': 'Précision ×1,3.', 'serene-grace': 'Double les chances des effets secondaires.', 'shield-dust': 'Pas d\'effets secondaires des attaques reçues.',
+    'shell-armor': 'Jamais de coup critique reçu.', 'battle-armor': 'Jamais de coup critique reçu.',
+    'clear-body': 'L\'adversaire ne peut pas baisser ses stats.', 'white-smoke': 'L\'adversaire ne peut pas baisser ses stats.',
+    'hyper-cutter': 'L\'adversaire ne peut pas baisser son Attaque.', 'keen-eye': 'L\'adversaire ne peut pas baisser sa Précision.', simple: 'Ses changements de stats sont doublés.',
+    immunity: 'Ne peut pas être empoisonné.', limber: 'Ne peut pas être paralysé.', insomnia: 'Ne peut pas s\'endormir.', 'vital-spirit': 'Ne peut pas s\'endormir.',
+    'water-veil': 'Ne peut pas être brûlé.', 'magma-armor': 'Ne peut pas être gelé.', 'own-tempo': 'Ne peut pas être confus.', 'inner-focus': 'N\'a jamais peur.',
+    'shed-skin': '1 chance sur 3 de guérir de son statut à chaque tour.', 'natural-cure': 'Guérit de son statut en quittant le combat.', 'early-bird': 'Se réveille deux fois plus vite.',
+    synchronize: 'Renvoie la brûlure, la paralysie ou le poison à l\'adversaire.', 'rock-head': 'Pas de contrecoup.', 'liquid-ooze': 'Les attaques qui volent ses PV blessent l\'attaquant.',
+    pressure: 'Les attaques de l\'adversaire coûtent 2 PP.', 'run-away': 'Peut toujours fuir un Pokémon sauvage.', pickup: 'Trouve parfois une Potion après un combat gagné.',
+    damp: 'Empêche Destruction et Explosion.', trace: 'Copie le talent de l\'adversaire.', 'shadow-tag': 'L\'adversaire ne peut ni fuir ni changer.',
+    'magnet-pull': 'Les Pokémon Acier ne peuvent ni fuir ni changer.', 'speed-boost': 'Sa Vitesse augmente à chaque tour.', truant: 'N\'attaque qu\'un tour sur deux.',
+    steadfast: 'Sa Vitesse augmente quand il a peur.', 'mold-breaker': 'Ignore les talents de l\'adversaire.', 'bad-dreams': 'Blesse l\'adversaire endormi à chaque tour.'
+  };
+  function abInfo(dex) {
+    const id = G.Talents && G.Talents.idOf(dex);
+    if (!id) return null;
+    return { name: abName(id), desc: AB_DESC[id] || 'Pas d\'effet en combat dans l\'Aventure (météo ou effet hors combat).' };
+  }
+
+  return { start, update, abInfo, drawables, drawFloor, drawBall, evolutions, learn, levelUp, ST_NAME, get active() { return active; },
            get focus() { return B ? { x: (B.slotMe.x + B.slotFoe.x) / 2, y: (B.slotMe.y + B.slotFoe.y) / 2 } : null } };
 })();
