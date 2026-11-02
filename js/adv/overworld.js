@@ -28,7 +28,7 @@ G.Overworld = (() => {
     3: [74, 95, 27, 50, 35, 39, 41, 23, 104, 138, 140, 142, 56, 21],
     // Route 3 et le Mont Sélénite : grottes, Mélofée, fossiles.
     4: [35, 39, 41, 74, 46, 27, 21, 56, 32, 29, 138, 140, 95, 23],
-    // Azuria, le Pont Pépite et la Route 25 : eau, Psy, et les Pokémon de l'animé (Bulbizarre du village caché, Salamèche abandonnée).
+    // Azuria, le Pont Pépite et la Route 25 : eau, Psy, et les Pokémon de l'animé (Bulbizarre du village caché, Salamèche abandonné).
     5: [54, 60, 118, 120, 116, 72, 79, 63, 43, 69, 10, 13, 1, 4, 129, 98],
     // Routes 5 et 6 et Carmin sur Mer : l'Escouade Carapuce, la mer, l'électricité.
     6: [7, 52, 56, 66, 81, 100, 86, 90, 98, 72, 16, 17, 43, 69, 39, 25],
@@ -587,7 +587,7 @@ G.Overworld = (() => {
       const visited = k => (S.visited && S.visited[k]) || ((K().MAPS[k] && K().MAPS[k].ch) || 1) < S.ch || k === mapKey;
       const el = document.createElement('div');
       el.id = 'adv-map';
-      el.innerHTML = `<div class="am-box"><button class="ad-x">Fermer</button><h3>Kanto</h3><p class="am-goal">${K().CHAPTERS[S.ch].goal}</p><canvas></canvas>
+      el.innerHTML = `<div class="am-box"><button class="ad-x">Fermer</button><h3>Kanto</h3><p class="am-goal">${cur().goal}</p><canvas></canvas>
         <p class="am-leg"><i class="me"></i> Toi <i class="fog"></i> Pas encore visité</p></div>`;
       document.body.appendChild(el);
       const cv = el.querySelector('canvas'), c = cv.getContext('2d');
@@ -846,6 +846,11 @@ G.Overworld = (() => {
     if (n.event === 'ghost') { await ghost(); return; }
     if (n.event === 'fuji') { await fuji(); return; }
     if (n.event === 'erika') { await erika(n); return; }
+    if (n.event === 'sala') { await sala(); return; }
+    if (n.event === 'bulbi') { await bulbi(); return; }
+    if (n.event === 'cara') { await cara(); return; }
+    if (n.event === 'jenny') { await talk([['Agent Jenny', S.flags.cara ? 'Merci pour ton aide ! Les Carapuce sont devenus les pompiers de Carmin sur Mer.'
+      : 'Ces Carapuce farceurs jouent des tours à tous les voyageurs… Si quelqu\'un arrive à battre leur chef, ils l\'écouteront peut-être !']]); return; }
     if (n.event === 'fujiHome') { await talk([['M. Fuji', 'Merci encore, jeune dresseur. Les Pokémon de cette maison sont heureux grâce à toi.']]); return; }
     if (n.talk) await talk(n.talk(S.flags));
   }
@@ -1324,7 +1329,7 @@ G.Overworld = (() => {
     G.Audio.sfx('legend');
     await talk([['Major Bob', pika ? 'Battu par un Pikachu… Sa vitesse, petit ! Je n\'y avais pas pensé. Voici le Badge Foudre !' : 'Ouah ! Tu es un vrai soldat, petit ! Voici le Badge Foudre !'],
                 ['', 'Tu obtiens le Badge Foudre et 1000 pièces !']]);
-    if (S.ch === 6) await chapterEnd();
+    if (S.ch === 6 && S.ep == null) await chapterEnd();
   }
 
   // ---------------- chapitres 7 à 9 ----------------
@@ -1478,6 +1483,12 @@ G.Overworld = (() => {
       G.Audio.sfx('select');
       setTimeout(() => el.classList.remove('on'), 1800);
     }
+    if (w.dest === 'carmin_arene' && !S.flags.surgeDoor && !S.flags.surge && !S.flags.surgeHint) {
+      S.flags.surgeHint = 1;
+      await new Promise(r => setTimeout(r, 900));
+      await talk([['Guide de l\'arène', 'Salut ! Le Major Bob est au fond, derrière la barrière électrique.'],
+                  ['Guide de l\'arène', 'Pour l\'éteindre, fouille les poubelles : deux interrupteurs sont cachés, l\'un juste à côté de l\'autre. Si tu te trompes, tout se referme !']]);
+    }
   }
   const GYMS = { argenta_arene: 'Champion : Pierre', azuria_arene: 'Championne : Ondine', carmin_arene: 'Champion : Major Bob' };
 
@@ -1571,7 +1582,7 @@ G.Overworld = (() => {
   async function chapterEnd() {
     const ch = S.ch;
     G.Audio.sfx('legend');
-    await talk([['', 'Chapitre ' + ch + ' terminé : ' + K().CHAPTERS[ch].title + ' !']]);
+    await talk([['', 'Chapitre ' + chNum() + ' terminé : ' + cur().title + ' !']]);
     for (;;) {
       const i = await G.AdvUI.choose('Choisis ta récompense', [
         { icon: 'pball', title: 'Capturer un Pokémon', desc: 'Un Pokémon de la région parmi 3' },
@@ -1587,9 +1598,95 @@ G.Overworld = (() => {
       await talk([['', 'Tu reçois 5 Potions, 2 Total Soin et 500 pièces !']]);
       break;
     }
-    S.ch = Math.min(K().CHAPTERS.length - 1, ch + 1);
+    // Les épisodes (chapitres entre les chapitres) se jouent avant le chapitre qui les porte.
+    const pre = K().CHAPTERS[ch].pre || [];
+    if (S.ep != null) { S.ep++; if (S.ep >= pre.length) S.ep = null; }
+    else { S.ch = Math.min(K().CHAPTERS.length - 1, ch + 1); S.ep = (K().CHAPTERS[S.ch].pre || []).length ? 0 : null; }
     commit();
     await intro();
+    // Déjà fait en avance (un épisode joué dans le désordre, le Major Bob battu pendant les épisodes) : on enchaîne.
+    const id = epId();
+    if (id ? S.flags[id] : DONE[S.ch] && DONE[S.ch](S.flags)) await chapterEnd();
+  }
+  const DONE = { 6: f => f.surge };
+  /** Le chapitre en cours : un épisode (S.ep) ou le chapitre lui-même. */
+  function cur() { const c = K().CHAPTERS[S.ch]; return S.ep != null && c.pre && c.pre[S.ep] ? c.pre[S.ep] : c; }
+  function epId() { return S.ep != null ? cur().id : null; }
+  /** Le numéro affiché : les épisodes comptent comme des chapitres. */
+  function chNum() {
+    const C = K().CHAPTERS;
+    let n = 0;
+    for (let c = 1; c < S.ch; c++) n += 1 + ((C[c] && C[c].pre) || []).length;
+    return S.ep != null ? n + S.ep + 1 : n + ((C[S.ch].pre) || []).length + 1;
+  }
+  /** Un Pokémon de l'histoire rejoint l'équipe (jamais un doublon de famille : alors un cadeau). */
+  async function join(dex, lv) {
+    const nm = G.DEX_BY[dex].name;
+    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+    G.Audio.sfx('confirm');
+    if (fams.has(family(dex))) {
+      S.superpo = (S.superpo || 0) + 2; S.money += 500;
+      await talk([['', 'Tu as déjà un Pokémon de sa famille : ' + nm + ' préfère rester ici et te remercie.'], ['', 'Tu reçois 2 Super Potions et 500 pièces.']]);
+    } else {
+      const m = M().make(dex, lv);
+      G.DB.grant(dex, 'adv');
+      if (S.team.length < 6) S.team.push(m); else S.box.push(m);
+      await talk([['', nm + (S.team.includes(m) ? ' rejoint ton équipe !' : ' part dans ta boîte (équipe pleine).')]]);
+    }
+    refreshFollowers();
+    commit();
+  }
+  /** Épisode : Salamèche abandonné par Damien sur la Route 24. */
+  async function sala() {
+    if (S.flags.sala) return;
+    const n = npcs.find(x => x.id === 'damien');
+    await talk([['', 'Un Salamèche est assis sur un rocher. Sa flamme est toute petite… Il regarde la route sans bouger.'],
+                ['Damien', 'Ce Salamèche ? C\'était le mien. Trop faible. Je lui ai dit de m\'attendre ici… et je ne reviendrai jamais le chercher ! Ha ha !'],
+                ['Ondine', 'Quoi ?! Tu l\'as abandonné ? C\'est horrible !'],
+                ['Damien', 'Tu veux le défendre ? Alors bats-moi, si tu peux !']]);
+    const res = await battle({ trainer: { name: 'Damien', team: [[27, 17], [23, 17], [22, 19]], smart: true, potions: 1 } }, n);
+    if (res !== 'win') return;
+    S.flags.sala = 1; S.money += 600;
+    await talk([['Damien', 'Tch… Garde-le, ce Salamèche. Il ne vaut rien de toute façon.'],
+                ['', 'Damien s\'en va sans se retourner. La pluie commence à tomber…'],
+                ['', 'Tu abrites Salamèche sous ta veste. Sa flamme se rallume ! Il te regarde… et décide de te suivre.'], ['', 'Tu gagnes 600 pièces.']]);
+    await join(4, 15);
+    loadNpcs();
+    if (epId() === 'sala') await chapterEnd();
+  }
+  /** Épisode : le village caché de Mélodie et son Bulbizarre, sur la Route 5. */
+  async function bulbi() {
+    if (S.flags.bulbi) { await talk([['Mélodie', 'Le village caché se porte bien. Prends soin de Bulbizarre, d\'accord ?']]); return; }
+    const n = npcs.find(x => x.id === 'bulbasaur');
+    await talk([['Mélodie', 'Bienvenue au village caché ! Ici, je soigne les Pokémon blessés ou abandonnés par leurs dresseurs.'],
+                ['', 'Bulbizarre : Bulbi ! (Il se met devant Mélodie. Il protège le village.)'],
+                ['Mélodie', 'Bulbizarre ne fait confiance à personne. Si tu veux qu\'il te suive, montre-lui ta force !']]);
+    const res = await battle({ wild: [1, 18] }, n);
+    if (res !== 'win') return;
+    S.flags.bulbi = 1;
+    await talk([['Mélodie', 'Tu as combattu avec respect… Bulbizarre, tu as toujours voulu voir le monde, non ?'],
+                ['', 'Bulbizarre : Bulbi… Bulbizarre ! (Il hoche la tête.)'],
+                ['Mélodie', 'Les Pokémon du village sont guéris. Il peut partir à l\'aventure avec toi.']]);
+    await join(1, 15);
+    loadNpcs();
+    if (epId() === 'bulbi') await chapterEnd();
+  }
+  /** Épisode : l'Escouade Carapuce de la Route 6, et l'incendie de Carmin. */
+  async function cara() {
+    if (S.flags.cara) return;
+    const n = npcs.find(x => x.id === 'squirtle');
+    await talk([['', 'Carapuce : Cara cara ! (Le chef de l\'Escouade Carapuce te bloque le passage, lunettes de soleil sur le nez. Ses copains rigolent.)'],
+                ['Pierre', 'Ce sont eux qui jouent des tours aux voyageurs ! On ne passera pas sans les battre.']]);
+    const res = await battle({ trainer: { name: 'Escouade Carapuce', team: [[7, 17], [7, 17], [7, 19]] } }, n);
+    if (res !== 'win') return;
+    S.flags.cara = 1;
+    G.Audio.sfx('select');
+    await talk([['', 'Une alarme retentit : un incendie près du port de Carmin ! Les Carapuce se regardent… puis foncent éteindre le feu avec leurs Pistolets à O !'],
+                ['Agent Jenny', 'Bravo, les Carapuce ! Vous êtes des héros. À partir d\'aujourd\'hui, vous serez les pompiers de Carmin sur Mer !'],
+                ['', 'Le chef de l\'Escouade s\'approche de toi et remonte ses lunettes… Il veut partir avec toi !']]);
+    await join(7, 15);
+    loadNpcs();
+    if (epId() === 'cara') await chapterEnd();
   }
   /** « évolue au N. 16 » (le plus petit niveau d'évolution), ou rien. */
   function evoTxt(m) {
@@ -1741,23 +1838,23 @@ G.Overworld = (() => {
     refreshFollowers();
   }
   async function intro() {
-    const c = K().CHAPTERS[S.ch];
+    const c = cur();
     hud();
     const el = $('world-banner');
-    el.innerHTML = `<small>Chapitre ${S.ch}</small><b>${c.title}</b>`;
+    el.innerHTML = `<small>Chapitre ${chNum()}</small><b>${c.title}</b>`;
     el.classList.add('on');
     await new Promise(r => setTimeout(r, 1600));
     el.classList.remove('on');
-    await talk(c.intro);
-    S.flags['intro' + S.ch] = 1;
+    await talk(c.intro.map(([w, t]) => [w, w ? t : t.replace(/^Chapitre \d+/, 'Chapitre ' + chNum())]));
+    if (S.ep == null) S.flags['intro' + S.ch] = 1;
     S.flags.introTitle = c.title;
   }
 
   // ---------------- interface ----------------
   function hud() {
     if (!S) return;
-    const c = K().CHAPTERS[S.ch];
-    $('world-ch').textContent = 'Chapitre ' + S.ch + ' · ' + c.title;
+    const c = cur();
+    $('world-ch').textContent = 'Chapitre ' + chNum() + ' · ' + c.title;
     $('world-goal').textContent = c.goal;
   }
   async function menu() {
@@ -1766,7 +1863,7 @@ G.Overworld = (() => {
       for (;;) {
         const i = await G.AdvUI.choose('Menu · ' + S.money + ' pièces · ' + S.potions + ' Potions', [
           { icon: 'pball', title: 'Équipe', desc: S.team.length + ' Pokémon' },
-          { icon: 'up', title: 'Objectif', desc: K().CHAPTERS[S.ch].goal },
+          { icon: 'up', title: 'Objectif', desc: cur().goal },
           { icon: 'map', title: 'Carte', desc: 'La carte de Kanto et où tu es' },
           { icon: 'trophy', title: 'Badges', desc: BADGES.filter(b => S.flags[b.flag]).length + ' / 8 badges' },
           { icon: 'flying', title: 'Vol', desc: flier() ? M().name(flier()) + ' t\'emmène à un Centre Pokémon' : 'Il faut un Pokémon de type Vol' },
@@ -1785,7 +1882,7 @@ G.Overworld = (() => {
             .concat([{ title: 'Retour', desc: '' }]));
           if (a === 0) await G.AdvUI.dex(m);
           else if (a === 1 && j > 0) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
-        } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
+        } else if (i === 1) await talk([['', cur().goal]]);
         else if (i === 2) await worldMap();
         else if (i === 3) await badgeCase();
         else if (i === 4) { await flyMenu(); return; }
@@ -1818,9 +1915,13 @@ G.Overworld = (() => {
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(frame);
     busy = false;
+    // Les épisodes du chapitre 6 (ajoutés après coup) : une partie arrêtée avant le Major Bob les joue d'abord.
+    let fresh = false;
+    if (S.ep === undefined) { S.ep = S.ch === 6 && !S.flags.surge ? 0 : null; fresh = S.ep === 0; }
     if (!S.flags.intro1) run(intro);
+    else if (fresh) run(intro);
     // Un chapitre « À suivre » devenu un vrai chapitre : on montre son introduction.
-    else if (S.flags.introTitle !== K().CHAPTERS[S.ch].title && /suivre/.test(S.flags.introTitle || 'À suivre')) run(intro);
+    else if (S.flags.introTitle !== cur().title && /suivre/.test(S.flags.introTitle || 'À suivre')) run(intro);
   }
   function quit() {
     commit();

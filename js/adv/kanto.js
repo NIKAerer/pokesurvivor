@@ -252,7 +252,7 @@ G.Kanto = (() => {
     CeruleanCity_PokemonCenter_1F_EventScript_Gentleman: 'Tu as vu le Psykokwak d\'Ondine ? Il a toujours mal à la tête, le pauvre.',
     CeruleanCity_PokemonCenter_1F_EventScript_Rocker: 'Léo, sur la Route 25, adore les Pokémon. Il en a des milliers sur son ordinateur !',
     CeruleanCity_PokemonCenter_1F_EventScript_Youngster: 'Les Pokémon Eau d\'Ondine sont rapides. Un Pokémon Plante ou Électrik t\'aidera !',
-    CeruleanCity_PokemonCenter_1F_EventScript_Lass: 'J\'ai vu une Salamèche abandonnée près des routes au nord… J\'espère qu\'elle a trouvé un ami.',
+    CeruleanCity_PokemonCenter_1F_EventScript_Lass: 'J\'ai vu un Salamèche abandonné près des routes au nord… J\'espère qu\'il a trouvé un ami.',
     CeruleanCity_PokemonCenter_1F_EventScript_PokemonJournalMisty: 'Journal Pokémon : « Ondine rêve de devenir la meilleure dresseuse de Pokémon Eau du monde. »',
     CeruleanCity_Mart_EventScript_Woman: 'Les Total Soin guérissent le poison, la paralysie et le sommeil. Très pratique !',
     CeruleanCity_Mart_EventScript_Youngster: 'Contre Ondine, prends beaucoup de Potions. Ses Pokémon frappent fort !',
@@ -571,6 +571,41 @@ G.Kanto = (() => {
               ['Pierre', 'Son arène est cachée derrière des petits arbres. Heureusement que tu connais Coupe !']] },
     { title: 'À suivre…', goal: 'La suite de l\'aventure (la Team Rocket de la Salle de jeux, Safrania…) arrive bientôt !',
       intro: [['', 'Chapitre 11 · À suivre'], ['', 'Bravo ! Quatre badges ! La suite arrive bientôt : la Team Rocket se cache sous la Salle de jeux…']] });
+
+  // ---------------- Les épisodes du chapitre 6 : les starters de l'animé (Salamèche, Bulbizarre, Carapuce) ----------------
+  // Version de Nika : plus de chapitres entre les chapitres. Ils se jouent avant le Major Bob.
+  CHAPTERS[6].pre = [
+    { id: 'sala', title: 'Salamèche abandonné', goal: 'Au nord d\'Azuria, après le Pont Pépite, un Salamèche attend sur un rocher de la Route 24. Va la voir.',
+      intro: [['', 'Chapitre 6 · Salamèche abandonné'], ['Ondine', 'Je viens avec toi ! Tant que tu ne m\'as pas remboursé ce vélo, je ne te lâche pas !'],
+              ['Pierre', 'Avant de partir vers Carmin… Un pêcheur m\'a parlé d\'un Salamèche qui attend son dresseur depuis des jours, au nord, sur la Route 24.'],
+              ['Ondine', 'Avec la pluie qui arrive ? Sa flamme va s\'éteindre ! Il faut y aller tout de suite !']] },
+    { id: 'bulbi', title: 'Le village caché', goal: 'Prends la Route 5 au sud d\'Azuria et trouve le village caché où Mélodie soigne les Pokémon blessés.',
+      intro: [['', 'Chapitre 7 · Le village caché'], ['Pierre', 'On dit qu\'au bout de la Route 5, une fille cache un village pour les Pokémon blessés ou abandonnés.'],
+              ['Ondine', 'Et qu\'un Bulbizarre très fort le protège. Personne n\'arrive à le battre !']] },
+    { id: 'cara', title: 'L\'Escouade Carapuce', goal: 'Passe par le Souterrain jusqu\'à la Route 6 : l\'Escouade Carapuce y fait la loi.',
+      intro: [['', 'Chapitre 8 · L\'Escouade Carapuce'], ['Pierre', 'Au bout du Souterrain, la Route 6 mène à Carmin sur Mer.'],
+              ['Ondine', 'Attention : une bande de Carapuce à lunettes de soleil y joue des tours aux voyageurs. Même l\'Agent Jenny n\'arrive pas à les attraper !']] }
+  ];
+  Object.assign(CHAPTERS[6], {
+    goal: 'Continue la Route 6 jusqu\'à Carmin sur Mer et défie le Major Bob dans son arène.',
+    intro: [['', 'Chapitre 6 · Carmin sur Mer'], ['', 'Au bout de la Route 6, Carmin sur Mer, la ville du port, et son arène électrique.'],
+            ['Pierre', 'Le Major Bob a caché son bureau derrière une barrière électrique. Il paraît que les interrupteurs sont dans les poubelles…']]
+  });
+  NPCS.route24 = [
+    { id: 'charmander', mon: 4, x: 5, y: 9, dir: 'down', event: 'sala', when: f => !f.sala },
+    { id: 'damien', look: 'cooltrainer_m', x: 8, y: 8, dir: 'left', event: 'sala', when: f => !f.sala }
+  ];
+  NPCS.route5 = [
+    { id: 'melodie', look: 'picnicker', x: 17, y: 30, dir: 'down', event: 'bulbi' },
+    { id: 'bulbasaur', mon: 1, x: 18, y: 31, dir: 'left', event: 'bulbi', when: f => !f.bulbi },
+    { id: 'v_oddish', mon: 43, x: 16, y: 32, dir: 'right', talk: () => [['', 'Mystherbe : Mys ! (Sa feuille est entourée d\'un bandage.)']] },
+    { id: 'v_rattata', mon: 19, x: 20, y: 29, dir: 'down', talk: () => [['', 'Rattata : Rattaaa… (Il boite un peu, mais il a l\'air heureux ici.)']] },
+    { id: 'v_pidgey', mon: 16, x: 21, y: 31, dir: 'left', talk: () => [['', 'Roucool : Rou rou ! (Son aile guérit bien.)']] }
+  ];
+  NPCS.route6 = NPCS.route6.concat([
+      { id: 'squirtle', mon: 7, x: 12, y: 19, dir: 'down', event: 'cara', when: f => !f.cara },
+      { id: 'jenny', look: 'cooltrainer_f', x: 8, y: 19, dir: 'right', event: 'jenny' }
+    ]);
 
   return { MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
 })();
