@@ -47,6 +47,7 @@ G.Overworld = (() => {
   let busy = false;          // dialogue, combat ou évènement en cours
   let cam = { x: 0, y: 0 };
   const pl = { x: 0, y: 0, dir: 'down', walkT: 0, moving: false, tile: '' };
+  let surfing = false, surfAnim = null;
   let trail = [], followers = [], hiddenMon = null, fxs = [], bumpT = 0, stuckT = 0, fly = null, calm = 0;
   let stick = null;          // joystick tactile { id, x0, y0, x, y }
   const keys = new Set();
@@ -108,13 +109,14 @@ G.Overworld = (() => {
   const FACE = { face_left: 'left', face_right: 'right', face_up: 'up', face_down_and_up: 'down' };
   function loadNpcs() {
     const story = (K().NPCS[mapKey] || []).filter(n => !n.when || n.when(S.flags));
-    // Le petit arbre de la Route 9 : il bloque le passage jusqu'à ce qu'on ait Coupe.
-    const cut = mapKey === 'route9' && !S.flags.cut_route9;
-    const amb = art.objs.filter(o => o.gfx === 'cut_tree' ? cut : !SKIP.has(o.gfx)).map((o, i) => {
+    // Les petits arbres : ils bloquent le passage jusqu'à ce qu'on les coupe avec Coupe (sauf celui de l'arène de Carmin).
+    const cutKey = o => mapKey + ':' + o.x + ',' + o.y;
+    const cut = o => mapKey !== 'carmin' && !(S.cut && S.cut[cutKey(o)]) && !(mapKey === 'route9' && S.flags.cut_route9);
+    const amb = art.objs.filter(o => o.gfx === 'cut_tree' ? cut(o) : !SKIP.has(o.gfx)).map((o, i) => {
       const t = o.trainer && (K().TRAINERS[o.script] || genTrainer(o));
       return { id: mapKey + '_' + i, look: G.People.has(o.gfx) ? o.gfx : 'boy', mon: MONS[o.gfx], x: o.x, y: o.y, dir: FACE[o.mv] || 'down',
         inv: INVISIBLE.has(o.gfx), event: o.gfx === 'nurse' ? 'center' : o.gfx === 'clerk' ? 'mart' : o.gfx === 'cut_tree' ? 'cut' : undefined,
-        trainer: t ? { ...t, sees: Math.max(2, +o.sight || 3) } : null,
+        trainer: t ? { ...t, sees: Math.max(2, +o.sight || 3) } : null, cutKey: o.gfx === 'cut_tree' ? cutKey(o) : null,
         talk: () => [['', K().TALK[o.script] || 'Bonjour ! Belle journée pour une balade avec ses Pokémon.']] };
     }).filter(n => !story.some(s2 => s2.x === n.x && s2.y === n.y));
     npcs = story.concat(amb).map(n => {
@@ -134,7 +136,7 @@ G.Overworld = (() => {
     const tx = Math.floor(wx / TS), ty = Math.floor(wy / TS);
     if (!inMap(tx, ty)) return !connAt(tx, ty);
     const ch = at(tx, ty), lg = LEDGE[ch];
-    if (SOLID.has(ch)) return true;
+    if (SOLID.has(ch) && !(surfing && ch === 'w')) return true;
     if (lg && !(lg[0] === Math.sign(dx) && lg[1] === Math.sign(dy) && (dx || dy))) return true;
     // Un rebord qui retombe dans un mur, un arbre ou l'eau : on ne saute pas.
     if (lg && !landOk(tx + lg[0], ty + lg[1])) return true;
@@ -147,7 +149,7 @@ G.Overworld = (() => {
   /** Touche un mur, un arbre, l'eau ou un personnage (pas les rebords) : coincé si c'est vrai là où on est. */
   function hard(x, y) {
     const c = (wx, wy) => { const tx = Math.floor(wx / TS), ty = Math.floor(wy / TS);
-      return inMap(tx, ty) && SOLID.has(at(tx, ty)) || npcs.some(n => Math.abs(n.px - wx) < 14 && wy > n.py - 14 && wy < n.py + 2); };
+      return inMap(tx, ty) && SOLID.has(at(tx, ty)) && !(surfing && at(tx, ty) === 'w') || npcs.some(n => Math.abs(n.px - wx) < 14 && wy > n.py - 14 && wy < n.py + 2); };
     return c(x - 9, y - 1) || c(x + 9, y - 1) || c(x - 9, y - 9) || c(x + 9, y - 9);
   }
   /** Un rebord sous les pieds : petit saut par-dessus, jusqu'à la case d'après (au milieu de la case). */
@@ -189,6 +191,9 @@ G.Overworld = (() => {
     return [tx, ty];
   }
   function setMap(key, tx, ty, dir) {
+    surfing = false;
+    if (art && !art.inside && !art.cave && mapKey) S.out = { map: mapKey, x: pl.x / TS, y: pl.y / TS };
+    (S.visited = S.visited || {})[key] = 1;
     mapKey = key;
     art = G.KantoArt.maps[key];
     def = K().MAPS[key];
@@ -322,6 +327,7 @@ G.Overworld = (() => {
       if (f.hopT > 0) f.hopT = Math.max(0, f.hopT - dt);
       if (f.emote) f.emote.t += dt;
     }
+    if (surfAnim) surfAnim.update(dt);
     if (fly) { fly.t += dt; fly.anim.update(dt); if (fly.t >= fly.dur && fly.res) { const r = fly.res; fly.res = null; r(); } }
     for (const n of npcs) { if (n.bubble) n.bubble = Math.max(0, n.bubble - dt); if (n.anim) n.anim.update(dt); }
     for (let i = fxs.length - 1; i >= 0; i--) { fxs[i].t += dt; if (fxs[i].t > 0.9) fxs.splice(i, 1); }
@@ -404,7 +410,7 @@ G.Overworld = (() => {
       if (n.bubble) { x.fillStyle = '#fff'; x.fillRect(n.px - 7, n.py - 66, 14, 16); x.fillStyle = '#e03030'; x.fillRect(n.px - 2, n.py - 63, 4, 7); x.fillRect(n.px - 2, n.py - 54, 4, 3); }
     } });
     for (const f of followers) {
-      if (f.m === hiddenMon || f.m.hp <= 0 || fly) continue;
+      if (f.m === hiddenMon || f.m.hp <= 0 || fly || surfing) continue;
       list.push({ y: f.y, draw: x => {
         const hop = f.hopT > 0 ? Math.abs(Math.sin(f.hopT * Math.PI / 0.3)) * 6 : 0;
         G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, 1); f.anim.draw(x, f.x, f.y - hop); if (!hop) grass(x, f.x, f.y);
@@ -413,7 +419,12 @@ G.Overworld = (() => {
     }
     if (!fly || fly.ground) list.push({ y: pl.y + 0.1, draw: x => {
       if (pl.hop) { x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(pl.x, pl.y - 2, 11, 4, 0, 0, 6.2832); x.fill(); }
-      G.People.draw(x, 'hero', pl.x, pl.y - pl.hop, pl.dir, pl.walkT, pl.moving);
+      if (surfing && surfAnim) {
+        surfAnim.dir = G.Sprites.dirFromAngle({ down: Math.PI / 2, up: -Math.PI / 2, left: Math.PI, right: 0 }[pl.dir]);
+        x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.ellipse(pl.x, pl.y - 1, 16 + Math.sin(time * 4) * 2, 5, 0, 0, 6.2832); x.fill();
+        surfAnim.draw(x, pl.x, pl.y + 8 - pl.hop);
+      }
+      G.People.draw(x, 'hero', pl.x, pl.y - pl.hop - (surfing ? 14 : 0), pl.dir, pl.walkT, pl.moving);
       if (!pl.hop) grass(x, pl.x, pl.y);
     } });
     list.sort((a, b) => a.y - b.y);
@@ -508,6 +519,92 @@ G.Overworld = (() => {
     { town: 'route10', name: 'Route 10', door: 'route10_centre', desc: 'Centre Pokémon de la Centrale' },
     { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' }
   ];
+  // ---------------- la carte du monde ----------------
+  /** Les cartes extérieures placées les unes par rapport aux autres (en cases), d'après leurs raccords. */
+  let WORLD = null;
+  function world() {
+    if (WORLD) return WORLD;
+    const maps = G.KantoArt.maps, pos = { bourg: [0, 0] }, q = ['bourg'];
+    while (q.length) {
+      const k = q.shift(), a = maps[k], [x, y] = pos[k];
+      for (const c of a.conns || []) {
+        const b = maps[c.map];
+        if (!b || pos[c.map]) continue;
+        pos[c.map] = c.dir === 'up' ? [x + c.offset, y - b.h] : c.dir === 'down' ? [x + c.offset, y + a.h]
+          : c.dir === 'left' ? [x - b.w, y + c.offset] : [x + a.w, y + c.offset];
+        q.push(c.map);
+      }
+    }
+    // Safrania n'existe pas encore : on la réserve (dans le brouillard) et on place la Route 6 et Carmin dessous.
+    const ghost = {};
+    if (pos.route5) {
+      ghost.safrania = [pos.route5[0], pos.route5[1] + maps.route5.h, 48, 40];
+      const go = (k, x, y) => { if (maps[k] && !pos[k]) { pos[k] = [x, y]; q.push(k); } };
+      go('route6', ghost.safrania[0] + 12, ghost.safrania[1] + 40);
+      if (pos.route6) go('carmin', pos.route6[0] - 12, pos.route6[1] + maps.route6.h);
+    }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const k in ghost) { const [x, y, w, h] = ghost[k]; x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); }
+    for (const k in pos) { const a = maps[k]; x0 = Math.min(x0, pos[k][0]); y0 = Math.min(y0, pos[k][1]); x1 = Math.max(x1, pos[k][0] + a.w); y1 = Math.max(y1, pos[k][1] + a.h); }
+    x0 -= 4; y0 -= 4; x1 += 4; y1 += 4;
+    return (WORLD = { pos, ghost, x0, y0, w: x1 - x0, h: y1 - y0 });
+  }
+  /** La carte de Kanto : les vraies cartes en petit, celles pas encore visitées dans le brouillard, et toi dessus. */
+  function worldMap() {
+    return new Promise(res => {
+      const W = world(), maps = G.KantoArt.maps;
+      const visited = k => (S.visited && S.visited[k]) || ((K().MAPS[k] && K().MAPS[k].ch) || 1) < S.ch || k === mapKey;
+      const el = document.createElement('div');
+      el.id = 'adv-map';
+      el.innerHTML = `<div class="am-box"><button class="ad-x">Fermer</button><h3>Kanto</h3><p class="am-goal">${K().CHAPTERS[S.ch].goal}</p><canvas></canvas>
+        <p class="am-leg"><i class="me"></i> Toi <i class="fog"></i> Pas encore visité</p></div>`;
+      document.body.appendChild(el);
+      const cv = el.querySelector('canvas'), c = cv.getContext('2d');
+      const draw = () => {
+        const bw = cv.clientWidth || 300, sc = bw / W.w, d = Math.min(2, devicePixelRatio || 1);
+        cv.width = Math.round(bw * d); cv.height = Math.round(W.h * sc * d); cv.style.height = W.h * sc + 'px';
+        c.setTransform(d * sc, 0, 0, d * sc, -W.x0 * sc * d, -W.y0 * sc * d);
+        c.imageSmoothingEnabled = true;
+        c.fillStyle = '#33433a'; c.fillRect(W.x0, W.y0, W.w, W.h);
+        for (const k in W.ghost) { const [x, y, w, h] = W.ghost[k]; c.fillStyle = '#20262c'; c.fillRect(x, y, w, h); }
+        for (const k in W.pos) {
+          const a = maps[k], [x, y] = W.pos[k];
+          if (!a._bg) { a._bg = img(a.base); a._top = img(a.top); }
+          if (a._bg.complete && a._bg.naturalWidth) c.drawImage(a._bg, x, y, a.w, a.h); else { c.fillStyle = '#6a9a5a'; c.fillRect(x, y, a.w, a.h); }
+          if (a._top.complete && a._top.naturalWidth) c.drawImage(a._top, x, y, a.w, a.h);
+          if (!a._bg.complete) a._bg.onload = draw;
+          if (!visited(k)) { c.fillStyle = 'rgba(20,24,30,.78)'; c.fillRect(x, y, a.w, a.h); }
+        }
+        // Les noms des villes et des routes visitées.
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        for (const k in W.pos) {
+          const a = maps[k], [x, y] = W.pos[k], town = !K().MAPS[k] || K().MAPS[k].wild === null;
+          if (!visited(k)) continue;
+          const nm = (K().MAPS[k] && K().MAPS[k].name || k).replace(/ ·.*/, '');
+          const fs = (town ? 15 : 10) / sc;
+          c.font = `800 ${fs}px sans-serif`;
+          const tw = c.measureText(nm).width;
+          c.fillStyle = town ? 'rgba(255,250,242,.92)' : 'rgba(255,250,242,.75)';
+          const lx = Math.max(W.x0 + tw / 2 + 6 / sc, Math.min(W.x0 + W.w - tw / 2 - 6 / sc, x + a.w / 2)), ly = y + a.h / 2 + (k === mapKey || (S.out && S.out.map === k) ? fs * 1.3 : 0);
+          c.fillRect(lx - tw / 2 - 4 / sc, ly - fs * 0.7, tw + 8 / sc, fs * 1.4);
+          c.fillStyle = '#2a1d14'; c.fillText(nm, lx, ly);
+        }
+        // Toi : là où tu es dehors (ou la porte par laquelle tu es entré).
+        const here = !art.inside && !art.cave ? { map: mapKey, x: pl.x / TS, y: pl.y / TS } : S.out;
+        if (here && W.pos[here.map]) {
+          const px = W.pos[here.map][0] + here.x, py = W.pos[here.map][1] + here.y, r = 9 / sc;
+          c.fillStyle = '#e83a3a'; c.strokeStyle = '#fff'; c.lineWidth = 3 / sc;
+          c.beginPath(); c.arc(px, py, r, 0, 6.2832); c.fill(); c.stroke();
+        }
+      };
+      requestAnimationFrame(draw);
+      G.Audio.sfx('select');
+      const fin = () => { removeEventListener('keydown', key, true); el.remove(); res(); };
+      const key = e => { if (['Space', 'Enter', 'Escape', 'Backspace', 'KeyM'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); fin(); } };
+      addEventListener('keydown', key, true);
+      el.onclick = e => { if (e.target === el || e.target.classList.contains('ad-x')) fin(); };
+    });
+  }
   function seen(key) {
     const f = FLY.find(f => f.town === key || f.door === key);
     if (f) (S.fly = S.fly || {})[f.town] = 1;
@@ -570,9 +667,54 @@ G.Overworld = (() => {
     if (/_centre$/.test(mapKey) && f.x === 11 && f.y === 1 && (!fromBump || pl.dir === 'up')) { run(pc); return; }
     const w = warpAt(f.x, f.y);
     if (w) { run(() => door(w)); return; }
+    if (!fromBump && inMap(f.x, f.y) && at(f.x, f.y) === 'w') { run(() => water(f)); return; }
+    if (fromBump && !surfing && inMap(f.x, f.y) && at(f.x, f.y) === 'w' && !S.flags.surfHint) { S.flags.surfHint = 1; run(() => water(f)); return; }
     const sg = art.signs.find(b => b.x === f.x && b.y === f.y);
     if (sg && /TrashCan/.test(sg.script)) { if (!fromBump) run(() => trash(sg)); return; }
     if (sg && (!fromBump || pl.dir === 'up')) run(() => talk([['', K().SIGNS[sg.script] || K().SIGN_DEFAULT]]));
+  }
+  // ---------------- Surf et pêche ----------------
+  const SURF_POOL = [72, 72, 72, 54, 79, 86, 90, 116, 118, 120, 129];
+  const FISH_POOL = [129, 129, 129, 129, 118, 118, 60, 98, 116, 72, 90, 120];
+  const swimmer = () => S.team.find(m => m.hp > 0 && G.DEX_BY[m.dex].types.includes('water'));
+  /** Devant l'eau : nager (un Pokémon Eau dans l'équipe) ou pêcher (avec la Canne). */
+  async function water(f) {
+    const sw = swimmer(), opts = [];
+    if (!surfing && sw) opts.push({ k: 'surf', dex: sw.dex, title: 'Surf', desc: M().name(sw) + ' te porte sur l\'eau' });
+    if (S.rod) opts.push({ k: 'fish', icon: 'pball', title: 'Pêcher', desc: 'Lancer la Canne' });
+    if (!opts.length) {
+      await talk([['', 'L\'eau est d\'un bleu profond…'], ['', surfing ? 'Avec une Canne, tu pourrais pêcher ici.' : 'Un Pokémon de type Eau dans ton équipe pourrait te faire nager. Et avec une Canne (en boutique), tu pourrais pêcher !']]);
+      return;
+    }
+    const i = await G.AdvUI.choose('L\'eau est d\'un bleu profond…', opts.concat([{ title: 'Rien', desc: '' }]));
+    const o = opts[i];
+    if (!o) return;
+    if (o.k === 'fish') { await fish(); return; }
+    await talk([['', M().name(sw) + ' utilise Surf !']]);
+    surfing = true;
+    surfAnim = new G.Sprites.Animator(sw.dex, 1, G.DB.ownsShiny(sw.dex));
+    surfAnim.loop('Idle');
+    pl.jump = { x0: pl.x, y0: pl.y, x1: f.x * TS + 16, y1: f.y * TS + 30, t: 0 };
+    G.Audio.sfx('click');
+  }
+  function endSurf() {
+    surfing = false; surfAnim = null;
+    trail = []; for (let i = 0; i < 200; i++) trail.push({ x: pl.x, y: pl.y });
+    followers.forEach(f => { f.x = pl.x; f.y = pl.y; });
+  }
+  async function waterBattle(pool) {
+    const dex = pool[Math.floor(Math.random() * pool.length)], lv = Math.max(3, 3 + S.ch * 3 + Math.floor(Math.random() * 4) - (dex === 129 ? 3 : 0));
+    const shiny = G.Sprites.hasShiny(dex) && Math.random() < 1 / 150;
+    await battle({ wild: [dex, lv], shiny });
+  }
+  async function fish() {
+    G.Audio.sfx('click');
+    await talk([['', 'Tu lances ta Canne…'], ['', '…']]);
+    if (Math.random() < 0.3) { await talk([['', 'Rien ne mord…']]); return; }
+    G.Audio.sfx('select');
+    await talk([['', 'Oh ! Ça mord !']]);
+    if (!canFight()) return;
+    await waterBattle(FISH_POOL);
   }
   /** Le Pokémon se tourne vers toi, sautille, et réagit selon son état et l'endroit. */
   async function petMon(f) {
@@ -668,7 +810,7 @@ G.Overworld = (() => {
     if (n.event === 'regis3') { await regis3(); return; }
     if (n.event === 'rocket2') { await rocket2(); return; }
     if (n.event === 'captain') { await captain(); return; }
-    if (n.event === 'cut') { await cutTree(); return; }
+    if (n.event === 'cut') { await cutTree(n); return; }
     if (n.event === 'regis4') { await regis4(); return; }
     if (n.event === 'ghost') { await ghost(); return; }
     if (n.event === 'fuji') { await fuji(); return; }
@@ -833,6 +975,7 @@ G.Overworld = (() => {
     const key = tx + ',' + ty;
     if (key === pl.tile) return;
     pl.tile = key;
+    if (surfing && at(tx, ty) !== 'w' && !pl.jump) endSurf();
     if (!pl.jump && ledgeJump()) return;
     const w = warpAt(tx, ty);
     if (w) { run(() => door(w)); return; }
@@ -845,6 +988,7 @@ G.Overworld = (() => {
     if (grassy) G.AdvFX.burst('grass', pl.x, pl.y - 8, 5, 0.35);
     // Après un combat ou en arrivant sur une carte : quelques pas tranquilles. Dans les grottes, bien plus rare que dans les herbes.
     if (calm > 0) calm--;
+    else if (surfing && at(tx, ty) === 'w' && canFight() && Math.random() < 1 / 14) { calm = 8; run(() => waterBattle(SURF_POOL)); }
     else if (wild && canFight() && (grassy ? Math.random() < 1 / 10 : (art.cave || art.inside) && Math.random() < 1 / 45)) {
       calm = 8;
       const [dex, a, b] = G.U.pick(wild);
@@ -1176,11 +1320,13 @@ G.Overworld = (() => {
     }
     if (S.ch === 7) await chapterEnd();
   }
-  async function cutTree() {
+  async function cutTree(n) {
     if (!S.flags.coupe) { await talk([['', 'Un petit arbre bloque le passage. Il faudrait la technique Coupe…']]); return; }
     const m = S.team.find(m => m.hp > 0) || S.team[0];
+    if (n) G.AdvFX.burst('grass', n.px, n.py - 14, 14, 0.6);
     await talk([['', (m ? M().name(m) : 'Ton Pokémon') + ' utilise Coupe ! L\'arbre est coupé.']]);
-    S.flags.cut_route9 = 1;
+    if (mapKey === 'route9') S.flags.cut_route9 = 1;
+    if (n && n.cutKey) (S.cut = S.cut || {})[n.cutKey] = 1;
     G.Audio.sfx('select');
     loadNpcs();
   }
@@ -1318,11 +1464,19 @@ G.Overworld = (() => {
     for (;;) {
       const i = await G.AdvUI.choose('Boutique · ' + S.money + ' pièces', MART.map(([k, t, p, d]) =>
         ({ title: t, desc: p + ' pièces · ' + d + ' · tu en as ' + (S[k] || 0), icon: 'up', off: S.money < p })).concat([
+        { title: 'Canne', desc: S.rod ? 'Tu en as déjà une' : '1000 pièces · pêcher face à l\'eau', icon: 'up', off: S.rod || S.money < 1000 },
         { title: 'Pokémon', desc: 'Des Pokémon du coin, mais chers', icon: 'pball' },
         { title: 'Au revoir', desc: '' }
       ]));
-      if (i === MART.length + 1) return;
-      if (i === MART.length) { await buyMon(); continue; }
+      if (i === MART.length + 2) return;
+      if (i === MART.length + 1) { await buyMon(); continue; }
+      if (i === MART.length) {
+        if (S.rod) { await talk([['Vendeur', 'Tu as déjà une Canne !']]); continue; }
+        if (S.money < 1000) { await talk([['Vendeur', 'Tu n\'as pas assez de pièces…']]); continue; }
+        S.money -= 1000; S.rod = 1; G.Audio.sfx('confirm');
+        await talk([['Vendeur', 'Voilà ta Canne ! Mets-toi face à l\'eau et lance-la.']]);
+        commit(); continue;
+      }
       const [k, , p, , n] = MART[i];
       if (S.money < p) { await talk([['Vendeur', 'Tu n\'as pas assez de pièces…']]); continue; }
       S.money -= p;
@@ -1531,6 +1685,7 @@ G.Overworld = (() => {
         const i = await G.AdvUI.choose('Menu · ' + S.money + ' pièces · ' + S.potions + ' Potions', [
           { icon: 'pball', title: 'Équipe', desc: S.team.length + ' Pokémon' },
           { icon: 'up', title: 'Objectif', desc: K().CHAPTERS[S.ch].goal },
+          { icon: 'map', title: 'Carte', desc: 'La carte de Kanto et où tu es' },
           { icon: 'flying', title: 'Vol', desc: flier() ? M().name(flier()) + ' t\'emmène à un Centre Pokémon' : 'Il faut un Pokémon de type Vol' },
           { icon: 'home', title: 'Débloquer', desc: 'Coincé ? Retour au dernier Centre Pokémon' },
           { title: 'Quitter', desc: 'Sauvegarde et retour au menu' },
@@ -1548,12 +1703,13 @@ G.Overworld = (() => {
           if (a === 0) await G.AdvUI.dex(m);
           else if (a === 1 && j > 0) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
-        else if (i === 2) { await flyMenu(); return; }
-        else if (i === 3) {
+        else if (i === 2) await worldMap();
+        else if (i === 3) { await flyMenu(); return; }
+        else if (i === 4) {
           const y = await G.AdvUI.choose('Retourner au dernier Centre Pokémon visité ?', [{ icon: 'home', title: 'Oui, j\'y retourne', desc: '' }, { title: 'Non', desc: '' }]);
           if (y === 0) { await rescue(); return; }
         }
-        else if (i === 4) { quit(); return; }
+        else if (i === 5) { quit(); return; }
         else return;
       }
     });
@@ -1626,5 +1782,5 @@ G.Overworld = (() => {
   }
 
   return { open, quit, init, save: () => S || save(), player: () => pl, setFollowerHidden, refreshFollowers, followers: () => followers, fx,
-           get active() { return open_; }, get busy() { return busy; } };
+           get active() { return open_; }, get busy() { return busy; }, get surfing() { return surfing; } };
 })();
