@@ -1106,7 +1106,7 @@ G.Overworld = (() => {
     if (mapKey === 'jadielle_centre' && S.ch === 1) { S.flags.ch1done = 1; await chapterEnd(); }
   }
   async function pierre(n) {
-    if (S.flags.pierre) { await talk([['Pierre', 'Tu as mon Badge Roche. Continue ta route, tu iras loin !']]); return; }
+    if (S.flags.pierre) { await rematch(n, 'pierre'); return; }
     await talk([['Pierre', 'Je suis Pierre, le champion d\'Argenta. Ma défense est solide comme le roc !'], ['Pierre', 'Montre-moi ta détermination !']]);
     const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]], smart: true,
       leader: { look: 'brock', type: 'rock', badge: 'Roche', title: 'Champion de l\'arène d\'Argenta', quote: 'Ma défense est solide comme le roc !' } } }, n);
@@ -1116,6 +1116,36 @@ G.Overworld = (() => {
       await talk([['Pierre', 'Tu m\'as battu… Tu mérites ceci : le Badge Roche !'], ['', 'Tu obtiens le Badge Roche et 500 pièces !']]);
       if (S.ch === 3) await chapterEnd();
     }
+  }
+
+  // ---------------- revanches des Champions ----------------
+  // Version de Nika : un Champion déjà battu propose une revanche, une fois par chapitre, avec une équipe plus forte (à ton niveau).
+  const REMATCH = {
+    pierre: { name: 'Pierre', team: [75, 95, 111, 76], bonus: 1500, hi: 'Tu reviens me voir ? Mes Pokémon se sont entraînés dans la montagne. Ils sont durs comme jamais !',
+      win: 'Toujours aussi fort… Ma défense n\'a pas tenu.', busy: 'Mes Pokémon se reposent. Reviens au prochain chapitre pour une revanche !',
+      leader: { look: 'brock', type: 'rock', badge: 'Roche', title: 'Revanche · Champion d\'Argenta', quote: 'Cette fois, ma défense est imprenable !' } },
+    ondine: { name: 'Ondine', team: [121, 55, 131, 120], bonus: 2000, hi: 'Une revanche ? Avec plaisir ! Mes Pokémon Eau ont fait des progrès… et toi, tu me dois toujours un vélo !',
+      win: 'Encore perdu ! Tu es vraiment doué.', busy: 'On a assez nagé pour ce chapitre. Reviens plus tard pour une revanche !',
+      leader: { look: 'misty', type: 'water', badge: 'Cascade', title: 'Revanche · Championne d\'Azuria', quote: 'La vague va tout emporter, cette fois !' } },
+    surge: { name: 'Major Bob', team: [26, 101, 82, 125], bonus: 2500, hi: 'Ha ha ! Tu reviens au combat, soldat ? Mon unité d\'élite est prête !',
+      win: 'Repos, soldat ! Tu as gagné cette bataille.', busy: 'Mes troupes rechargent leurs batteries ! Reviens au prochain chapitre.',
+      leader: { look: 'lt_surge', type: 'electric', badge: 'Foudre', title: 'Revanche · Champion de Carmin', quote: 'Décharge totale !' } }
+  };
+  async function rematch(n, key) {
+    const R = REMATCH[key];
+    S.rematch = S.rematch || {};
+    if (S.rematch[key] === S.ch) { await talk([[R.name, R.busy]]); return; }
+    const y = await G.AdvUI.choose(R.name + ' propose une revanche', [
+      { icon: 'crown', title: 'Revanche !', desc: 'Une équipe plus forte, à ton niveau · ' + R.bonus + ' pièces' }, { title: 'Pas maintenant', desc: '' }]);
+    if (y !== 0) return;
+    await talk([[R.name, R.hi]]);
+    const top = Math.max(...S.team.map(m => m.lv));
+    const team = R.team.map((d, i) => [d, Math.min(100, top + 1 + i)]);
+    const res = await battle({ trainer: { name: R.name, team, smart: true, potions: 2, leader: R.leader } }, n);
+    if (res !== 'win') return;
+    S.rematch[key] = S.ch; S.money += R.bonus;
+    G.Audio.sfx('legend');
+    await talk([[R.name, R.win], ['', 'Tu gagnes ' + R.bonus + ' pièces !']]);
   }
 
   // ---------------- chapitres 4 à 6 ----------------
@@ -1187,7 +1217,7 @@ G.Overworld = (() => {
     loadNpcs();
   }
   async function ondine(n) {
-    if (S.flags.ondine) { await talk([['Ondine', 'Bravo pour le Badge Cascade ! … Et n\'oublie pas que quelqu\'un me doit toujours un vélo.']]); return; }
+    if (S.flags.ondine) { await rematch(n, 'ondine'); return; }
     await talk([['Ondine', 'Je suis Ondine, la championne d\'Azuria ! Ma stratégie : l\'attaque totale avec les Pokémon Eau !'],
                 ['', 'Une Poké Ball s\'ouvre toute seule… Psykokwak en sort, l\'air perdu.'], ['Psykokwak', 'Psy… ?'],
                 ['Ondine', 'Psykokwak ! Retourne dans ta Ball, ce n\'est pas ton tour ! … Stari, en avant !']]);
@@ -1247,7 +1277,7 @@ G.Overworld = (() => {
     await talk([['', 'Rien… Bzzzt ! Les serrures se referment ! Les interrupteurs ont changé de place.']]);
   }
   async function surge(n) {
-    if (S.flags.surge) { await talk([['Major Bob', 'Hé, petit ! Ton équipe m\'a électrisé. Continue comme ça, soldat !']]); return; }
+    if (S.flags.surge) { await rematch(n, 'surge'); return; }
     const pika = S.team.some(m => m.dex === 25);
     await talk([['Major Bob', 'Hé, petit ! Bienvenue dans mon arène ! Mes Pokémon Électrik m\'ont sauvé la vie pendant la guerre !'],
                 ['Major Bob', pika ? 'Un Pikachu ? Ha ha ha ! Tu devrais le faire évoluer, petit, sinon il n\'a aucune chance contre mon Raichu !'
