@@ -268,7 +268,7 @@ G.AdvBattle = (() => {
       if (a.alpha <= 0) return;
       ctx.save();
       ctx.globalAlpha = a.alpha;
-      const sc = a.scale * 1.3;   // un peu plus grands que sur la carte : on les voit bien pendant le combat
+      const sc = a.scale * 1.3 * G.Sprites.fit(a.dex);   // un peu plus grands que sur la carte, mais les géants réduits
       ctx.translate(a.x, a.y); ctx.scale(sc, sc); ctx.translate(-a.x, -a.y);
       G.Sprites.drawShadow(ctx, a.dex, a.x + a.ox, a.y + a.oy, 1);
       a.anim.draw(ctx, a.x + a.ox, a.y + a.oy, { flash: a.flash > 0 });
