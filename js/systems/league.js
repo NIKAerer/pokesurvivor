@@ -210,7 +210,7 @@ G.League = (() => {
       <p class="cr-big">Tu es le nouveau Maître de la Ligue Pokémon !</p>
       <div class="cr-team" id="cr-team"></div>
       <div class="cr-badges">${STEPS.filter(s => s.kind === 'gym').map(s => `<span class="cr-badge" style="--c:${G.U.TYPE_COLOR[s.type]}" title="${s.badge}"></span>`).join('')}</div>
-      <h3>PokéSurvivor · version de Nika</h3>
+      <h3>PokeWeb · version de Nika</h3>
       <p>Imaginé et testé par Nika</p>
       <p>D'après PokéSurvivor de JPTER78</p>
       <p>Sprites : PMD SpriteCollab (CC BY-NC 4.0)</p>

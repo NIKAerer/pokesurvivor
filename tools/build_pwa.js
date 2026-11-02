@@ -26,8 +26,8 @@ for (const f of ['icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-
 copy(path.join(ROOT, 'favicon.ico'), 'favicon.ico');
 
 const manifest = {
-  name: 'PokéSurvivor de Nika',
-  short_name: 'PokéSurvivor',
+  name: 'PokeWeb',
+  short_name: 'PokeWeb',
   lang: 'fr',
   start_url: './',
   scope: './',
@@ -67,7 +67,7 @@ const page = `<!doctype html>
 <html lang="fr">
 <head>
 ${HEAD}
-<title>PokéSurvivor de Nika</title>
+<title>PokeWeb</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -75,7 +75,7 @@ ${HEAD}
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PokéSurvivor">
+<meta name="apple-mobile-web-app-title" content="PokeWeb">
 <style>
 body{overflow:hidden;position:fixed;inset:0}
 #game-frame{position:fixed;top:0;left:0;border:0;display:block;transform-origin:0 0}

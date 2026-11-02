@@ -436,7 +436,7 @@ G.I18n.add({
   'Créditos': 'Crédits', 'Sprites:': 'Sprites :', 'PMD SpriteCollab y sus artistas (CC BY-NC 4.0).': 'PMD SpriteCollab et ses artistes (CC BY-NC 4.0).',
   'Datos de los Pokémon:': 'Données des Pokémon :', 'Música y sonidos:': 'Musique et sons :', 'originales, generados por el propio juego.': 'originaux, générés par le jeu lui-même.',
   'Fuente:': 'Police :', 'Guía y preguntas': 'Guide et FAQ', 'Pokédex': 'Pokédex', 'Contacto': 'Contact', 'Código (GitHub)': 'Code (GitHub)',
-  'Gira el móvil': 'Tourne ton téléphone', 'PokéSurvivor se juega en horizontal.': "PokéSurvivor se joue à l'horizontale.",
+  'Gira el móvil': 'Tourne ton téléphone', 'PokeWeb se juega en horizontal.': "PokeWeb se joue à l'horizontale.",
   'No se pudo cargar todo el juego (¿se cortó la conexión?).': "Le jeu n'a pas pu se charger entièrement (la connexion a coupé ?).", 'Recargar': 'Recharger',
 
   // ---------------- mentions légales ----------------
@@ -456,7 +456,7 @@ G.I18n.add({
   'con el de tus compañeros (como en una videollamada), así que cada uno puede llegar a ver la dirección IP del otro. Juega en grupo sólo con gente que conozcas. Si la conexión directa no es posible, la partida pasa por los servidores de Firebase.': "à celui de tes coéquipiers (comme pour un appel vidéo), donc chacun peut voir l'adresse IP des autres. Ne joue en groupe qu'avec des gens que tu connais. Si la connexion directe n'est pas possible, la partie passe par les serveurs de Firebase.",
   'Puedes borrar tu cuenta cuando quieras (se borran también tu apodo, tus amigos y tus marcas):': 'Tu peux supprimer ton compte quand tu veux (ton pseudo, tes amis et tes records sont aussi supprimés) :',
   'Borrar mi cuenta y mi partida': 'Supprimer mon compte et ma partie',
-  'PokéSurvivor necesita JavaScript para funcionar. Actívalo para jugar.': 'PokéSurvivor a besoin de JavaScript pour fonctionner. Active-le pour jouer.',
+  'PokeWeb necesita JavaScript para funcionar. Actívalo para jugar.': 'PokeWeb a besoin de JavaScript pour fonctionner. Active-le pour jouer.',
   'Fan game gratuito de supervivencia con 966 Pokémon de las 9 regiones: elige tu compañero, sobrevive a las hordas, evoluciona tus ataques, enfréntate a legendarios y juega en cooperativo con hasta 4 amigos.': "Un jeu de survie gratuit fait par des fans, avec 966 Pokémon des 9 régions : choisis ton compagnon, survis aux hordes, fais évoluer tes attaques, affronte des légendaires et joue en coopération avec jusqu'à 4 amis.",
   'Guía del juego': 'Guide du jeu',
   // dons

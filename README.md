@@ -1,4 +1,6 @@
-# PokéSurvivor de Nika
+# PokeWeb
+
+(Anciennement « PokéSurvivor de Nika ».)
 
 Version personnelle (non commerciale) du fan game **PokéSurvivor** de JPTER78,
 adaptée pour Nika :
