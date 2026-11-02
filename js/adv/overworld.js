@@ -206,9 +206,7 @@ G.Overworld = (() => {
     [tx, ty] = freeNear(tx, ty);
     pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir; pl.jump = null; pl.hop = 0;
     pl.tile = tx + ',' + ty;
-    trail = [];
-    for (let i = 0; i < 200; i++) trail.push({ x: pl.x, y: pl.y });
-    followers.forEach(f => { f.x = pl.x; f.y = pl.y; });
+    resetTrail();
     G.Audio.music(def.music);
     $('world-place').textContent = def.name;
     seen(key);
@@ -227,7 +225,7 @@ G.Overworld = (() => {
       const was = old.find(f => f.m === m);
       if (was && was.anim.dex === m.dex) return was;
       const shiny = G.DB.ownsShiny(m.dex);
-      const a = new G.Sprites.Animator(m.dex, 1, shiny);
+      const a = new G.Sprites.Animator(m.dex, G.Sprites.fit(m.dex), shiny);
       a.loop('Idle');
       return { m, anim: a, x: was ? was.x : pl.x, y: was ? was.y : pl.y };
     });
@@ -364,7 +362,7 @@ G.Overworld = (() => {
     else { const d = ty * TS + 30 - pl.y, m = Math.sign(d) * Math.min(Math.abs(d), step); if (m && !blocked(pl.x, pl.y + m, 0, Math.sign(m))) pl.y += m; }
   }
   // L'équipe suit en petit groupe derrière le dresseur (pas à la queue leu leu) : [distance sur le chemin, écart sur le côté].
-  const FORM = [[28, -16], [28, 16], [50, 0], [66, -20], [66, 20], [84, 0]];
+  const FORM = [[38, -20], [38, 20], [66, 0], [92, -22], [92, 22], [118, 0]];
   /** Une case où un Pokémon peut se tenir (pas de mur, d'arbre, d'eau, de rebord ni de personnage). */
   function monOk(x, y) {
     const tx = Math.floor(x / TS), ty = Math.floor((y - 4) / TS);
@@ -412,10 +410,12 @@ G.Overworld = (() => {
       if (n.bubble) { x.fillStyle = '#fff'; x.fillRect(n.px - 7, n.py - 66, 14, 16); x.fillStyle = '#e03030'; x.fillRect(n.px - 2, n.py - 63, 4, 7); x.fillRect(n.px - 2, n.py - 54, 4, 3); }
     } });
     for (const f of followers) {
-      if (f.m === hiddenMon || f.m.hp <= 0 || fly || surfing) continue;
-      list.push({ y: f.y, draw: x => {
+      // Pendant un combat, l'équipe s'efface : seul le Pokémon qui se bat reste sur le terrain.
+      if (f.m === hiddenMon || f.m.hp <= 0 || fly || surfing || G.AdvBattle.active) continue;
+      // Dessinés un peu plus tôt : le dresseur passe devant son équipe (les grands Pokémon juste derrière ne le cachent plus).
+      list.push({ y: Math.min(f.y, pl.y - 0.05), draw: x => {
         const hop = f.hopT > 0 ? Math.abs(Math.sin(f.hopT * Math.PI / 0.3)) * 6 : 0;
-        G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, 1); f.anim.draw(x, f.x, f.y - hop); if (!hop) grass(x, f.x, f.y);
+        G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, f.anim.scale); f.anim.draw(x, f.x, f.y - hop); if (!hop) grass(x, f.x, f.y);
         if (f.emote) drawEmote(x, f);
       } });
     }
@@ -653,7 +653,7 @@ G.Overworld = (() => {
   }
   async function flyTo(m, f) {
     const to = G.KantoArt.maps[f.town], w = to.warps.find(w => w.dest === f.door) || to.warps[0];
-    fly = { dex: m.dex, anim: new G.Sprites.Animator(m.dex, 2.2, G.DB.ownsShiny(m.dex)), t: 0, dur: 1 };
+    fly = { dex: m.dex, anim: new G.Sprites.Animator(m.dex, 2.2 * G.Sprites.fit(m.dex), G.DB.ownsShiny(m.dex)), t: 0, dur: 1 };
     fly.anim.loop('Walk', 1.6);
     G.Sprites.preload([m.dex], 3000, false);
     try {
@@ -723,15 +723,27 @@ G.Overworld = (() => {
     if (o.k === 'fish') { await fish(); return; }
     await talk([['', M().name(sw) + ' utilise Surf !']]);
     surfing = true;
-    surfAnim = new G.Sprites.Animator(sw.dex, 1, G.DB.ownsShiny(sw.dex));
+    surfAnim = new G.Sprites.Animator(sw.dex, G.Sprites.fit(sw.dex), G.DB.ownsShiny(sw.dex));
     surfAnim.loop('Idle');
     pl.jump = { x0: pl.x, y0: pl.y, x1: f.x * TS + 16, y1: f.y * TS + 30, t: 0 };
     G.Audio.sfx('click');
   }
   function endSurf() {
     surfing = false; surfAnim = null;
-    trail = []; for (let i = 0; i < 200; i++) trail.push({ x: pl.x, y: pl.y });
-    followers.forEach(f => { f.x = pl.x; f.y = pl.y; });
+    resetTrail();
+  }
+  /** Le chemin du dresseur part derrière lui (là où la carte le permet) : l'équipe ne s'entasse pas sur lui en arrivant. */
+  function resetTrail() {
+    const [dx, dy] = DIRV[pl.dir] || [0, 1];
+    trail = [{ x: pl.x, y: pl.y }];
+    let x = pl.x, y = pl.y;
+    for (let i = 1; i < 200; i++) {
+      const nx = x - dx * 2, ny = y - dy * 2;
+      if (monOk(nx, ny)) { x = nx; y = ny; }
+      trail.push({ x, y });
+    }
+    let k = 0;
+    followers.forEach(f => { if (f.m === hiddenMon || f.m.hp <= 0) return; const p = slotAt(k++); f.x = p.x; f.y = p.y; });
   }
   async function waterBattle(pool) {
     const dex = pool[Math.floor(Math.random() * pool.length)], lv = Math.max(3, 3 + S.ch * 3 + Math.floor(Math.random() * 4) - (dex === 129 ? 3 : 0));

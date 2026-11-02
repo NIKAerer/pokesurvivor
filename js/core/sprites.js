@@ -253,6 +253,12 @@ G.Sprites = (() => {
     return (m ? m.ay : 24) * PX * scale;
   }
 
+  /** Échelle d'affichage pour l'Aventure : les très grands Pokémon (Léviator, Onix…) sont réduits pour ne pas tout cacher. */
+  function fit(dex) {
+    const h = bodyHeight(dex);
+    return h > 60 ? (60 + (h - 60) * 0.25) / h : 1;
+  }
+
   /** Sombra elíptica bajo los pies, tamaño según el ShadowSize de PMD. */
   function drawShadow(ctx, dex, x, y, scale = 1) {
     const m = meta(dex);
@@ -376,7 +382,7 @@ G.Sprites = (() => {
     }
   }
 
-  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, warmAll, dirFromAngle, bodyRadius, bodyHeight,
+  return { PX, meta, hasShiny, hovers, white, animMeta, sheet, preload, warmAll, dirFromAngle, bodyRadius, bodyHeight, fit,
            drawShadow, Animator, ANIMS, get sheetCount() { return sheets.size; }, get usedMB() { return Math.round(used / 1e6); },
            /** Pour les tests : [clé, octets, âge en ms] de chaque feuille. */
            debugSheets() { const n = Date.now(); return [...sheets].map(([k, s]) => [k, bytesOf(s), n - s.at]); } };
