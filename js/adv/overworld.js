@@ -41,7 +41,11 @@ G.Overworld = (() => {
     // Routes 7 et 8, Céladopole et l'arène d'Érika : plantes, Évoli du Grand Magasin, Caninos, Miaouss.
     10: [43, 44, 69, 70, 102, 114, 1, 46, 48, 58, 37, 52, 16, 23, 133, 60, 61],
     // Le repaire de la Team Rocket : les Pokémon des sbires (Rattata, Nosferapti, Abo, Smogo, Miaouss, Tadmorv…).
-    11: [19, 20, 41, 42, 23, 24, 109, 110, 52, 88, 96, 66, 74, 27]
+    11: [19, 20, 41, 42, 23, 24, 109, 110, 52, 88, 96, 66, 74, 27],
+    // Safrania et Sylphe SARL : les Pokémon des sbires, Porygon et les Magnéton du labo.
+    12: [20, 42, 24, 110, 53, 89, 97, 67, 81, 82, 137, 100, 125],
+    // Morgane et le Dojo : Pokémon Psy et Combat.
+    13: [63, 64, 96, 97, 122, 79, 102, 56, 57, 66, 106, 107, 124]
   };
 
   let S = null;              // la sauvegarde de l'Aventure
@@ -82,7 +86,7 @@ G.Overworld = (() => {
     if (!w) return null;
     // Les vraies cartes : on entre, on sort, on descend dans la grotte (les étages privés restent fermés).
     if (w.dest && G.KantoArt.maps[w.dest]) return { ...w, ev: 'go' };
-    if (w.to === 'ROCKET_HIDEOUT_ELEVATOR') return { ...w, ev: 'lift' };
+    if (w.to === 'ROCKET_HIDEOUT_ELEVATOR' || w.to === 'SILPH_CO_ELEVATOR') return { ...w, ev: 'lift' };
     if (art.inside) return { ...w, ev: 'stairs' };
     const k = Object.keys(def.doors || {}).find(k => w.to.includes(k));
     return k ? { ...w, ev: def.doors[k] } : { ...w, ev: 'closed' };
@@ -100,8 +104,8 @@ G.Overworld = (() => {
     for (const ch of o.script || '') h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
     const ch = def.ch || S.ch;
-    const pool = o.gfx === 'rocket_m' ? (ch >= 11 ? HABITAT[11] : [19, 41, 23, 109]) : def.pool || (art.wild.length ? art.wild.map(w => w[0]) : HABITAT[ch] || [16, 19]);
-    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26, 29, 31][ch] || 31;
+    const pool = o.gfx === 'rocket_m' ? (ch >= 12 ? HABITAT[12] : ch >= 11 ? HABITAT[11] : [19, 41, 23, 109]) : def.pool || (art.wild.length ? art.wild.map(w => w[0]) : HABITAT[ch] || [16, 19]);
+    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26, 29, 31, 34, 37][ch] || 37;
     const n = 1 + Math.floor(rnd() * 3), team = [];
     for (let i = 0; i < n; i++) team.push([pool[Math.floor(rnd() * pool.length)], Math.max(2, top - (n - 1) + Math.floor(rnd() * 2))]);
     const who = (K().CLASSES[o.gfx] || 'Dresseur') + ' ' + String(o.script || '').replace(/^.*_EventScript_/, '').replace(/\d+$/, '');
@@ -117,7 +121,8 @@ G.Overworld = (() => {
     // Les petits arbres : ils bloquent le passage jusqu'à ce qu'on les coupe avec Coupe (sauf celui de l'arène de Carmin).
     const cutKey = o => mapKey + ':' + o.x + ',' + o.y;
     const cut = o => mapKey !== 'carmin' && !(S.cut && S.cut[cutKey(o)]) && !(mapKey === 'route9' && S.flags.cut_route9);
-    const amb = art.objs.filter(o => o.gfx === 'cut_tree' ? cut(o) : !SKIP.has(o.gfx)).map((o, i) => {
+    const hide = (K().HIDE[mapKey] || (() => []))(S.flags);
+    const amb = art.objs.filter(o => o.gfx === 'cut_tree' ? cut(o) : !SKIP.has(o.gfx) && !hide.includes(o.gfx)).map((o, i) => {
       const t = o.trainer && (K().TRAINERS[o.script] || genTrainer(o));
       return { id: mapKey + '_' + i, look: G.People.has(o.gfx) ? o.gfx : 'boy', mon: MONS[o.gfx], x: o.x, y: o.y, dir: FACE[o.mv] || 'down',
         inv: INVISIBLE.has(o.gfx), event: o.gfx === 'nurse' ? 'center' : o.gfx === 'clerk' ? 'mart' : o.gfx === 'cut_tree' ? 'cut' : undefined,
@@ -523,7 +528,8 @@ G.Overworld = (() => {
     { town: 'carmin', name: 'Carmin-sur-Mer', door: 'carmin_centre' },
     { town: 'route10', name: 'Route 10', door: 'route10_centre', desc: 'Centre Pokémon de la Centrale' },
     { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' },
-    { town: 'celadopole', name: 'Céladopole', door: 'celadopole_centre' }
+    { town: 'celadopole', name: 'Céladopole', door: 'celadopole_centre' },
+    { town: 'safrania', name: 'Safrania', door: 'safrania_centre' }
   ];
   // ---------------- la boîte à badges ----------------
   const BADGES = [
@@ -572,7 +578,7 @@ G.Overworld = (() => {
     }
     // Safrania n'existe pas encore : on la réserve (dans le brouillard) et on place la Route 6 et Carmin dessous.
     const ghost = {};
-    if (pos.route5) {
+    if (pos.route5 && !maps.safrania) {
       ghost.safrania = [pos.route5[0], pos.route5[1] + maps.route5.h, 48, 40];
       const go = (k, x, y) => { if (maps[k] && !pos[k]) { pos[k] = [x, y]; q.push(k); } };
       go('route6', ghost.safrania[0] + 12, ghost.safrania[1] + 40);
@@ -866,6 +872,13 @@ G.Overworld = (() => {
     if (n.event === 'casinoGrunt') { await casinoGrunt(n); return; }
     if (n.event === 'rocket3') { await rocket3(); return; }
     if (n.event === 'giovanni') { await giovanni(n); return; }
+    if (n.event === 'silphGuard') { await silphGuard(n); return; }
+    if (n.event === 'regis5') { await regis5(n); return; }
+    if (n.event === 'lapras') { await lapras(); return; }
+    if (n.event === 'giovanni2') { await giovanni2(n); return; }
+    if (n.event === 'president') { await president(); return; }
+    if (n.event === 'dojo') { await dojo(n); return; }
+    if (n.event === 'morgane') { await morgane(n); return; }
     if (n.event === 'sala') { await sala(); return; }
     if (n.event === 'bulbi') { await bulbi(); return; }
     if (n.event === 'cara') { await cara(); return; }
@@ -1060,6 +1073,8 @@ G.Overworld = (() => {
     // Les passages bloqués par l'histoire.
     const back = () => { pl.x -= DIRV[e.dir][0] * 24; pl.y -= DIRV[e.dir][1] * 24; };
     if (e.todo) { back(); await talk([['', K().CLOSED[e.map] || 'Cette route n\'est pas encore ouverte. La suite de l\'aventure arrive bientôt !']]); return; }
+    // Safrania est entourée de murs : on y entre par les postes de garde.
+    if (e.map === 'safrania' || mapKey === 'safrania') { back(); await talk([['', 'Pour entrer à Safrania, il faut passer par un poste de garde.']]); return; }
     if (mapKey === 'argenta' && e.map === 'route3' && !S.flags.pierre) {
       back();
       await talk([['Gamin', 'Hé ! Tu n\'as pas encore le Badge Roche ? Pierre veut voir tous les dresseurs avant qu\'ils partent vers le Mont Sélénite !']]);
@@ -1191,7 +1206,10 @@ G.Overworld = (() => {
       leader: { look: 'lt_surge', type: 'electric', badge: 'Foudre', title: 'Revanche · Champion de Carmin', quote: 'Décharge totale !' } },
     erika: { name: 'Érika', team: [71, 114, 45, 103], bonus: 3000, hi: 'Une revanche ? Avec plaisir… Mes fleurs ont bien poussé depuis la dernière fois.',
       win: 'Quel combat… Je vais aller faire une petite sieste.', busy: 'Mes Pokémon se reposent au soleil. Reviens au prochain chapitre !',
-      leader: { look: 'erika', type: 'grass', badge: 'Prisme', title: 'Revanche · Championne de Céladopole', quote: 'Les fleurs reviennent toujours.' } }
+      leader: { look: 'erika', type: 'grass', badge: 'Prisme', title: 'Revanche · Championne de Céladopole', quote: 'Les fleurs reviennent toujours.' } },
+    morgane: { name: 'Morgane', team: [122, 49, 64, 65], bonus: 3500, hi: 'Je savais que tu reviendrais. Je l\'ai vu.',
+      win: 'Je n\'avais pas prévu ça… Intéressant.', busy: 'Mes Pokémon méditent. Reviens au prochain chapitre.',
+      leader: { look: 'sabrina', type: 'psychic', badge: 'Marais', title: 'Revanche · Championne de Safrania', quote: 'Je lis chacun de tes gestes.' } }
   };
   async function rematch(n, key) {
     const R = REMATCH[key];
@@ -1501,9 +1519,20 @@ G.Overworld = (() => {
   }
   /** L'ascenseur du repaire (avec la Clé Ascenseur). */
   const LIFT = [['repaire1', 'Sous-sol 1', 24, 26], ['repaire2', 'Sous-sol 2', 28, 17], ['repaire4', 'Sous-sol 4', 20, 24]];
+  const SILPH = [['sylphe1', 'Rez-de-chaussée', 22, 4], ['sylphe5', '5e étage', 22, 4], ['sylphe7', '7e étage', 23, 4], ['sylphe11', '11e étage', 13, 4]];
   async function lift() {
-    if (!S.flags.lift) { await talk([['', 'L\'ascenseur ne bouge pas. Il faut une Clé Ascenseur…']]); return; }
-    const floors = LIFT.filter(f => f[0] !== mapKey);
+    const silph = /^sylphe/.test(mapKey);
+    if (!silph && !S.flags.lift) { await talk([['', 'L\'ascenseur ne bouge pas. Il faut une Clé Ascenseur…']]); return; }
+    const floors = (silph ? SILPH : LIFT).filter(f => f[0] !== mapKey);
+    if (silph && !S.flags.regis5 && !S.flags.giovanni2) {
+      const i = await G.AdvUI.choose('Ascenseur · quel étage ?', floors.map(f => ({ title: f[1], desc: f[0] === 'sylphe11' ? 'Bloqué par la Team Rocket' : '', off: f[0] === 'sylphe11' })).concat([{ title: 'Rester ici', desc: '' }]));
+      if (i == null || i < 0 || i >= floors.length) return;
+      if (floors[i][0] === 'sylphe11') { await talk([['', 'Le bouton du 11e étage est bloqué… Il paraît qu\'il se passe quelque chose au 7e.']]); return; }
+      const [key, , x, y] = floors[i];
+      await fade(() => setMap(key, x, y, 'down'));
+      commit();
+      return;
+    }
     const i = await G.AdvUI.choose('Ascenseur · quel étage ?', floors.map(f => ({ title: f[1], desc: '' })).concat([{ title: 'Rester ici', desc: '' }]));
     if (i == null || i >= floors.length) return;
     const [key, , x, y] = floors[i];
@@ -1541,6 +1570,100 @@ G.Overworld = (() => {
     if (S.ch === 11) await chapterEnd();
   }
 
+  // ---------------- chapitres 12 et 13 : Sylphe SARL et Morgane ----------------
+  async function silphGuard(n) {
+    if (S.ch < 12) { await talk([['Sbire Rocket', 'Sylphe SARL est fermé. Circule !']]); return; }
+    await talk([['Sbire Rocket', 'Encore toi ?! Le gamin du repaire ! Le Boss m\'a dit de ne laisser entrer personne !']]);
+    const res = await battle({ trainer: { name: 'Sbire Rocket', team: [[20, 32], [42, 32], [110, 33]], smart: true } }, n);
+    if (res !== 'win') return;
+    S.flags.silphGuard = 1; S.money += 500;
+    await talk([['Sbire Rocket', 'Je… je vais chercher du renfort !'], ['', 'Le sbire s\'enfuit. La porte de Sylphe SARL est libre. Tu gagnes 500 pièces.']]);
+    loadNpcs();
+  }
+  async function regis5(n) {
+    await talk([['Régis', 'Tiens, le nul ! Moi aussi je suis venu chasser la Team Rocket. Enfin… surtout voir s\'ils ont des Pokémon rares.'],
+                ['Régis', 'Avant que tu montes au 11e, voyons si tu es à la hauteur !']]);
+    const res = await battle({ trainer: { name: 'Régis', team: [[18, 37], [64, 35], [59, 36], [134, 38]], smart: true, potions: 2 } }, n);
+    if (res !== 'win') return;
+    S.flags.regis5 = 1; S.money += 1500;
+    await talk([['Régis', 'Pfff… Tu as eu de la chance. Le Boss de la Team Rocket est au 11e, j\'ai débloqué l\'ascenseur. Fais ce que tu veux, moi je file !'],
+                ['', 'Tu gagnes 1500 pièces. L\'ascenseur monte maintenant jusqu\'au 11e étage.']]);
+    loadNpcs();
+  }
+  /** Comme dans les jeux : un employé du 7e t'offre un Lokhlass. */
+  async function lapras() {
+    if (S.flags.lapras) { await talk([['Employée', 'Prends bien soin de Lokhlass ! Il adore nager.']]); return; }
+    if (!S.flags.regis5) { await talk([['Employée', 'Chut ! Je cache un Pokémon de la Team Rocket… Reviens quand le couloir sera plus calme.']]); return; }
+    S.flags.lapras = 1;
+    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+    if (fams.has(family(131))) {
+      S.money += 2000;
+      await talk([['Employée', 'Tu as déjà un Lokhlass ? Alors prends cette récompense, pour nous avoir sauvés.'], ['', 'Tu reçois 2000 pièces.']]);
+      return;
+    }
+    const lv = Math.max(25, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)) - 2);
+    G.Audio.sfx('legend');
+    await talk([['Employée', 'La Team Rocket voulait vendre ce Lokhlass… Je préfère te le confier. Il sera plus heureux avec toi !']]);
+    const inTeam = give(131, lv);
+    await talk([['', 'Tu reçois Lokhlass N. ' + lv + (inTeam ? ' !' : ' (il part dans ta boîte) !')]]);
+  }
+  async function giovanni2(n) {
+    await talk([['Giovanni', 'Encore toi… Le petit dresseur de la Salle de jeux.'],
+                ['Giovanni', 'Sylphe SARL et sa Master Ball vont faire de la Team Rocket la plus grande organisation du monde. Le Président n\'a plus qu\'à signer.'],
+                ['Giovanni', 'Mais d\'abord, je vais te donner une leçon que tu n\'oublieras pas !']]);
+    const res = await battle({ trainer: { name: 'Giovanni', team: [[34, 37], [115, 37], [31, 38], [112, 39]], tm: 89, smart: true, potions: 2 } }, n);
+    if (res !== 'win') return;
+    S.flags.giovanni2 = 1; S.money += 2500;
+    G.Audio.sfx('legend');
+    await talk([['Giovanni', 'Encore battu… Très bien, je laisse Sylphe SARL. Mais n\'oublie pas mon nom : Giovanni. On se reverra.'],
+                ['', 'Giovanni et tous les sbires quittent la tour et la ville ! Tu gagnes 2500 pièces.']]);
+    loadNpcs();
+  }
+  async function president() {
+    if (!S.flags.giovanni2) { await talk([['Président', 'Au secours… Cet homme veut me forcer à lui donner la Master Ball !']]); return; }
+    if (S.flags.president) { await talk([['Président', 'Toute la ville te remercie, jeune dresseur. Morgane a rouvert son arène.']]); return; }
+    S.flags.president = 1; S.money += 3000; S.superpo = (S.superpo || 0) + 3;
+    G.Audio.sfx('confirm');
+    await talk([['Président', 'Merci ! Tu as sauvé Sylphe SARL ! Sans toi, la Team Rocket aurait toutes nos Poké Balls.'],
+                ['Président', 'La Master Ball est encore un prototype… Mais prends ceci pour ton aventure.'], ['', 'Tu reçois 3000 pièces et 3 Super Potions !']]);
+    if (S.ch === 12) await chapterEnd();
+  }
+  /** Le Dojo de Karaté : le Maître donne Kicklee ou Tygnon, comme dans les jeux. */
+  async function dojo(n) {
+    if (S.flags.dojo) { await talk([['Maître Karaté', 'Entraîne bien ce Pokémon. Hiya !']]); return; }
+    await talk([['Maître Karaté', 'Hiya ! Je suis le Maître du Dojo. Tu veux le prix du Dojo ? Montre-moi ta force !']]);
+    const res = await battle({ trainer: { name: 'Maître Karaté', team: [[57, 37], [67, 37], [62, 38]], smart: true, potions: 1 } }, n);
+    if (res !== 'win') return;
+    S.flags.dojo = 1; S.money += 1500;
+    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+    const picks = [106, 107].filter(d => !fams.has(family(d)));
+    if (!picks.length) { await talk([['Maître Karaté', 'Tu es fort ! Tu as déjà nos Pokémon, alors prends ces pièces.'], ['', 'Tu gagnes 1500 pièces.']]); return; }
+    const lv = Math.max(25, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)) - 2);
+    await talk([['Maître Karaté', 'Bravo ! Choisis un de nos Pokémon Combat. Un seul !']]);
+    const i = await G.AdvUI.choose('Le prix du Dojo', picks.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types, desc: 'Niveau ' + lv + ' · ' + M().movesAt(d, lv).map(M().moveName).join(', ') })));
+    const d = picks[Math.max(0, Math.min(picks.length - 1, i || 0))];
+    const inTeam = give(d, lv);
+    G.Audio.sfx('legend');
+    await talk([['', 'Tu reçois ' + G.DEX_BY[d].name + ' N. ' + lv + (inTeam ? ' !' : ' (il part dans ta boîte) !') + ' Et 1500 pièces.']]);
+  }
+  async function morgane(n) {
+    if (S.flags.morgane) { await rematch(n, 'morgane'); return; }
+    if (S.ch < 13) { await talk([['Morgane', 'Je sais pourquoi tu es là. Mais l\'heure n\'est pas venue.']]); return; }
+    const haunter = S.team.some(m => [92, 93, 94].includes(m.dex));
+    await talk([['Morgane', 'Je savais que tu viendrais. Je l\'ai vu il y a trois jours.'],
+                ['Morgane', 'Je suis Morgane, championne de Safrania. Mes pouvoirs psychiques sont plus forts que tout.'],
+                haunter ? ['Morgane', 'Tiens… Ton Pokémon Spectre me fait des grimaces. Je… je ne rirai pas !'] : ['Morgane', 'Tu ne peux rien me cacher. Je lis chacun de tes gestes.']]);
+    const res = await battle({ trainer: { name: 'Morgane', team: [[64, 38, [60, 115, 248, 347]], [122, 37, [112, 60, 226, 347]], [49, 38, [60, 16, 141, 48]], [65, 43, [94, 105, 248, 347]]], tm: 347, smart: true, potions: 2,
+      leader: { look: 'sabrina', type: 'psychic', badge: 'Marais', title: 'Championne de l\'arène de Safrania', quote: 'J\'ai déjà vu ma victoire.' } } }, n);
+    if (res !== 'win') return;
+    S.flags.morgane = 1; S.flags.badge6 = 1; S.money += 1500;
+    G.Audio.sfx('legend');
+    await talk([['Morgane', haunter ? 'Ha… ha ha ! Pardon… Ton Spectrum… Ha ha ha ! C\'est la première fois que je ris depuis des années !' : 'Je n\'avais pas vu cette défaite… Tu es plein de surprises.'],
+                ['Morgane', 'Prends le Badge Marais. Tu l\'as mérité.'], ['', 'Tu obtiens le Badge Marais et 1500 pièces !']]);
+    await leaderTm('morgane', 'Morgane');
+    if (S.ch === 13) await chapterEnd();
+  }
+
   /** Passer une porte, une échelle ou l'entrée d'une grotte : on arrive sur la vraie carte, à la porte qui y mène. */
   async function go(w) {
     if (w.dest === 'ssanne' && mapKey === 'carmin') {
@@ -1549,6 +1672,9 @@ G.Overworld = (() => {
       if (!S.flags.surge) { await talk([['Marin', 'La fête des dresseurs commence ce soir. Va d\'abord défier le Major Bob, petit !']]); return; }
       if (!S.flags.ssanne) { S.flags.ssanne = 1; await talk([['Marin', 'Un Passe Océane ! Bienvenue à bord, la fête des dresseurs va commencer !']]); }
     }
+    if (/^porte[5-8]$/.test(w.dest) && !/^porte/.test(mapKey) && mapKey !== 'safrania' && S.ch < 12) { await talk([['', K().DOORS.safrania]]); return; }
+    if (w.dest === 'sylphe1' && mapKey === 'safrania' && !S.flags.silphGuard) { await talk([['Sbire Rocket', 'Hé ! Personne n\'entre à Sylphe SARL ! Viens me parler si tu as un problème.']]); return; }
+    if (w.dest === 'safrania_arene' && !S.flags.giovanni2) { await talk([['', 'Un sbire de la Team Rocket bloque l\'entrée de l\'arène.']]); return; }
     if (w.dest === 'repaire1' && mapKey === 'celadopole_casino' && !S.flags.poster) { await talk([['', 'Un mur… On dirait qu\'il y a un passage, mais il est fermé.']]); return; }
     const to = G.KantoArt.maps[w.dest];
     // La porte d'arrivée (celle donnée par le jeu, sinon une qui ramène ici).
@@ -1577,7 +1703,7 @@ G.Overworld = (() => {
                   ['Guide de l\'arène', 'Pour l\'éteindre, fouille les poubelles : deux interrupteurs sont cachés, l\'un juste à côté de l\'autre. Si tu te trompes, tout se referme !']]);
     }
   }
-  const GYMS = { argenta_arene: 'Champion : Pierre', azuria_arene: 'Championne : Ondine', carmin_arene: 'Champion : Major Bob' };
+  const GYMS = { argenta_arene: 'Champion : Pierre', azuria_arene: 'Championne : Ondine', carmin_arene: 'Champion : Major Bob', celadopole_arene: 'Championne : Érika', safrania_arene: 'Championne : Morgane' };
 
   async function door(w) {
     const ev = w.ev;
@@ -1946,7 +2072,7 @@ G.Overworld = (() => {
   // ---------------- les CT des jeux ----------------
   // Version de Nika : les CT de Rouge Feu, une seule utilisation comme dans les jeux. Les Champions donnent la leur,
   // les boutiques en vendent quelques-unes (de plus en plus fortes au fil des chapitres).
-  const LEADER_TM = { pierre: 317, ondine: 352, surge: 351, erika: 202, giovanni: 89 };
+  const LEADER_TM = { pierre: 317, ondine: 352, surge: 351, erika: 202, giovanni: 89, morgane: 347 };
   const TM_USELESS = new Set(['skill-swap', 'snatch', 'torment', 'taunt', 'attract', 'roar']);
   // [chapitre, numéro de CT] : à partir de quel chapitre une boutique peut la vendre.
   const TM_SHOP = [[2, 9], [2, 46], [2, 40], [2, 28], [3, 6], [3, 43], [4, 31], [4, 17], [4, 33], [4, 16], [4, 42], [4, 44], [5, 18], [5, 11], [5, 23], [5, 10],
@@ -2092,7 +2218,7 @@ G.Overworld = (() => {
     for (const f in LEADER_TM) if (S.flags[f] && !S.flags['tm_' + f]) { S.flags['tm_' + f] = 1; giveTm(LEADER_TM[f]); }
     // Vol : les villes déjà traversées dans les parties d'avant.
     S.fly = S.fly || {};
-    [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville'], [11, 'celadopole']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });
+    [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville'], [11, 'celadopole'], [13, 'safrania']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });
     G.UI.show('scr-world');
     open_ = true;
     resize();

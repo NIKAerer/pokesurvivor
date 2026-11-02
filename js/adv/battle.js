@@ -259,7 +259,7 @@ G.AdvBattle = (() => {
         { html: 'Pokémon', cls: 'big', color: '#3ab060', disabled: stuck('me'), fn: team },
         { html: 'Fuite', cls: 'big', color: '#3a7ae0', disabled: !!B.trainer || (stuck('me') && ab('me') !== 'run-away'), fn: () => res({ type: 'run' }) }
       ]);
-      const attacks = () => menu(B.me.moves.map((id, i) => {
+      const attacks = () => B.me && menu(B.me.moves.map((id, i) => {
         const mv = M.move(id), pw = M.power(id);
         const mul = mv.cls ? M.typeMul(mv.type, types(B.foe)) : 1;
         const eff = !mv.cls ? '' : mul === 0 ? '<em class="advb-eff no">Aucun effet</em>' : mul > 1 ? '<em class="advb-eff up">Super efficace</em>' : mul < 1 ? '<em class="advb-eff down">Peu efficace</em>' : '';
