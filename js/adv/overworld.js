@@ -1179,21 +1179,23 @@ G.Overworld = (() => {
     await talk([['', 'C\'est fermé.']]);
   }
 
-  /** Les Pokémon de la boutique : 3 Pokémon du coin, les mêmes pour ce chapitre et cette boutique, et chers. */
+  /** Les Pokémon de la boutique : 3 Pokémon du coin par boutique pour toute l'aventure (version de Nika), et chers. */
   function martMons() {
-    const key = mapKey + ':' + S.ch;
-    if (!S.shop || S.shop.key !== key) {
+    S.shops = S.shops || {};
+    let sh = S.shops[mapKey];
+    if (!sh) {
       let h = 17;
-      for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      for (const c of mapKey) h = (h * 31 + c.charCodeAt(0)) >>> 0;
       const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
-      const pool = [...new Set([].concat(HABITAT[S.ch] || [], HABITAT[S.ch - 1] || [], HABITAT[S.ch - 2] || []))].filter(d => G.DEX_BY[d] && !G.DEX_BY[d].leg);
+      // Jamais un Pokémon d'une famille déjà dans l'équipe ou la boîte (ni deux de la même famille).
+      const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+      const pool = [...new Set([].concat(HABITAT[S.ch] || [], HABITAT[S.ch - 1] || [], HABITAT[S.ch - 2] || []))]
+        .filter(d => G.DEX_BY[d] && !G.DEX_BY[d].leg && !fams.has(family(d)));
       const list = [];
-      while (pool.length && list.length < 6) list.push(...pool.splice(Math.floor(rnd() * pool.length), 1));
-      S.shop = { key, list, sold: [] };
+      while (pool.length && list.length < 3) { const d = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; if (!list.some(q => family(q) === family(d))) list.push(d); }
+      sh = S.shops[mapKey] = { list, sold: [] };
     }
-    // Jamais un Pokémon d'une famille déjà dans l'équipe ou la boîte.
-    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
-    return S.shop.list.filter(d => !S.shop.sold.includes(d) && !fams.has(family(d))).slice(0, 3);
+    return sh.list.filter(d => !sh.sold.includes(d));
   }
   async function buyMon() {
     const lv = Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
@@ -1202,7 +1204,7 @@ G.Overworld = (() => {
     const price = d => Math.round(Math.pow(1.5, S.monsBought || 0) * (5000 + 5000 * Math.max(0, Math.min(1, ((G.DEX_BY[d].bst || 300) - 250) / 300))) / 500) * 500;
     for (;;) {
       const list = martMons();
-      if (!list.length) { await talk([['Vendeur', 'Je n\'ai plus de Pokémon à vendre pour l\'instant. Repasse plus tard dans l\'aventure !']]); return; }
+      if (!list.length) { await talk([['Vendeur', 'J\'ai vendu tous mes Pokémon ! Va voir les boutiques des autres villes.']]); return; }
       const i = await G.AdvUI.choose('Pokémon à vendre · tu as ' + S.money + ' pièces', list.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types,
         desc: price(d) + ' pièces · N. ' + lv + ' · ' + M().movesAt(d, lv).map(M().moveName).join(', '), off: S.money < price(d) })).concat([{ title: 'Retour', desc: '' }]));
       if (i >= list.length) return;
@@ -1210,7 +1212,7 @@ G.Overworld = (() => {
       if (S.money < cost) { await talk([['Vendeur', 'Il te faut ' + cost + ' pièces pour ' + G.DEX_BY[d].name + '. Reviens quand tu les auras !']]); continue; }
       S.money -= cost;
       S.monsBought = (S.monsBought || 0) + 1;
-      S.shop.sold.push(d);
+      S.shops[mapKey].sold.push(d);
       const m = M().make(d, lv);
       if (S.team.length < 6) S.team.push(m); else S.box.push(m);
       G.DB.grant(d, 'adv');
