@@ -338,3 +338,21 @@ body:not(.touch) .advb-btn[data-k]::after, body:not(.touch) .adv-opt[data-k]::af
 #advb-intro .ai-txt b { display: block; font-size: clamp(30px, 9vw, 54px); font-weight: 900; line-height: 1.05; }
 #advb-intro .ai-txt p { margin: 8px 0 10px; font-size: clamp(13px, 3.6vw, 17px); }
 #advb-intro .ai-badge { display: inline-block; background: #fff; color: #222; text-shadow: none; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 8px; }
+
+/* Évolution en Aventure */
+#adv-evo { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+  background: radial-gradient(circle at 50% 45%, #2b2550 0%, #0c0a16 70%); opacity: 0; transition: opacity .25s; cursor: pointer; padding: 16px; }
+#adv-evo.on { opacity: 1; }
+#adv-evo .ae-rays { position: absolute; inset: -50%; background: repeating-conic-gradient(rgba(255,255,255,.06) 0 8deg, transparent 8deg 20deg); opacity: 0; transition: opacity .6s; animation: ae-spin 14s linear infinite; }
+#adv-evo.glow .ae-rays, #adv-evo.done .ae-rays { opacity: 1; }
+@keyframes ae-spin { to { transform: rotate(360deg); } }
+#adv-evo .ae-stage { position: relative; width: 150px; height: 150px; transform: scale(1.6); }
+#adv-evo .ae-mon { position: absolute; inset: 0; width: 150px !important; height: 150px; transition: filter .5s; }
+#adv-evo .ae-new { opacity: 0; }
+#adv-evo.glow .ae-mon { filter: brightness(0) invert(1) drop-shadow(0 0 10px #fff) drop-shadow(0 0 22px #9fd8ff); }
+#adv-evo.flash::after { content: ''; position: absolute; inset: 0; background: #fff; animation: ae-flash .6s forwards; pointer-events: none; }
+@keyframes ae-flash { from { opacity: 1; } to { opacity: 0; } }
+#adv-evo .ae-txt { position: relative; margin: 40px 0 0; max-width: 520px; text-align: center; color: #fff; font-size: 20px; font-weight: 800; text-shadow: 0 2px 0 #000; }
+#adv-evo .ae-spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; background: #fff6a0; box-shadow: 0 0 6px #ffe14d;
+  transform: rotate(var(--a)) translateX(0); animation: ae-spark .9s ease-out forwards; }
+@keyframes ae-spark { to { transform: rotate(var(--a)) translateX(110px); opacity: 0; } }

@@ -105,5 +105,55 @@ G.AdvUI = (() => {
     G.Overworld.init();
   }
 
-  return { open, talk, talkP, choose, init };
+  /** L'évolution, comme dans les jeux : le Pokémon devient lumière, clignote entre ses deux formes, puis la nouvelle apparaît. */
+  function evolve(from, to, shinyFrom, shinyTo) {
+    return new Promise(res => {
+      const el = document.createElement('div');
+      el.id = 'adv-evo';
+      const name = d => G.DEX_BY[d].name;
+      el.innerHTML = `<div class="ae-rays"></div><div class="ae-stage"></div><p class="ae-txt">Quoi ? ${name(from)} évolue !</p>`;
+      const stage = el.querySelector('.ae-stage');
+      const a = G.UI.spriteCanvas(from, 150, 150, { fit: true, shiny: shinyFrom }), b = G.UI.spriteCanvas(to, 150, 150, { fit: true, shiny: shinyTo });
+      a.className = 'ae-mon'; b.className = 'ae-mon ae-new';
+      stage.append(a, b);
+      document.body.appendChild(el);
+      G.Audio.sfx('legend');
+      requestAnimationFrame(() => el.classList.add('on'));
+      // Clignotements de plus en plus rapides entre les deux silhouettes blanches.
+      let t = 0, show = 0, done = false;
+      const steps = [];
+      for (let d = 420; d > 50; d *= 0.82) steps.push(d);
+      setTimeout(() => el.classList.add('glow'), 500);
+      const tick = i => {
+        if (i >= steps.length) return reveal();
+        show ^= 1;
+        a.style.opacity = show ? 0 : 1; b.style.opacity = show ? 1 : 0;
+        setTimeout(() => tick(i + 1), steps[i]);
+      };
+      setTimeout(() => tick(0), 900);
+      const reveal = () => {
+        a.style.opacity = 0; b.style.opacity = 1;
+        el.classList.add('flash');
+        G.Audio.sfx('levelup');
+        setTimeout(() => {
+          el.classList.remove('glow'); el.classList.add('done');
+          el.querySelector('.ae-txt').textContent = 'Félicitations ! ' + name(from) + ' a évolué en ' + name(to) + ' !';
+          for (let i = 0; i < 14; i++) {
+            const sp = document.createElement('i');
+            sp.className = 'ae-spark';
+            sp.style.setProperty('--a', (i / 14 * 360) + 'deg');
+            sp.style.animationDelay = (Math.random() * 0.3) + 's';
+            stage.appendChild(sp);
+          }
+          const fin = () => { if (done) return; done = true; removeEventListener('keydown', key, true); el.classList.remove('on'); setTimeout(() => { el.remove(); res(); }, 250); };
+          const key = e => { if (['Space', 'Enter', 'KeyE'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); fin(); } };
+          addEventListener('keydown', key, true);
+          el.onclick = fin;
+          setTimeout(fin, 3500);
+        }, 350);
+      };
+    });
+  }
+
+  return { open, talk, talkP, choose, init, evolve };
 })();
