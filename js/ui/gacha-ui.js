@@ -109,6 +109,7 @@ G.GachaUI = (() => {
     const fx = $('pull-fx'), slot = $('slot'), out = $('pull-results');
     out.innerHTML = '';
     $('pull-close').classList.add('hidden');
+    $('pull-release').classList.add('hidden');
     slot.style.display = '';
     fx.classList.remove('hidden');
     // Version de Nika : bouton pour passer l'animation.
@@ -122,6 +123,7 @@ G.GachaUI = (() => {
     G.Audio.sfx('burst', { rarity: best });
     slot.style.display = 'none';
 
+    let relOne = null;
     for (const r of res) {
       const mon = G.DEX_BY[r.dex];
       const c = document.createElement('div');
@@ -133,11 +135,33 @@ G.GachaUI = (() => {
         ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : '¡NUEVO!'}</span>`
         : `${r.full ? 'Boîte pleine' : 'Repetido'} · ${G.Icons.html('candy', 12)} +${r.candy} Bonbons`;
       c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
+      // Version de Nika : on peut relâcher tout de suite un nouveau Pokémon (contre des Super Bonbons).
+      if (r.isNew) {
+        const free = () => {
+          const k = G.Box.release(r.dex);
+          if (!k) { G.Audio.sfx('error'); G.UI.toast('Il faut garder au moins un Pokémon'); return false; }
+          G.Audio.sfx('select'); G.UI.toast(mon.name + ' est relâché. +' + k + ' Super Bonbons');
+          c.classList.add('gone'); c.querySelector('.tag').textContent = 'Relâché · +' + k + ' Super Bonbons';
+          const b = c.querySelector('.rel'); if (b) b.remove();
+          return true;
+        };
+        if (n === 1) {
+          const rb = $('pull-release');
+          rb.onclick = () => { if (free()) rb.classList.add('hidden'); };
+          relOne = rb;
+        } else {
+          const b = document.createElement('button');
+          b.className = 'btn small rel'; b.textContent = 'Relâcher';
+          b.onclick = e => { e.stopPropagation(); free(); };
+          c.appendChild(b);
+        }
+      }
       out.appendChild(c);
       if (!skipped) { G.Audio.sfx('reveal', { rarity: r.rarity }); await wait(n === 10 ? 150 : 0); }
     }
     sk.classList.add('hidden');
     $('pull-close').classList.remove('hidden');
+    if (relOne) relOne.classList.remove('hidden');
     busy = false;
   }
 
