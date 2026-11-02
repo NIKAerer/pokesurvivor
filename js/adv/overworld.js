@@ -37,7 +37,9 @@ G.Overworld = (() => {
     // Routes 9 et 10, la Grotte : roches, Onix, Électrik de la Centrale.
     8: [74, 66, 95, 41, 56, 21, 23, 100, 81, 19, 96, 104, 111, 27],
     // Lavanville et la Tour Pokémon : les spectres, Osselait l'orphelin, Spectrum le farceur.
-    9: [92, 93, 104, 96, 63, 39, 35, 79, 52, 58, 37, 132]
+    9: [92, 93, 104, 96, 63, 39, 35, 79, 52, 58, 37, 132],
+    // Routes 7 et 8, Céladopole et l'arène d'Érika : plantes, Évoli du Grand Magasin, Caninos, Miaouss.
+    10: [43, 44, 69, 70, 102, 114, 1, 46, 48, 58, 37, 52, 16, 23, 133, 60, 61]
   };
 
   let S = null;              // la sauvegarde de l'Aventure
@@ -88,7 +90,7 @@ G.Overworld = (() => {
   const INVISIBLE = new Set(['', 'clipboard']);   // journaux et cahiers posés sur les tables : on peut les lire
   // Les Pokémon posés sur la carte (le Piafabec de Jadielle, le Rondoudou du Centre…) : dessinés avec nos sprites.
   const MONS = { spearow: 21, nidoran_m: 32, jigglypuff: 39, pikachu: 25, clefairy: 35, meowth: 52, pidgey: 16, machop: 66, seel: 86, slowbro: 80,
-                 cubone: 104, psyduck: 54, nidorino: 33, wigglytuff: 40, machoke: 67 };
+                 cubone: 104, psyduck: 54, nidorino: 33, wigglytuff: 40, machoke: 67, poliwrath: 62, nidoran_f: 29 };
   /** Un dresseur du jeu sans équipe écrite : des Pokémon du coin, toujours les mêmes pour lui. */
   function genTrainer(o) {
     let h = 7;
@@ -96,7 +98,7 @@ G.Overworld = (() => {
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
     const ch = def.ch || S.ch;
     const pool = o.gfx === 'rocket_m' ? [19, 41, 23, 109] : def.pool || (art.wild.length ? art.wild.map(w => w[0]) : HABITAT[ch] || [16, 19]);
-    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26][ch] || 26;
+    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26, 29][ch] || 29;
     const n = 1 + Math.floor(rnd() * 3), team = [];
     for (let i = 0; i < n; i++) team.push([pool[Math.floor(rnd() * pool.length)], Math.max(2, top - (n - 1) + Math.floor(rnd() * 2))]);
     const who = (K().CLASSES[o.gfx] || 'Dresseur') + ' ' + String(o.script || '').replace(/^.*_EventScript_/, '').replace(/\d+$/, '');
@@ -519,6 +521,35 @@ G.Overworld = (() => {
     { town: 'route10', name: 'Route 10', door: 'route10_centre', desc: 'Centre Pokémon de la Centrale' },
     { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' }
   ];
+  // ---------------- la boîte à badges ----------------
+  const BADGES = [
+    { flag: 'pierre', name: 'Badge Roche', who: 'Pierre · Argenta', c: '#9aa0a8', d: '#5c6068', svg: '<polygon points="30,6 50,18 50,42 30,54 10,42 10,18"/>' },
+    { flag: 'ondine', name: 'Badge Cascade', who: 'Ondine · Azuria', c: '#5aaaf0', d: '#2a6ab0', svg: '<path d="M30 6 C40 22 48 30 48 38 A18 18 0 0 1 12 38 C12 30 20 22 30 6Z"/>' },
+    { flag: 'surge', name: 'Badge Foudre', who: 'Major Bob · Carmin sur Mer', c: '#f0a030', d: '#a86010', svg: '<polygon points="30,4 36,22 54,22 40,34 46,52 30,41 14,52 20,34 6,22 24,22"/>' },
+    { flag: 'erika', name: 'Badge Prisme', who: 'Érika · Céladopole', c: '#e070c0', d: '#9a3a8a', svg: '<circle cx="30" cy="16" r="10"/><circle cx="44" cy="28" r="10"/><circle cx="38" cy="44" r="10"/><circle cx="22" cy="44" r="10"/><circle cx="16" cy="28" r="10"/><circle cx="30" cy="31" r="7" fill="#ffd23f"/>' },
+    { flag: 'badge5', name: 'Badge Âme', who: 'Koga · Parmanie', c: '#f070a0', d: '#a83a60', svg: '<path d="M30 52 L10 30 A11 11 0 0 1 30 14 A11 11 0 0 1 50 30Z"/>' },
+    { flag: 'badge6', name: 'Badge Marais', who: 'Morgane · Safrania', c: '#e0c040', d: '#9a8010', svg: '<circle cx="30" cy="30" r="22"/><circle cx="30" cy="30" r="10" fill="#fffaf2"/>' },
+    { flag: 'badge7', name: 'Badge Volcan', who: 'Auguste · Cramois\'Île', c: '#f05030', d: '#a02010', svg: '<path d="M30 4 C44 20 50 30 46 42 A16 16 0 0 1 14 42 C10 30 22 24 24 12 C28 20 32 20 30 4Z"/>' },
+    { flag: 'badge8', name: 'Badge Terre', who: 'Giovanni · Jadielle', c: '#50b060', d: '#2a7a3a', svg: '<path d="M30 4 C48 14 52 34 30 56 C8 34 12 14 30 4Z"/>' }
+  ];
+  function badgeCase() {
+    return new Promise(res => {
+      const el = document.createElement('div');
+      el.id = 'adv-badges';
+      const n = BADGES.filter(b => S.flags[b.flag]).length;
+      el.innerHTML = `<div class="ab-box"><button class="ad-x">Fermer</button><h3>Badges</h3><p class="ab-n">${n} / 8 badges de Kanto</p><div class="ab-grid">${BADGES.map(b => {
+        const on = !!S.flags[b.flag];
+        return `<div class="ab-b${on ? ' on' : ''}"><svg viewBox="0 0 60 60" style="fill:${on ? b.c : '#cfc6b6'};stroke:${on ? b.d : '#b4aa98'}">${b.svg}</svg>
+          <b>${on ? b.name : '???'}</b><small>${on ? b.who : 'Pas encore obtenu'}</small></div>`; }).join('')}</div></div>`;
+      document.body.appendChild(el);
+      G.Audio.sfx('select');
+      const fin = () => { removeEventListener('keydown', key, true); el.remove(); res(); };
+      const key = e => { if (['Space', 'Enter', 'Escape', 'Backspace'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); fin(); } };
+      addEventListener('keydown', key, true);
+      el.onclick = e => { if (e.target === el || e.target.classList.contains('ad-x')) fin(); };
+    });
+  }
+
   // ---------------- la carte du monde ----------------
   /** Les cartes extérieures placées les unes par rapport aux autres (en cases), d'après leurs raccords. */
   let WORLD = null;
@@ -814,6 +845,7 @@ G.Overworld = (() => {
     if (n.event === 'regis4') { await regis4(); return; }
     if (n.event === 'ghost') { await ghost(); return; }
     if (n.event === 'fuji') { await fuji(); return; }
+    if (n.event === 'erika') { await erika(n); return; }
     if (n.event === 'fujiHome') { await talk([['M. Fuji', 'Merci encore, jeune dresseur. Les Pokémon de cette maison sont heureux grâce à toi.']]); return; }
     if (n.talk) await talk(n.talk(S.flags));
   }
@@ -1129,7 +1161,10 @@ G.Overworld = (() => {
       leader: { look: 'misty', type: 'water', badge: 'Cascade', title: 'Revanche · Championne d\'Azuria', quote: 'La vague va tout emporter, cette fois !' } },
     surge: { name: 'Major Bob', team: [26, 101, 82, 125], bonus: 2500, hi: 'Ha ha ! Tu reviens au combat, soldat ? Mon unité d\'élite est prête !',
       win: 'Repos, soldat ! Tu as gagné cette bataille.', busy: 'Mes troupes rechargent leurs batteries ! Reviens au prochain chapitre.',
-      leader: { look: 'lt_surge', type: 'electric', badge: 'Foudre', title: 'Revanche · Champion de Carmin', quote: 'Décharge totale !' } }
+      leader: { look: 'lt_surge', type: 'electric', badge: 'Foudre', title: 'Revanche · Champion de Carmin', quote: 'Décharge totale !' } },
+    erika: { name: 'Érika', team: [71, 114, 45, 103], bonus: 3000, hi: 'Une revanche ? Avec plaisir… Mes fleurs ont bien poussé depuis la dernière fois.',
+      win: 'Quel combat… Je vais aller faire une petite sieste.', busy: 'Mes Pokémon se reposent au soleil. Reviens au prochain chapitre !',
+      leader: { look: 'erika', type: 'grass', badge: 'Prisme', title: 'Revanche · Championne de Céladopole', quote: 'Les fleurs reviennent toujours.' } }
   };
   async function rematch(n, key) {
     const R = REMATCH[key];
@@ -1399,6 +1434,22 @@ G.Overworld = (() => {
     if (S.ch === 9) await chapterEnd();
   }
 
+  // ---------------- chapitre 10 ----------------
+  async function erika(n) {
+    if (S.flags.erika) { await rematch(n, 'erika'); return; }
+    await talk([['Érika', 'Oh… Bonjour. Pardon, je m\'étais assoupie… Il fait si doux ici.'],
+                ['Érika', 'Je suis Érika, championne de Céladopole. J\'aime les fleurs, les parfums… et les Pokémon Plante.'],
+                ['Érika', 'Tu viens pour un badge ? Alors je ne retiendrai pas mes coups. Ortide, je compte sur toi !']]);
+    const res = await battle({ trainer: { name: 'Érika', team: [[114, 29], [70, 29], [44, 31]], smart: true, potions: 1,
+      leader: { look: 'erika', type: 'grass', badge: 'Prisme', title: 'Championne de l\'arène de Céladopole', quote: 'La nature est ma force.' } } }, n);
+    if (res !== 'win') return;
+    S.flags.erika = 1; S.money += 1200;
+    G.Audio.sfx('legend');
+    await talk([['Érika', 'J\'ai perdu… Tu es vraiment doué. Tes Pokémon t\'aiment beaucoup, ça se voit.'],
+                ['Érika', 'Voici le Badge Prisme. Et ce petit flacon de parfum… pour que ton équipe sente les fleurs !'],
+                ['', 'Tu obtiens le Badge Prisme et 1200 pièces !']]);
+    if (S.ch === 10) await chapterEnd();
+  }
   /** Passer une porte, une échelle ou l'entrée d'une grotte : on arrive sur la vraie carte, à la porte qui y mène. */
   async function go(w) {
     if (w.dest === 'ssanne' && mapKey === 'carmin') {
@@ -1699,6 +1750,7 @@ G.Overworld = (() => {
     el.classList.remove('on');
     await talk(c.intro);
     S.flags['intro' + S.ch] = 1;
+    S.flags.introTitle = c.title;
   }
 
   // ---------------- interface ----------------
@@ -1716,6 +1768,7 @@ G.Overworld = (() => {
           { icon: 'pball', title: 'Équipe', desc: S.team.length + ' Pokémon' },
           { icon: 'up', title: 'Objectif', desc: K().CHAPTERS[S.ch].goal },
           { icon: 'map', title: 'Carte', desc: 'La carte de Kanto et où tu es' },
+          { icon: 'trophy', title: 'Badges', desc: BADGES.filter(b => S.flags[b.flag]).length + ' / 8 badges' },
           { icon: 'flying', title: 'Vol', desc: flier() ? M().name(flier()) + ' t\'emmène à un Centre Pokémon' : 'Il faut un Pokémon de type Vol' },
           { icon: 'home', title: 'Débloquer', desc: 'Coincé ? Retour au dernier Centre Pokémon' },
           { title: 'Quitter', desc: 'Sauvegarde et retour au menu' },
@@ -1734,12 +1787,13 @@ G.Overworld = (() => {
           else if (a === 1 && j > 0) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
         else if (i === 2) await worldMap();
-        else if (i === 3) { await flyMenu(); return; }
-        else if (i === 4) {
+        else if (i === 3) await badgeCase();
+        else if (i === 4) { await flyMenu(); return; }
+        else if (i === 5) {
           const y = await G.AdvUI.choose('Retourner au dernier Centre Pokémon visité ?', [{ icon: 'home', title: 'Oui, j\'y retourne', desc: '' }, { title: 'Non', desc: '' }]);
           if (y === 0) { await rescue(); return; }
         }
-        else if (i === 5) { quit(); return; }
+        else if (i === 6) { quit(); return; }
         else return;
       }
     });
@@ -1765,6 +1819,8 @@ G.Overworld = (() => {
     raf = requestAnimationFrame(frame);
     busy = false;
     if (!S.flags.intro1) run(intro);
+    // Un chapitre « À suivre » devenu un vrai chapitre : on montre son introduction.
+    else if (S.flags.introTitle !== K().CHAPTERS[S.ch].title && /suivre/.test(S.flags.introTitle || 'À suivre')) run(intro);
   }
   function quit() {
     commit();

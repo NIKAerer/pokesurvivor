@@ -1085,7 +1085,7 @@ G.AdvBattle = (() => {
         } else result = 'lose';
       }
     }
-    if (result === 'win' && B.trainer) await say(B.trainer.name + ' est battu !', 1.2);
+    if (result === 'win' && B.trainer) await say('Tu as battu ' + B.trainer.name + ' !', 1.2);
     if (result === 'win') for (const m of s.team) if (m.hp > 0 && abOf(m) === 'pickup' && Math.random() < 0.1) {
       s.potions++; await say('Ramassage : ' + M.name(m) + ' a trouvé une Potion !', 1.1);
     }
