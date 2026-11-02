@@ -122,8 +122,8 @@ G.AdvBattle = (() => {
   let B = null;            // { wild, trainer, foes, fi, foe, me, stages, vol, aMe, aFoe, slotMe, slotFoe }
   let tweens = [];
 
-  const ST_NAME = { par: 'PAR', slp: 'SOM', frz: 'GEL', brn: 'BRÛ', psn: 'PSN' };
-  const ST_COLOR = { par: '#d8b020', slp: '#8888a8', frz: '#58b8e8', brn: '#e07030', psn: '#a040a0' };
+  const ST_NAME = { par: 'PAR', slp: 'SOM', frz: 'GEL', brn: 'BRÛ', psn: 'PSN', tox: 'PSN' };
+  const ST_COLOR = { par: '#d8b020', slp: '#8888a8', frz: '#58b8e8', brn: '#e07030', psn: '#a040a0', tox: '#7a2080' };
 
   // ---------------- petites animations ----------------
   function tween(dur, fn) {
@@ -358,8 +358,7 @@ G.AdvBattle = (() => {
     const t = types(m);
     if (st === 'brn' && t.includes('fire')) return false;
     if (st === 'frz' && t.includes('ice')) return false;
-    if (st === 'psn' && (t.includes('poison') || t.includes('steel'))) return false;
-    if (st === 'par' && t.includes('electric')) return false;
+    if ((st === 'psn' || st === 'tox') && (t.includes('poison') || t.includes('steel'))) return false;
     return true;
   }
   async function inflict(side, st) {
@@ -373,11 +372,13 @@ G.AdvBattle = (() => {
     }
     if (!canAil(m, st)) return false;
     m.st = st;
-    if (st === 'slp') m.sleep = 1 + Math.floor(Math.random() * 3);
-    FX().ail(a.x, a.y - 22, st);
+    // Rouge Feu : on dort de 1 à 4 tours (le compteur baisse avant chaque action).
+    if (st === 'slp') m.sleep = 2 + Math.floor(Math.random() * 4);
+    if (st === 'tox') B.vol[side].tox = 1;
+    FX().ail(a.x, a.y - 22, st === 'tox' ? 'psn' : st);
     G.Audio.sfx('select');
     cards();
-    await say(label(side) + ({ par: ' est paralysé ! Il aura du mal à attaquer.', slp: ' s\'endort !', frz: ' est gelé !', brn: ' est brûlé !', psn: ' est empoisonné !' })[st], 1.2);
+    await say(label(side) + ({ par: ' est paralysé ! Il aura du mal à attaquer.', slp: ' s\'endort !', frz: ' est gelé !', brn: ' est brûlé !', psn: ' est empoisonné !', tox: ' est gravement empoisonné !' })[st], 1.2);
     return true;
   }
   async function changeStat(side, k, n) {
@@ -390,10 +391,16 @@ G.AdvBattle = (() => {
   }
 
   /** Avant d'agir : sommeil, gel, paralysie, peur, confusion. Rend false si le Pokémon ne peut pas agir. */
-  async function canAct(side) {
+  async function canAct(side, id) {
     const m = mon(side), v = B.vol[side];
     if (m.st === 'slp') {
-      if (--m.sleep > 0) { FX().ail(act(side).x, act(side).y - 30, 'slp'); await say(label(side) + ' dort profondément…', 1); return false; }
+      const k = id && M.move(id).key;
+      if (--m.sleep > 0) {
+        FX().ail(act(side).x, act(side).y - 30, 'slp');
+        await say(label(side) + ' dort profondément…', 1);
+        // Ronflement et Blabla Dodo marchent justement en dormant.
+        return k === 'snore' || k === 'sleep-talk';
+      }
       m.st = ''; cards();
       await say(label(side) + ' se réveille !', 1);
     }
@@ -406,7 +413,7 @@ G.AdvBattle = (() => {
       if (--v.cnf <= 0) { v.cnf = 0; await say(label(side) + ' n\'est plus confus !', 1); }
       else {
         await say(label(side) + ' est confus…', 0.8);
-        if (Math.random() < 1 / 3) {
+        if (Math.random() < 1 / 2) {   // Rouge Feu : une chance sur deux de se blesser
           const dmg = Math.max(1, Math.floor(((2 * m.lv / 5 + 2) * 40 * M.stat(m, 'atk') / M.stat(m, 'def')) / 50 + 2));
           act(side).flash = 1; G.Audio.sfx('hit');
           await wait(0.15); act(side).flash = 0;
@@ -421,14 +428,38 @@ G.AdvBattle = (() => {
   }
 
   /** Une attaque, avec toutes ses règles. id 0 = Lutte (plus de PP). */
-  async function useMove(side, id) {
+  async function useMove(side, id, called) {
     const user = mon(side), tside = other(side), target = mon(tside);
     const ua = act(side), ta = act(tside);
-    if (!(await canAct(side))) return;
+    if (!called) B.lastBoom = null;
+    if (!called && !(await canAct(side, id))) return;
     const struggle = !id;
     const mv = struggle ? { name: 'Lutte', type: 'normal', cls: 1, power: 50, acc: 0, stats: [], drain: -25, hitMin: 0, flinch: 0, crit: 0, key: 'struggle' } : M.move(id);
-    if (!struggle) { const i = user.moves.indexOf(id); if (i >= 0 && user.pp[i] > 0) user.pp[i]--; }
+    if (!struggle && !called) { const i = user.moves.indexOf(id); if (i >= 0 && user.pp[i] > 0) user.pp[i]--; }
     await say(label(side) + ' utilise ' + mv.name + ' !', 0.9);
+    B.lastBoom = mv.key === 'self-destruct' || mv.key === 'explosion' ? side : null;
+    const fail = async () => { await say('Mais cela échoue !', 1); };
+    // Les attaques spéciales des jeux.
+    if ((mv.key === 'snore' || mv.key === 'sleep-talk') && user.st !== 'slp') return fail();
+    if (mv.key === 'sleep-talk') {
+      const ids = user.moves.filter(x => x !== id && !['sleep-talk', 'rest', 'yawn'].includes(M.move(x).key));
+      if (!ids.length) return fail();
+      return useMove(side, ids[Math.floor(Math.random() * ids.length)], true);
+    }
+    if (mv.key === 'rest') {
+      if (user.hp >= M.maxHp(user)) { await say('Les PV de ' + label(side) + ' sont au maximum !', 1); return; }
+      user.st = 'slp'; user.sleep = 3; B.vol[side].tox = 0;
+      FX().heal(ua.x, ua.y - 20); FX().ail(ua.x, ua.y - 30, 'slp');
+      G.Audio.sfx('levelup');
+      cards();
+      await hpTo(user, M.maxHp(user));
+      await say(label(side) + ' s\'endort et récupère tous ses PV !', 1.2);
+      return;
+    }
+    if (mv.key === 'dream-eater' && target.st !== 'slp') {
+      if (mv.acc) await say(label(tside) + ' ne dort pas…', 0.9);
+      return fail();
+    }
 
     // Précision (les attaques sur soi touchent toujours).
     if (mv.acc && !mv.self) {
@@ -458,10 +489,27 @@ G.AdvBattle = (() => {
         for (const [k, n] of mv.stats) await changeStat(mv.self ? side : tside, k, n);
         did = true;
       }
+      if (mv.key === 'leech-seed') {
+        await FX().attack(mv.type, pt(ua), pt(ta), 2);
+        if (types(target).includes('grass') || B.vol[tside].seed) { await say(types(target).includes('grass') ? 'Ça n\'affecte pas ' + label(tside) + '…' : label(tside) + ' est déjà infecté.', 1); return; }
+        B.vol[tside].seed = 1;
+        await say(label(tside) + ' est infecté !', 1);
+        return;
+      }
+      if (mv.key === 'yawn') {
+        await FX().attack(mv.type, pt(ua), pt(ta), 2);
+        if (target.st || B.vol[tside].yawn) return fail();
+        B.vol[tside].yawn = 2;
+        await say(label(side) + ' rend ' + label(tside) + ' somnolent !', 1);
+        return;
+      }
       if (mv.ail) {
         const tgt = mv.self ? side : tside;
+        // Cage Éclair et les autres attaques de statut Électrik ne touchent pas les Pokémon Sol.
+        if (mv.type === 'electric' && !mv.self && M.typeMul('electric', types(mon(tgt))) === 0) { await say('Ça n\'affecte pas ' + label(tgt) + '…', 1.1); return; }
         await FX().attack(mv.type, pt(ua), pt(act(tgt)), 2);
-        if (!(await inflict(tgt, mv.ail))) await say('Mais cela échoue !', 1);
+        const st = mv.key === 'toxic' ? 'tox' : mv.ail;
+        if (!(await inflict(tgt, st))) await say('Mais cela échoue !', 1);
         did = true;
       }
       if (!did) await say('Mais rien ne se passe…', 1);
@@ -520,7 +568,9 @@ G.AdvBattle = (() => {
       await say(label(side) + ' subit le contrecoup !', 0.9);
     }
     // Effets secondaires.
-    if (target.hp > 0 && mv.ail && Math.random() * 100 < (mv.ailCh || 100) && canAil(target, mv.ail)) await inflict(tside, mv.ail);
+    if (target.hp > 0 && mv.ail && Math.random() * 100 < (mv.ailCh || 100) && canAil(target, mv.ail) && !(mv.ail === 'cnf' && B.vol[tside].cnf)) await inflict(tside, mv.ail);
+    // Triplattaque : 20 % de brûler, paralyser ou geler.
+    if (mv.key === 'tri-attack' && target.hp > 0 && Math.random() < 0.2) { const st = G.U.pick(['brn', 'par', 'frz']); if (canAil(target, st)) await inflict(tside, st); }
     if (mv.stats.length && Math.random() * 100 < (mv.statCh || 100)) {
       const who = mv.self ? side : tside;
       if (mon(who).hp > 0) for (const [k, v] of mv.stats) await changeStat(who, k, v);
@@ -530,23 +580,43 @@ G.AdvBattle = (() => {
 
   /** Fin du tour : brûlure et poison. */
   async function endTurn(side) {
-    const m = mon(side);
-    if (!m || m.hp <= 0 || (m.st !== 'brn' && m.st !== 'psn')) return;
-    const a = act(side);
-    FX().ail(a.x, a.y - 22, m.st);
-    a.flash = 1; await wait(0.12); a.flash = 0;
-    await hpTo(m, Math.max(0, m.hp - Math.max(1, Math.floor(M.maxHp(m) / 8))));
-    await say(label(side) + (m.st === 'brn' ? ' souffre de sa brûlure !' : ' souffre du poison !'), 1);
+    const m = mon(side), v = B.vol[side];
+    if (!m || m.hp <= 0) return;
+    const a = act(side), hurt = async n => { a.flash = 1; await wait(0.12); a.flash = 0; await hpTo(m, Math.max(0, m.hp - n)); };
+    if (m.st === 'brn' || m.st === 'psn' || m.st === 'tox') {
+      FX().ail(a.x, a.y - 22, m.st === 'tox' ? 'psn' : m.st);
+      // Toxik : 1/16 des PV, puis 2/16, 3/16… à chaque tour.
+      const n = m.st === 'tox' ? Math.floor(M.maxHp(m) * Math.min(15, v.tox = (v.tox || 0) + 1) / 16) : Math.floor(M.maxHp(m) / 8);
+      await hurt(Math.max(1, n));
+      await say(label(side) + (m.st === 'brn' ? ' souffre de sa brûlure !' : ' souffre du poison !'), 1);
+    }
+    // Vampigraine : 1/8 des PV, rendus à l'adversaire.
+    const o = mon(other(side));
+    if (v.seed && m.hp > 0 && o && o.hp > 0) {
+      const n = Math.min(Math.ceil(m.hp), Math.max(1, Math.floor(M.maxHp(m) / 8)));
+      await hurt(n);
+      FX().heal(act(other(side)).x, act(other(side)).y - 20);
+      await hpTo(o, Math.min(M.maxHp(o), o.hp + n));
+      await say('Vampigraine draine l\'énergie de ' + label(side) + ' !', 1);
+    }
+    // Bâillement : il s'endort à la fin du tour suivant.
+    if (v.yawn && m.hp > 0 && --v.yawn === 0 && canAil(m, 'slp')) await inflict(side, 'slp');
   }
 
   // ---------------- l'adversaire ----------------
   /** Valeur d'une attaque pour l'adversaire. */
   function scoreMove(id, user, target, us, ts) {
     const mv = M.move(id);
+    if ((mv.key === 'snore' && user.st !== 'slp') || (mv.key === 'dream-eater' && target.st !== 'slp')) return 0;
     if (!mv.cls) {
       let v = 0;
       if (mv.heal > 0) v = user.hp < M.maxHp(user) * 0.5 ? 70 : 0;
-      if (mv.ail && canAil(target, mv.ail) && !(mv.ail === 'cnf' && B.vol[ts].cnf)) v = Math.max(v, { slp: 60, par: 50, psn: 40, brn: 40, cnf: 35, frz: 30 }[mv.ail] * (mv.acc ? mv.acc / 100 : 1));
+      if (mv.ail && canAil(target, mv.ail) && !(mv.ail === 'cnf' && B.vol[ts].cnf) && !(mv.type === 'electric' && M.typeMul('electric', types(target)) === 0))
+        v = Math.max(v, { slp: 60, par: 50, psn: mv.key === 'toxic' ? 50 : 40, brn: 40, cnf: 35, frz: 30 }[mv.ail] * (mv.acc ? mv.acc / 100 : 1));
+      if (mv.key === 'leech-seed' && !B.vol[ts].seed && !types(target).includes('grass')) v = Math.max(v, 40);
+      if (mv.key === 'yawn' && !target.st && !B.vol[ts].yawn) v = Math.max(v, 35);
+      if (mv.key === 'rest') v = user.hp < M.maxHp(user) * 0.4 && !user.st ? 65 : 0;
+      if ((mv.key === 'sleep-talk') && user.st !== 'slp') v = 0;
       if (mv.stats.length) {
         const [k, n] = mv.stats[0];
         if (mv.self && B.stages[us][k] < 2 && user.hp > M.maxHp(user) * 0.6) v = Math.max(v, 30);
@@ -758,7 +828,12 @@ G.AdvBattle = (() => {
         if (mon(side).hp <= 0 || mon(other(side)).hp <= 0) continue;
         const a = plan[side];
         if (side === 'foe' && plan.me.type === 'switch' && a.type === 'switch') continue;
-        if (a.type === 'move') await useMove(side, a.id);
+        if (a.type === 'move') {
+          await useMove(side, a.id);
+          // Destruction et Explosion : le lanceur est K.O., même s'il rate.
+          const k = a.id && M.move(a.id).key, u = mon(side);
+          if ((k === 'self-destruct' || k === 'explosion') && u.hp > 0 && B.lastBoom === side) await hpTo(u, 0);
+        }
         else { result = await doAction(side, a); if (result) break; }
       }
       if (!result) for (const side of B.order) await endTurn(side);
@@ -789,6 +864,7 @@ G.AdvBattle = (() => {
   }
 
   async function end() {
+    for (const m of G.Overworld.save().team) if (m.st === 'tox') m.st = 'psn';   // comme dans les jeux : le poison grave redevient normal
     G.Overworld.setFollowerHidden(null);
     $('advb').classList.add('hidden');
     $('advb-msg').classList.remove('on');
