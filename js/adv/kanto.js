@@ -650,5 +650,91 @@ G.Kanto = (() => {
     { title: 'À suivre…', goal: 'La suite de l\'aventure (Safrania, Sylphe SARL et Morgane…) arrive bientôt !',
       intro: [['', 'Chapitre 15 · À suivre'], ['', 'Bravo ! Le chef de la Team Rocket a fui. La suite arrive bientôt : Safrania, la tour Sylphe SARL et la championne Morgane…']] });
 
-  return { MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
+  // ---------------- Chapitres 12 et 13 : Safrania, Sylphe SARL et Morgane ----------------
+  Object.assign(MAPS, {
+    safrania: { name: 'Safrania', ch: 12, music: 'village', wild: null, doors: { COPYCATS: 'copieuse', MR_PSYCHICS: 'mpsy', FAN_CLUB: 'fanclub' } }
+  });
+  const ROOMS6 = {
+    porte5: ['Poste de garde de Safrania', 12], porte6: ['Poste de garde de Safrania', 12], porte7: ['Poste de garde de Safrania', 12], porte8: ['Poste de garde de Safrania', 12],
+    safrania_centre: ['Centre Pokémon de Safrania', 12], safrania_boutique: ['Boutique de Safrania', 12], safrania_maison: ['Maison de Safrania', 12],
+    safrania_dojo: ['Dojo de Karaté', 12], safrania_arene: ['Arène de Safrania', 13],
+    sylphe1: ['Sylphe SARL · Rez-de-chaussée', 12], sylphe5: ['Sylphe SARL · 5e étage', 12], sylphe7: ['Sylphe SARL · 7e étage', 12], sylphe11: ['Sylphe SARL · 11e étage', 12]
+  };
+  for (const k in ROOMS6) MAPS[k] = { name: ROOMS6[k][0], ch: ROOMS6[k][1], music: 'village', wild: null, doors: {}, inside: true };
+  MAPS.safrania_dojo.pool = [56, 57, 66, 67, 106, 107, 236];
+  MAPS.safrania_arene.pool = [63, 64, 96, 97, 122, 79, 80, 102];
+  Object.assign(DOORS, {
+    copieuse: 'La maison de la Copieuse. « Copieuse ! Copieuse ! » crie quelqu\'un derrière la porte… Elle ne veut voir personne.',
+    mpsy: 'La maison de M. Psy. Il dit qu\'il savait que tu viendrais… mais il n\'ouvre pas.',
+    fanclub: 'Le club des fans de dresseurs. Fermé pour la journée.'
+  });
+  Object.assign(CLASSES, { channeler: 'Médium', policeman: 'Policier' });
+  // Les sbires qui occupent Safrania partent quand Giovanni est battu à Sylphe SARL.
+  const HIDE = { safrania: f => (f.giovanni2 ? ['rocket_m'] : []) };
+  Object.assign(TRAINERS, {
+    SilphCo_5F_EventScript_Grunt1: { name: 'Sbire Rocket', team: [[24, 33], [110, 33]], coins: 520, meet: 'Sylphe SARL est à nous ! Le Boss veut leur nouvelle Master Ball !', lose: 'Le Boss est tout en haut…' },
+    SilphCo_5F_EventScript_Grunt2: { name: 'Sbire Rocket', team: [[20, 33], [42, 33], [89, 34]], coins: 540, meet: 'Tu n\'iras pas plus haut !', lose: 'Prends l\'ascenseur, tiens… Je n\'ai plus la force.' },
+    SilphCo_7F_EventScript_Grunt1: { name: 'Sbire Rocket', team: [[24, 34], [53, 34]], coins: 560, meet: 'Le 11e étage est bouclé ! Personne ne monte !', lose: 'Bon… Il y a peut-être un passage.' },
+    SilphCo_7F_EventScript_Grunt2: { name: 'Sbire Rocket', team: [[97, 35], [67, 35]], coins: 560, meet: 'Ici on cherche le Président. Tu l\'as vu ?', lose: 'Il est au 11e, mais tu ne le sauveras pas !' },
+    SilphCo_7F_EventScript_Grunt3: { name: 'Sbire Rocket', team: [[42, 34], [20, 34], [110, 35]], coins: 560, meet: 'Encore toi ? Le gamin de la Salle de jeux !', lose: 'Le Boss va encore être furieux…' },
+    SilphCo_11F_EventScript_Grunt1: { name: 'Sbire Rocket', team: [[89, 36], [24, 36]], coins: 600, meet: 'Le Boss négocie avec le Président. Ne le dérange pas !', lose: 'Boss… Je n\'ai pas réussi…' },
+    SilphCo_11F_EventScript_Grunt2: { name: 'Sbire Rocket', team: [[110, 36], [53, 37]], coins: 600, meet: 'Tu ne sortiras pas d\'ici !', lose: 'Si, tu sortiras… Pardon.' }
+  });
+  Object.assign(SIGNS, {
+    SaffronCity_EventScript_CitySign: 'Safrania — Brillante comme l\'or, la ville de Sylphe SARL.',
+    SaffronCity_EventScript_GymSign: 'Arène de Safrania · Championne : Morgane — La maîtresse des Pokémon Psy.',
+    SaffronCity_EventScript_DojoSign: 'Dojo de Karaté — Le temple des combats !',
+    SaffronCity_EventScript_SilphCoSign: 'Sylphe SARL — Siège social. Les Poké Balls de tout Kanto sont fabriquées ici.'
+  });
+  Object.assign(TALK, {
+    Route5_SouthEntrance_EventScript_Guard: 'Le garde : « Du thé ! Enfin ! Allez, tu peux passer. Fais attention, la Team Rocket est partout en ville. »',
+    Route6_NorthEntrance_EventScript_Guard: 'Le garde : « Safrania est pleine de sbires en noir… Sois prudent, petit. »',
+    Route7_EastEntrance_EventScript_Guard: 'Le garde : « Je te laisse passer, mais la Team Rocket occupe Sylphe SARL. »',
+    Route8_WestEntrance_EventScript_Guard: 'Le garde : « Merci pour ta patience ! Safrania est juste derrière. »',
+    SaffronCity_EventScript_RocketGrunt1: 'On garde la ville ! Circule, gamin !', SaffronCity_EventScript_RocketGrunt2: 'Sylphe SARL est à nous maintenant !',
+    SaffronCity_EventScript_RocketGrunt3: 'L\'arène est fermée. Ordre du Boss !', SaffronCity_EventScript_RocketGrunt4: 'Tu cherches quoi, toi ?',
+    SaffronCity_EventScript_RocketGrunt5: 'Le Boss va devenir le maître de toutes les Poké Balls !', SaffronCity_EventScript_RocketGrunt6: 'Ne traîne pas dans le coin !',
+    SaffronCity_EventScript_RocketGrunt7: 'Hé hé… Toute la ville a peur de nous.',
+    SaffronCity_EventScript_Youngster: 'Les sbires ont pris la tour de Sylphe SARL ! Le Président est enfermé là-haut !',
+    SaffronCity_EventScript_WorkerM: 'Je travaille à Sylphe SARL… mais ils m\'ont jeté dehors !',
+    SaffronCity_EventScript_Man: 'Le Dojo de Karaté, c\'était l\'arène de Safrania avant que Morgane n\'arrive.',
+    SaffronCity_EventScript_Boy: 'Mon Roucarnage peut voler jusqu\'à Céladopole en une minute !', SaffronCity_EventScript_Pidgeot: 'Roucarnage : Rouuu !',
+    SaffronCity_EventScript_Lass: 'Morgane voit l\'avenir… On dit qu\'elle n\'a jamais ri de sa vie.',
+    SaffronCity_EventScript_CrushGirl: 'Je m\'entraîne au Dojo tous les jours. Hiya !',
+    SaffronCity_PokemonCenter_1F_EventScript_Gentleman: 'Les Pokémon Psy de Morgane craignent les Pokémon Insecte et Spectre.',
+    SaffronCity_PokemonCenter_1F_EventScript_Woman: 'La tour de Sylphe SARL a un ascenseur qui va jusqu\'au 11e étage.',
+    SaffronCity_PokemonCenter_1F_EventScript_Youngster: 'Un Spectrum, ça fait rire n\'importe qui… même Morgane ?',
+    SilphCo_1F_EventScript_Receptionist: 'B… bienvenue à Sylphe SARL. Les hommes en noir sont en haut. L\'ascenseur est au fond.',
+    SilphCo_5F_EventScript_WorkerM: 'Ils veulent voler la Master Ball, la meilleure Poké Ball du monde !',
+    SilphCo_5F_EventScript_Scientist: 'Le Scope Sylphe vient d\'ici, de notre laboratoire. La Team Rocket l\'avait volé.',
+    SilphCo_7F_EventScript_WorkerM1: 'Les sbires sont partout ! Je me cache derrière mon bureau.',
+    SilphCo_7F_EventScript_WorkerM2: 'Le Président est au 11e étage avec leur chef…',
+    SilphCo_11F_EventScript_Secretary: 'Merci ! Le Président est sain et sauf grâce à toi.'
+  });
+  Object.assign(NPCS, {
+    safrania: [{ id: 'sylphe_garde', look: 'rocket_m', x: 34, y: 31, dir: 'down', event: 'silphGuard', when: f => !f.silphGuard }],
+    sylphe7: [
+      { id: 'regis5', look: 'blue', x: 14, y: 6, dir: 'down', event: 'regis5', when: f => !f.regis5 },
+      { id: 'lapras', look: 'worker_f', x: 10, y: 10, dir: 'down', event: 'lapras' }
+    ],
+    sylphe11: [
+      { id: 'giovanni2', look: 'giovanni', x: 6, y: 11, dir: 'right', event: 'giovanni2', when: f => !f.giovanni2 },
+      { id: 'president', look: 'old_man_2', x: 9, y: 9, dir: 'down', event: 'president' }
+    ],
+    safrania_dojo: [{ id: 'koichi', look: 'black_belt', x: 6, y: 5, dir: 'down', event: 'dojo' }],
+    safrania_arene: [{ id: 'morgane', look: 'sabrina', x: 14, y: 11, dir: 'down', event: 'morgane' }]
+  });
+  CHAPTERS.splice(12, 1,
+    { title: 'Sylphe SARL', goal: 'Entre à Safrania par un poste de garde, bats le sbire devant Sylphe SARL et monte jusqu\'au 11e étage par l\'ascenseur pour libérer le Président.',
+      intro: [['', 'Chapitre 15 · Sylphe SARL'], ['Pierre', 'Le Scope Sylphe vient de Sylphe SARL, la grande tour de Safrania. Si la Team Rocket l\'avait volé…'],
+              ['Ondine', '… c\'est qu\'ils préparent un mauvais coup là-bas ! Et les gardes laissent enfin passer : je leur ai offert du thé de la Résidence !'],
+              ['Pierre', 'Il paraît que Giovanni est revenu, et qu\'il retient le Président de Sylphe SARL tout en haut de la tour.']] },
+    { title: 'Morgane', goal: 'Les sbires sont partis de Safrania : traverse l\'arène de Morgane (les dalles téléportent !) et défie la championne.',
+      intro: [['', 'Chapitre 16 · Morgane'], ['Ondine', 'L\'arène de Safrania est rouverte. La championne, Morgane, est une médium… Elle lit dans les pensées.'],
+              ['Pierre', 'Ses Pokémon Psy sont terribles. On dit que seul un Spectrum farceur arriverait à la faire rire.'],
+              ['Ondine', 'Et son arène est pleine de dalles qui téléportent. Bonne chance pour trouver le bon chemin !']] },
+    { title: 'À suivre…', goal: 'La suite de l\'aventure (Parmanie, Koga et le Parc Safari…) arrive bientôt !',
+      intro: [['', 'Chapitre 17 · À suivre'], ['', 'Bravo ! Six badges ! La suite arrive bientôt : Parmanie, le ninja Koga et le Parc Safari…']] });
+
+  return { HIDE, MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
 })();
