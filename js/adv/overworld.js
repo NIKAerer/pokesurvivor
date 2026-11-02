@@ -534,6 +534,8 @@ G.Overworld = (() => {
     // Par-dessus un comptoir (Infirmière Joëlle, vendeur) : on parle à la personne derrière.
     if (!n && at(f.x, f.y) === '#') { n = at2(f.x + ddx, f.y + ddy); if (n && !n.event) n = null; }
     if (n) { run(() => talkNpc(n)); return; }
+    // Le PC du Centre Pokémon (même place dans tous les Centres de Rouge Feu).
+    if (/_centre$/.test(mapKey) && f.x === 11 && f.y === 1 && (!fromBump || pl.dir === 'up')) { run(pc); return; }
     const w = warpAt(f.x, f.y);
     if (w) { run(() => door(w)); return; }
     const sg = art.signs.find(b => b.x === f.x && b.y === f.y);
@@ -1207,13 +1209,69 @@ G.Overworld = (() => {
     commit();
     await intro();
   }
+  /** Le PC du Centre : la boîte pour ranger, reprendre ou relâcher ses Pokémon. */
+  async function pc() {
+    G.Audio.sfx('select');
+    await talk([['', 'Tu allumes le PC. Connexion au système de stockage de Léo…']]);
+    const card = (m, k) => ({ dex: m.dex, title: M().name(m) + (k === 0 && S.team.includes(m) ? ' (tête)' : ''),
+      desc: 'N. ' + m.lv + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV · ' + m.moves.map(M().moveName).join(', ') });
+    for (;;) {
+      const i = await G.AdvUI.choose('PC de Léo · équipe ' + S.team.length + '/6 · boîte ' + S.box.length, [
+        { icon: 'pcbox', title: 'Retirer', desc: 'Prendre un Pokémon de la boîte dans l\'équipe', off: !S.box.length },
+        { icon: 'pball', title: 'Déposer', desc: 'Ranger un Pokémon de l\'équipe dans la boîte', off: S.team.length < 2 },
+        { icon: 'friends', title: 'Échanger', desc: 'Un de l\'équipe contre un de la boîte', off: !S.box.length },
+        { icon: 'heart', title: 'Relâcher', desc: 'Rendre un Pokémon de la boîte à la nature', off: !S.box.length },
+        { title: 'Éteindre', desc: '' }]);
+      if (i === 4) break;
+      if (i !== 1 && !S.box.length) { await talk([['', 'La boîte est vide. Les Pokémon capturés quand l\'équipe est pleine arrivent ici.']]); continue; }
+      if (i === 0) {
+        if (S.team.length >= 6) { await talk([['', 'Ton équipe est pleine (6 Pokémon). Dépose ou échange un Pokémon d\'abord.']]); continue; }
+        const j = await G.AdvUI.choose('Quel Pokémon retirer ?', S.box.map(card).concat([{ title: 'Retour', desc: '' }]));
+        if (j >= S.box.length) continue;
+        const [m] = S.box.splice(j, 1); S.team.push(m);
+        await talk([['', M().name(m) + ' rejoint ton équipe !']]);
+      } else if (i === 1) {
+        if (S.team.length < 2) { await talk([['', 'Il te faut au moins un Pokémon avec toi !']]); continue; }
+        const j = await G.AdvUI.choose('Quel Pokémon déposer ?', S.team.map(card).concat([{ title: 'Retour', desc: '' }]));
+        if (j >= S.team.length) continue;
+        const [m] = S.team.splice(j, 1); S.box.push(m);
+        await talk([['', M().name(m) + ' est rangé dans la boîte.']]);
+      } else if (i === 2) {
+        const j = await G.AdvUI.choose('Qui part dans la boîte ?', S.team.map(card).concat([{ title: 'Retour', desc: '' }]));
+        if (j >= S.team.length) continue;
+        const k = await G.AdvUI.choose('Qui le remplace ?', S.box.map(card).concat([{ title: 'Retour', desc: '' }]));
+        if (k >= S.box.length) continue;
+        const a = S.team[j]; S.team[j] = S.box[k]; S.box[k] = a;
+        await talk([['', M().name(S.team[j]) + ' rejoint ton équipe, ' + M().name(a) + ' va dans la boîte.']]);
+      } else if (i === 3) {
+        const j = await G.AdvUI.choose('Quel Pokémon relâcher ?', S.box.map(card).concat([{ title: 'Retour', desc: '' }]));
+        if (j >= S.box.length) continue;
+        const m = S.box[j];
+        const y = await G.AdvUI.choose('Relâcher ' + M().name(m) + ' ? Tu ne le reverras plus.', [{ title: 'Oui, relâcher', desc: '' }, { title: 'Non', desc: '' }]);
+        if (y !== 0) continue;
+        S.box.splice(j, 1);
+        await talk([['', 'Au revoir, ' + M().name(m) + ' !']]);
+      }
+      refreshFollowers();
+      commit();
+    }
+    hud();
+  }
+  /** La forme de base de la famille (Roucool pour Roucoups et Roucarnage). */
+  let PRE = null;
+  function family(d) {
+    if (!PRE) { PRE = {}; for (const [a, l] of Object.entries(G.EVOS || {})) for (const [to] of l) if (!PRE[to]) PRE[to] = +a; }
+    for (let i = 0; i < 4 && PRE[d]; i++) d = PRE[d];
+    return d;
+  }
   /** Capturer : 3 cartes de Pokémon de la région (ceux de l'animé à cet endroit). */
   async function capture(ch) {
     const avg = Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
     // Version de Nika : des Pokémon cohérents avec le coin (ceux qui y vivent dans les jeux et l'animé),
     // et au moins un de ceux croisés pendant le chapitre (sauvages ou Pokémon des dresseurs).
-    const owned = d => S.team.some(m => m.dex === d) || S.box.some(m => m.dex === d);
-    const ok = d => G.DEX_BY[d] && !G.DEX_BY[d].leg && !owned(d);
+    // Version de Nika : jamais de doublon, ni le même Pokémon ni un de sa famille (Roucool si on a Roucoups).
+    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+    const ok = d => G.DEX_BY[d] && !G.DEX_BY[d].leg && !fams.has(family(d));
     const shuffle = a => [...new Set(a)].filter(ok).sort(() => Math.random() - 0.5);
     const met0 = (S.seen && S.seen[ch]) || [];
     const shown = new Set();
@@ -1222,9 +1280,10 @@ G.Overworld = (() => {
       const fresh = a => { const f = a.filter(d => !shown.has(d)); return f.length ? f : a; };
       const met = fresh(shuffle(met0));
       let picks = met.slice(0, 1);
-      for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(fresh(shuffle(HABITAT[c] || [])).filter(d => !picks.includes(d))).slice(0, 3);
-      for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(shuffle(HABITAT[c] || []).filter(d => !picks.includes(d))).slice(0, 3);
-      if (!picks.length) picks = [16, 19, 21];
+      for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(fresh(shuffle(HABITAT[c] || [])).filter(d => !picks.some(q => family(q) === family(d)))).slice(0, 3);
+      for (let c = ch; picks.length < 3 && c >= 1; c--) picks = picks.concat(shuffle(HABITAT[c] || []).filter(d => !picks.some(q => family(q) === family(d)))).slice(0, 3);
+      // Tout le coin est déjà dans l'équipe : d'autres Pokémon de Kanto.
+      if (picks.length < 3) picks = picks.concat(shuffle(Array.from({ length: 151 }, (_, k) => k + 1).filter(d => family(d) === d && !picks.some(q => family(q) === d)))).slice(0, 3);
       picks.forEach(d => shown.add(d));
       return picks;
     };
