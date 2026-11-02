@@ -147,7 +147,7 @@ G.GachaUI = (() => {
         };
         if (n === 1) {
           const rb = $('pull-release');
-          rb.onclick = () => { if (free()) rb.classList.add('hidden'); };
+          rb.onclick = () => { if (free()) { rb.classList.add('hidden'); close(); } };   // relâché : l'écran se ferme tout seul
           relOne = rb;
         } else {
           const b = document.createElement('button');
