@@ -34,11 +34,8 @@ G.AdvMon = (() => {
 
   const base = dex => D().stats[dex] || [50, 50, 50, 50, 50, 50];
   const K = { atk: 1, def: 2, spa: 3, spd: 4, spe: 5 };
-  /**
-   * Version de Nika : ton équipe est faite de Pokémon entraînés, comme dans les jeux (IV 31 et points
-   * d'effort qui montent avec le niveau, 252 au maximum dès le N. 63). Les Pokémon adverses (m.foe) restent à IV 15.
-   */
-  const bonus = m => m.foe ? IV : 31 + Math.floor(Math.min(252, m.lv * 4) / 4);
+  // Version de Nika : les PV et les stats comme dans les jeux, pour ton équipe comme pour les adversaires (IV 15, pas de points d'effort).
+  const bonus = () => IV;
   function maxHp(m) { return m.dex === 292 ? 1 : Math.floor((2 * base(m.dex)[0] + bonus(m)) * m.lv / 100) + m.lv + 10; }
   function stat(m, k) { return Math.floor((2 * base(m.dex)[K[k]] + bonus(m)) * m.lv / 100) + 5; }
   const xpAt = lv => lv * lv * lv;
