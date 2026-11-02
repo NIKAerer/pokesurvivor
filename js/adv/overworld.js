@@ -1179,13 +1179,54 @@ G.Overworld = (() => {
     await talk([['', 'C\'est fermé.']]);
   }
 
+  /** Les Pokémon de la boutique : 3 Pokémon du coin, les mêmes pour ce chapitre et cette boutique, et chers. */
+  function martMons() {
+    const key = mapKey + ':' + S.ch;
+    if (!S.shop || S.shop.key !== key) {
+      let h = 17;
+      for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
+      const pool = [...new Set([].concat(HABITAT[S.ch] || [], HABITAT[S.ch - 1] || [], HABITAT[S.ch - 2] || []))].filter(d => G.DEX_BY[d] && !G.DEX_BY[d].leg);
+      const list = [];
+      while (pool.length && list.length < 6) list.push(...pool.splice(Math.floor(rnd() * pool.length), 1));
+      S.shop = { key, list, sold: [] };
+    }
+    // Jamais un Pokémon d'une famille déjà dans l'équipe ou la boîte.
+    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+    return S.shop.list.filter(d => !S.shop.sold.includes(d) && !fams.has(family(d))).slice(0, 3);
+  }
+  async function buyMon() {
+    const lv = Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
+    // Version de Nika : de 5 000 à 10 000 pièces selon la force du Pokémon (total de ses stats de base).
+    const price = d => Math.round((5000 + 5000 * Math.max(0, Math.min(1, ((G.DEX_BY[d].bst || 300) - 250) / 300))) / 500) * 500;
+    for (;;) {
+      const list = martMons();
+      if (!list.length) { await talk([['Vendeur', 'Je n\'ai plus de Pokémon à vendre pour l\'instant. Repasse plus tard dans l\'aventure !']]); return; }
+      const i = await G.AdvUI.choose('Pokémon à vendre · tu as ' + S.money + ' pièces', list.map(d => ({ dex: d, title: G.DEX_BY[d].name, types: G.DEX_BY[d].types,
+        desc: price(d) + ' pièces · N. ' + lv + ' · ' + M().movesAt(d, lv).map(M().moveName).join(', '), off: S.money < price(d) })).concat([{ title: 'Retour', desc: '' }]));
+      if (i >= list.length) return;
+      const d = list[i], cost = price(d);
+      if (S.money < cost) { await talk([['Vendeur', 'Il te faut ' + cost + ' pièces pour ' + G.DEX_BY[d].name + '. Reviens quand tu les auras !']]); continue; }
+      S.money -= cost;
+      S.shop.sold.push(d);
+      const m = M().make(d, lv);
+      if (S.team.length < 6) S.team.push(m); else S.box.push(m);
+      G.DB.grant(d, 'adv');
+      refreshFollowers();
+      G.Audio.sfx('confirm');
+      await talk([['Vendeur', 'Merci ! Prends bien soin de ' + G.DEX_BY[d].name + '.'], ['', G.DEX_BY[d].name + (S.team.includes(m) ? ' rejoint ton équipe !' : ' part dans ta boîte (équipe pleine).')]]);
+      commit();
+    }
+  }
   async function mart() {
     for (;;) {
       const i = await G.AdvUI.choose('Boutique · ' + S.money + ' pièces', [
         { title: '3 Potions', desc: '300 pièces · +20 PV chacune', icon: 'up', off: S.money < 300 },
+        { title: 'Pokémon', desc: 'Des Pokémon du coin, mais chers', icon: 'pball' },
         { title: 'Au revoir', desc: '' }
       ]);
-      if (i === 1) return;
+      if (i === 2) return;
+      if (i === 1) { await buyMon(); continue; }
       if (S.money < 300) { await talk([['Vendeur', 'Tu n\'as pas assez de pièces…']]); continue; }
       S.money -= 300;
       S.potions += 3;
