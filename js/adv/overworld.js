@@ -1166,12 +1166,13 @@ G.Overworld = (() => {
   async function pierre(n) {
     if (S.flags.pierre) { await rematch(n, 'pierre'); return; }
     await talk([['Pierre', 'Je suis Pierre, le champion d\'Argenta. Ma défense est solide comme le roc !'], ['Pierre', 'Montre-moi ta détermination !']]);
-    const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10], [95, 12]], smart: true,
+    const res = await battle({ trainer: { name: 'Pierre', team: [[74, 10, [33, 111]], [95, 12, [33, 20, 106, 317]]], tm: 317, smart: true,
       leader: { look: 'brock', type: 'rock', badge: 'Roche', title: 'Champion de l\'arène d\'Argenta', quote: 'Ma défense est solide comme le roc !' } } }, n);
     if (res === 'win') {
       S.flags.pierre = 1; S.money += 500;
       G.Audio.sfx('legend');
       await talk([['Pierre', 'Tu m\'as battu… Tu mérites ceci : le Badge Roche !'], ['', 'Tu obtiens le Badge Roche et 500 pièces !']]);
+      await leaderTm('pierre', 'Pierre');
       if (S.ch === 3) await chapterEnd();
     }
   }
@@ -1202,7 +1203,7 @@ G.Overworld = (() => {
     await talk([[R.name, R.hi]]);
     const top = Math.max(...S.team.map(m => m.lv));
     const team = R.team.map((d, i) => [d, Math.min(100, top + 1 + i)]);
-    const res = await battle({ trainer: { name: R.name, team, smart: true, potions: 2, leader: R.leader } }, n);
+    const res = await battle({ trainer: { name: R.name, team, smart: true, potions: 2, leader: R.leader, tm: LEADER_TM[key] } }, n);
     if (res !== 'win') return;
     S.rematch[key] = S.ch; S.money += R.bonus;
     G.Audio.sfx('legend');
@@ -1282,12 +1283,13 @@ G.Overworld = (() => {
     await talk([['Ondine', 'Je suis Ondine, la championne d\'Azuria ! Ma stratégie : l\'attaque totale avec les Pokémon Eau !'],
                 ['', 'Une Poké Ball s\'ouvre toute seule… Psykokwak en sort, l\'air perdu.'], ['Psykokwak', 'Psy… ?'],
                 ['Ondine', 'Psykokwak ! Retourne dans ta Ball, ce n\'est pas ton tour ! … Stari, en avant !']]);
-    const res = await battle({ trainer: { name: 'Ondine', team: [[120, 18], [121, 21]], smart: true,
+    const res = await battle({ trainer: { name: 'Ondine', team: [[120, 18, [33, 106, 105, 352]], [121, 21, [129, 105, 229, 352]]], tm: 352, smart: true,
       leader: { look: 'misty', type: 'water', badge: 'Cascade', title: 'Championne de l\'arène d\'Azuria', quote: 'Ma stratégie : l\'attaque totale avec les Pokémon Eau !' } } }, n);
     if (res !== 'win') return;
     S.flags.ondine = 1; S.money += 800;
     G.Audio.sfx('legend');
     await talk([['Ondine', 'Waouh, tu es fort ! Voici le Badge Cascade, tu l\'as mérité.'], ['', 'Tu obtiens le Badge Cascade et 800 pièces !']]);
+    await leaderTm('ondine', 'Ondine');
     if (S.ch === 5) await chapterEnd();
   }
   /** Léo, coincé dans le corps d'un Mélofée. */
@@ -1343,13 +1345,14 @@ G.Overworld = (() => {
     await talk([['Major Bob', 'Hé, petit ! Bienvenue dans mon arène ! Mes Pokémon Électrik m\'ont sauvé la vie pendant la guerre !'],
                 ['Major Bob', pika ? 'Un Pikachu ? Ha ha ha ! Tu devrais le faire évoluer, petit, sinon il n\'a aucune chance contre mon Raichu !'
                                    : 'Voyons si ton équipe supporte la décharge ! Raichu est mon meilleur soldat !']]);
-    const res = await battle({ trainer: { name: 'Major Bob', team: [[100, 21], [25, 18], [26, 24]], smart: true,
+    const res = await battle({ trainer: { name: 'Major Bob', team: [[100, 21, [33, 103, 49, 351]], [25, 18, [98, 86, 104, 351]], [26, 24, [98, 86, 104, 351]]], tm: 351, smart: true,
       leader: { look: 'lt_surge', type: 'electric', badge: 'Foudre', title: 'Champion de l\'arène de Carmin', quote: 'Mes Pokémon Électrik m\'ont sauvé la vie à la guerre !' } } }, n);
     if (res !== 'win') return;
     S.flags.surge = 1; S.money += 1000;
     G.Audio.sfx('legend');
     await talk([['Major Bob', pika ? 'Battu par un Pikachu… Sa vitesse, petit ! Je n\'y avais pas pensé. Voici le Badge Foudre !' : 'Ouah ! Tu es un vrai soldat, petit ! Voici le Badge Foudre !'],
                 ['', 'Tu obtiens le Badge Foudre et 1000 pièces !']]);
+    await leaderTm('surge', 'Major Bob');
     if (S.ch === 6 && S.ep == null) await chapterEnd();
   }
 
@@ -1466,7 +1469,7 @@ G.Overworld = (() => {
     await talk([['Érika', 'Oh… Bonjour. Pardon, je m\'étais assoupie… Il fait si doux ici.'],
                 ['Érika', 'Je suis Érika, championne de Céladopole. J\'aime les fleurs, les parfums… et les Pokémon Plante.'],
                 ['Érika', 'Tu viens pour un badge ? Alors je ne retiendrai pas mes coups. Ortide, je compte sur toi !']]);
-    const res = await battle({ trainer: { name: 'Érika', team: [[114, 29], [70, 29], [44, 31]], smart: true, potions: 1,
+    const res = await battle({ trainer: { name: 'Érika', team: [[114, 29, [20, 78, 72, 202]], [70, 29, [79, 51, 75, 202]], [44, 31, [77, 51, 78, 202]]], tm: 202, smart: true, potions: 1,
       leader: { look: 'erika', type: 'grass', badge: 'Prisme', title: 'Championne de l\'arène de Céladopole', quote: 'La nature est ma force.' } } }, n);
     if (res !== 'win') return;
     S.flags.erika = 1; S.money += 1200;
@@ -1474,6 +1477,7 @@ G.Overworld = (() => {
     await talk([['Érika', 'J\'ai perdu… Tu es vraiment doué. Tes Pokémon t\'aiment beaucoup, ça se voit.'],
                 ['Érika', 'Voici le Badge Prisme. Et ce petit flacon de parfum… pour que ton équipe sente les fleurs !'],
                 ['', 'Tu obtiens le Badge Prisme et 1200 pièces !']]);
+    await leaderTm('erika', 'Érika');
     if (S.ch === 10) await chapterEnd();
   }
   // ---------------- chapitre 11 : le repaire de la Team Rocket ----------------
@@ -1525,13 +1529,14 @@ G.Overworld = (() => {
     await talk([['???', 'Alors c\'est toi, le gamin qui a mis mes sbires en déroute…'],
                 ['Giovanni', 'Je suis Giovanni, le chef de la Team Rocket. Ce repaire, la Salle de jeux, cette ville… tout ça m\'appartient.'],
                 ['Giovanni', 'Persian ronronne : il a hâte de voir ce que tu vaux. Montre-moi, petit dresseur !']]);
-    const res = await battle({ trainer: { name: 'Giovanni', team: [[95, 25], [111, 24], [53, 27], [115, 29]], smart: true, potions: 2 } }, n);
+    const res = await battle({ trainer: { name: 'Giovanni', team: [[95, 25], [111, 24], [53, 27], [115, 29]], tm: 89, smart: true, potions: 2 } }, n);
     if (res !== 'win') return;
     S.flags.giovanni = 1; S.money += 2000;
     G.Audio.sfx('legend');
     await talk([['Giovanni', 'Impossible… Battu par un enfant.'], ['Giovanni', 'Très bien. Je quitte ce repaire. Mais la Team Rocket ne disparaîtra jamais. On se reverra !'],
                 ['', 'Giovanni s\'enfuit par une sortie secrète. Il laisse tomber un Scope Sylphe… et 2000 pièces !'],
                 ['Pierre', 'Le Scope Sylphe… On dit qu\'il est fabriqué par Sylphe SARL, à Safrania. Il se passe des choses bizarres là-bas.']]);
+    await leaderTm('giovanni', '', 'Dans sa fuite, Giovanni a aussi laissé tomber une CT…');
     loadNpcs();
     if (S.ch === 11) await chapterEnd();
   }
@@ -1641,9 +1646,11 @@ G.Overworld = (() => {
         ({ title: t, desc: p + ' pièces · ' + d + ' · tu en as ' + (S[k] || 0), icon: 'up', off: S.money < p })).concat([
         { title: 'Canne', desc: S.rod ? 'Tu en as déjà une' : '1000 pièces · pêcher face à l\'eau', icon: 'up', off: S.rod || S.money < 1000 },
         { title: 'Pokémon', desc: 'Des Pokémon du coin, mais chers', icon: 'pball' },
+        { title: 'CT', desc: 'Des Capsules Techniques des jeux', icon: 'book' },
         { title: 'Au revoir', desc: '' }
       ]));
-      if (i === MART.length + 2) return;
+      if (i === MART.length + 3 || i == null || i < 0) return;
+      if (i === MART.length + 2) { await tmShop(); continue; }
       if (i === MART.length + 1) { await buyMon(); continue; }
       if (i === MART.length) {
         if (S.rod) { await talk([['Vendeur', 'Tu as déjà une Canne !']]); continue; }
@@ -1936,6 +1943,64 @@ G.Overworld = (() => {
       if (await G.AdvBattle.learn(m, ids[k], false)) return true;
     }
   }
+  // ---------------- les CT des jeux ----------------
+  // Version de Nika : les CT de Rouge Feu, une seule utilisation comme dans les jeux. Les Champions donnent la leur,
+  // les boutiques en vendent quelques-unes (de plus en plus fortes au fil des chapitres).
+  const LEADER_TM = { pierre: 317, ondine: 352, surge: 351, erika: 202, giovanni: 89 };
+  const TM_USELESS = new Set(['skill-swap', 'snatch', 'torment', 'taunt', 'attract', 'roar']);
+  // [chapitre, numéro de CT] : à partir de quel chapitre une boutique peut la vendre.
+  const TM_SHOP = [[2, 9], [2, 46], [2, 40], [2, 28], [3, 6], [3, 43], [4, 31], [4, 17], [4, 33], [4, 16], [4, 42], [4, 44], [5, 18], [5, 11], [5, 23], [5, 10],
+    [6, 32], [6, 27], [6, 21], [6, 7], [6, 37], [7, 24], [7, 13], [7, 35], [7, 29], [7, 30], [7, 36], [8, 8], [8, 4], [8, 1], [8, 47], [8, 20],
+    [10, 22], [10, 15], [10, 14], [10, 25], [10, 38], [10, 2], [10, 50], [11, 26]];
+  const tmId = n => (G.AdvData.tms.find(([k]) => k === n) || [])[1];
+  function tmPrice(id) { const p = M().power(id); return p >= 110 ? 9000 : p >= 90 ? 6000 : p >= 70 ? 4000 : p > 0 ? 2500 : 2000; }
+  function giveTm(id) { S.tms = S.tms || {}; S.tms[id] = (S.tms[id] || 0) + 1; }
+  /** La CT d'un Champion battu (une fois). */
+  async function leaderTm(flag, who, line) {
+    const id = LEADER_TM[flag];
+    if (!id || S.flags['tm_' + flag]) return;
+    S.flags['tm_' + flag] = 1; giveTm(id);
+    G.Audio.sfx('confirm');
+    await talk([[who, line || 'Prends aussi cette CT : elle contient mon attaque préférée.'], ['', 'Tu obtiens la ' + M().tmNum(id) + ' ' + M().moveName(id) + ' ! (Menu → Équipe → un Pokémon → Utiliser une CT)']]);
+  }
+  /** Les CT du sac que ce Pokémon peut apprendre (et ne connaît pas). */
+  function myTms(m) { return Object.keys(S.tms || {}).map(Number).filter(id => S.tms[id] > 0 && M().canTm(m.dex, id) && !m.moves.includes(id)); }
+  async function useTm(m) {
+    const ids = myTms(m);
+    if (!ids.length) { await talk([['', Object.keys(S.tms || {}).some(id => S.tms[id] > 0) ? M().name(m) + ' ne peut apprendre aucune de tes CT.' : 'Tu n\'as pas de CT. Les Champions en donnent, et les boutiques en vendent.']]); return; }
+    const k = await G.AdvUI.choose('Quelle CT pour ' + M().name(m) + ' ?', ids.map(id => ({ icon: 'move:' + id, title: M().tmNum(id) + ' ' + M().moveName(id), desc: M().moveInfo(id) + ' · × ' + S.tms[id] }))
+      .concat([{ title: 'Retour', desc: '' }]));
+    if (k == null || k < 0 || k >= ids.length) return;
+    if (await G.AdvBattle.learn(m, ids[k], false)) { S.tms[ids[k]]--; commit(); }
+  }
+  /** Les CT de cette boutique : 5 au plus, toujours les mêmes pour elle, parmi celles du chapitre. */
+  function shopTms() {
+    let h = 29;
+    for (const c of mapKey) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
+    const pool = TM_SHOP.filter(([c]) => c <= S.ch).map(([, n]) => tmId(n)).filter(id => id && !TM_USELESS.has(M().move(id).key));
+    const out = [];
+    while (pool.length && out.length < 5) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+    return out.sort((a, b) => M().tmNum(a).localeCompare(M().tmNum(b)));
+  }
+  async function tmShop() {
+    for (;;) {
+      const ids = shopTms();
+      if (!ids.length) { await talk([['Vendeur', 'Pas de CT pour l\'instant. Reviens plus tard dans ton aventure !']]); return; }
+      const who = id => S.team.filter(m => M().canTm(m.dex, id)).map(M().name);
+      const i = await G.AdvUI.choose('CT · ' + S.money + ' pièces', ids.map(id => ({ icon: 'move:' + id, title: M().tmNum(id) + ' ' + M().moveName(id),
+        desc: tmPrice(id) + ' pièces · ' + M().moveInfo(id) + ' · ' + (who(id).length ? who(id).join(', ') : 'personne dans l\'équipe') + ((S.tms || {})[id] ? ' · tu en as ' + S.tms[id] : ''), off: S.money < tmPrice(id) }))
+        .concat([{ title: 'Retour', desc: '' }]));
+      if (i == null || i < 0 || i >= ids.length) return;
+      const id = ids[i];
+      if (S.money < tmPrice(id)) { await talk([['Vendeur', 'Tu n\'as pas assez de pièces…']]); continue; }
+      S.money -= tmPrice(id); giveTm(id);
+      G.Audio.sfx('confirm');
+      await talk([['', 'Tu achètes la ' + M().tmNum(id) + ' ' + M().moveName(id) + ' !']]);
+      commit();
+    }
+  }
+
   /** Le Maître des capacités : réapprendre n'importe quelle attaque déjà passée (comme dans les jeux), gratuit. */
   async function relearn(m) {
     const ids = M().relearnable(m);
@@ -1996,8 +2061,10 @@ G.Overworld = (() => {
           const a = await G.AdvUI.choose(M().name(m) + ' · N. ' + m.lv, [{ icon: 'book', title: 'Pokédex', desc: 'Stats, évolutions et attaques' }]
             .concat(j > 0 ? [{ icon: 'crown', title: 'Mettre en tête', desc: 'Il ouvre la marche et combat en premier' }] : [])
             .concat([{ icon: 'up', title: 'Réapprendre une attaque', desc: M().relearnable(m).length + ' attaques apprises jusqu\'ici (forme d\'avant comprise)' }])
+            .concat([{ icon: 'book', title: 'Utiliser une CT', desc: myTms(m).length + ' CT de ton sac pour lui' }])
             .concat([{ title: 'Retour', desc: '' }]));
           const lead = j > 0 ? 1 : -1, re = j > 0 ? 2 : 1;
+          if (a === re + 1) await useTm(m);
           if (a === 0) await G.AdvUI.dex(m);
           else if (a === lead) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
           else if (a === re) await relearn(m);
@@ -2021,6 +2088,8 @@ G.Overworld = (() => {
     S = save();
     S.flags = S.flags || {};
     S.team.concat(S.box).forEach(M().migrate);
+    // Les CT des Champions déjà battus avant l'arrivée des CT.
+    for (const f in LEADER_TM) if (S.flags[f] && !S.flags['tm_' + f]) { S.flags['tm_' + f] = 1; giveTm(LEADER_TM[f]); }
     // Vol : les villes déjà traversées dans les parties d'avant.
     S.fly = S.fly || {};
     [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville'], [11, 'celadopole']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });

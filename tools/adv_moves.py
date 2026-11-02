@@ -9,6 +9,8 @@ js/adv/moves-data.js :
                   vol de vie %, soin %, coups min, coups max, peur %, taux critique, PP] },
              (puissance, précision, PP, type et priorité de la 4e génération, via move_changelog)
     learn: { dex: [[niveau, id], ...] },          // attaques apprises par niveau (Rouge Feu, sinon Platine)
+    tms: [[numéro, id], ...],                      // les CT 01 à 50 de Rouge Feu
+    tm: { dex: [id, ...] },                        // les CT que le Pokémon peut apprendre (Rouge Feu, sinon Platine)
     stats: { dex: [PV, Atq, Déf, Atq Spé, Déf Spé, Vit] }
   }
 """
@@ -18,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, '.pokeapi')
 OUT = os.path.join(HERE, '..', 'js', 'adv', 'moves-data.js')
 URL = 'https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/%s.csv'
-FILES = ['moves', 'move_names', 'move_meta', 'move_meta_stat_changes', 'types', 'pokemon_moves', 'version_groups', 'pokemon_stats', 'move_changelog']
+FILES = ['moves', 'move_names', 'move_meta', 'move_meta_stat_changes', 'types', 'pokemon_moves', 'version_groups', 'pokemon_stats', 'move_changelog', 'machines']
 MAX_DEX = 493
 FR = '5'
 # Rouge Feu / Vert Feuille d'abord (Gen 1-3), puis Platine et HeartGold (Gen 4).
@@ -51,9 +53,11 @@ def main():
         sc.setdefault(r['move_id'], []).append([STATS[int(r['stat_id'])], int(r['change'])])
 
     learn, used = {}, set()
-    by = {}
+    by, mach = {}, {}
     for r in rows('pokemon_moves'):
         d = int(r['pokemon_id'])
+        if d <= MAX_DEX and r['pokemon_move_method_id'] == '4':
+            mach.setdefault(d, {}).setdefault(r['version_group_id'], set()).add(int(r['move_id']))
         if d > MAX_DEX or r['pokemon_move_method_id'] != '1':
             continue
         by.setdefault(d, {}).setdefault(r['version_group_id'], []).append((num(r['level'], 1), int(r['move_id']), num(r['order'], 0)))
@@ -69,6 +73,17 @@ def main():
             out.append([max(1, lv), mid])
             used.add(mid)
         learn[d] = out
+
+    # Version de Nika : les CT de Rouge Feu (01 à 50), et qui peut les apprendre.
+    tms = sorted([int(r['machine_number']), int(r['move_id'])] for r in rows('machines')
+                 if r['version_group_id'] == vg['firered-leafgreen'] and 1 <= int(r['machine_number']) <= 50)
+    tmset = {m for _, m in tms}
+    used |= tmset
+    tm = {}
+    for d in range(1, MAX_DEX + 1):
+        g = next((mach.get(d, {})[vg[x]] for x in GROUPS if vg[x] in mach.get(d, {})), None)
+        if g:
+            tm[d] = sorted(g & tmset)
 
     # Version de Nika : les attaques comme dans les jeux de base (Rouge Feu / Platine), pas comme aujourd'hui.
     # move_changelog donne, pour chaque changement, la valeur d'AVANT : on remonte de la plus récente à la 5e génération.
@@ -105,7 +120,7 @@ def main():
 
     js = ('/* moves-data.js — généré par tools/adv_moves.py (ne pas modifier à la main).\n'
           ' * Les vraies attaques, niveaux d\'apprentissage et statistiques des jeux (données PokeAPI).\n'
-          ' */\nG.AdvData = ' + json.dumps({'moves': moves, 'learn': learn, 'stats': stats}, ensure_ascii=False, separators=(',', ':')) + ';\n')
+          ' */\nG.AdvData = ' + json.dumps({'moves': moves, 'learn': learn, 'stats': stats, 'tms': tms, 'tm': tm}, ensure_ascii=False, separators=(',', ':')) + ';\n')
     with open(OUT, 'w', encoding='utf-8') as f:
         f.write(js)
     print('écrit', OUT, len(js) // 1024, 'Ko', len(moves), 'attaques', len(learn), 'Pokémon')
