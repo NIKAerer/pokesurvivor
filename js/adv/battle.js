@@ -34,8 +34,13 @@ G.AdvMon = (() => {
 
   const base = dex => D().stats[dex] || [50, 50, 50, 50, 50, 50];
   const K = { atk: 1, def: 2, spa: 3, spd: 4, spe: 5 };
-  function maxHp(m) { return m.dex === 292 ? 1 : Math.floor((2 * base(m.dex)[0] + IV) * m.lv / 100) + m.lv + 10; }
-  function stat(m, k) { return Math.floor((2 * base(m.dex)[K[k]] + IV) * m.lv / 100) + 5; }
+  /**
+   * Version de Nika : ton équipe est faite de Pokémon entraînés, comme dans les jeux (IV 31 et points
+   * d'effort qui montent avec le niveau, 252 au maximum dès le N. 63). Les Pokémon adverses (m.foe) restent à IV 15.
+   */
+  const bonus = m => m.foe ? IV : 31 + Math.floor(Math.min(252, m.lv * 4) / 4);
+  function maxHp(m) { return m.dex === 292 ? 1 : Math.floor((2 * base(m.dex)[0] + bonus(m)) * m.lv / 100) + m.lv + 10; }
+  function stat(m, k) { return Math.floor((2 * base(m.dex)[K[k]] + bonus(m)) * m.lv / 100) + 5; }
   const xpAt = lv => lv * lv * lv;
 
   /** Les attaques du Pokémon par niveau : [[niveau, id], ...]. */
@@ -80,8 +85,9 @@ G.AdvMon = (() => {
     m.pp = null; fixPp(m);
     return true;
   }
-  function make(dex, lv) {
+  function make(dex, lv, foe) {
     const m = { dex, lv, xp: xpAt(lv), hp: 0, moves: movesAt(dex, lv), st: '' };
+    if (foe) m.foe = 1;
     ensureDamage(m);
     restore(m);
     return m;
@@ -111,7 +117,28 @@ G.AdvMon = (() => {
     return k;
   }
 
-  return { base, maxHp, stat, xpAt, power, move, ensureDamage, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
+  /**
+   * Version de Nika : les dresseurs se mettent à ton niveau (moyenne entre ton meilleur Pokémon et la moyenne de l'équipe).
+   * Leur meilleur Pokémon arrive à ce niveau (+2 pour un Champion), les autres gardent leur écart, jamais plus bas
+   * qu'à l'origine. Un Pokémon qui a dépassé son niveau d'évolution arrive évolué, comme dans les jeux.
+   */
+  function scaleTeam(tr, team) {
+    const lv = team.map(m => m.lv);
+    if (!lv.length) return tr.team;
+    const avg = lv.reduce((a, b) => a + b, 0) / lv.length;
+    const target = Math.round((Math.max(...lv) + avg) / 2) + (tr.leader ? 2 : 0);
+    const top = Math.max(...tr.team.map(t => t[1]));
+    return tr.team.map(([d, l]) => {
+      const nl = Math.min(100, Math.max(l, target - (top - l)));
+      if (nl > l) for (let i = 0; i < 2; i++) {
+        const e = (G.EVOS[d] || []).find(([to, el]) => nl >= el && G.DEX_BY[to]);
+        if (e) d = e[0];
+      }
+      return [d, nl];
+    });
+  }
+
+  return { scaleTeam, base, maxHp, stat, xpAt, power, move, ensureDamage, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
 })();
 
 G.AdvBattle = (() => {
@@ -1010,7 +1037,7 @@ G.AdvBattle = (() => {
     const s = G.Overworld.save();
     active = true;
     B = { wild: !!opts.wild, trainer: opts.trainer || null, leader: opts.trainer && opts.trainer.leader, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, scr: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
-    B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1])] : opts.trainer.team.map(([d, l]) => M.make(d, l));
+    B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1], true)] : M.scaleTeam(opts.trainer, s.team).map(([d, l]) => M.make(d, l, true));
     if (opts.shiny) B.foes[0].shiny = true;
     B.foePotions = opts.trainer ? (opts.trainer.potions != null ? opts.trainer.potions : opts.trainer.smart ? 1 : 0) : 0;
     s.team.forEach(M.migrate);
