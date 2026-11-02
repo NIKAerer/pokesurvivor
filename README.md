@@ -1,4 +1,6 @@
-# PokéSurvivor de Nika
+# PokeWeb
+
+(Anciennement « PokéSurvivor de Nika ».)
 
 Version personnelle (non commerciale) du fan game **PokéSurvivor** de JPTER78,
 adaptée pour Nika :
@@ -12,7 +14,7 @@ adaptée pour Nika :
 
 ## Jouer
 
-- **Sur téléphone ou PC : https://nikaerer.github.io/pokesurvivor/**
+- **Sur téléphone ou PC : https://nikaerer.github.io/pokeweb/**
   Sur iPhone, ouvrir le lien dans Safari puis Partager > « Sur l'écran d'accueil » : le jeu
   s'ouvre en plein écran, marche hors ligne et propose « Forcer le mode horizontal ».
 - Chaque push sur `main` republie le site tout seul (`.github/workflows/pages.yml`).
