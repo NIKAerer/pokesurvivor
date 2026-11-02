@@ -1197,8 +1197,9 @@ G.Overworld = (() => {
   }
   async function buyMon() {
     const lv = Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
-    // Version de Nika : de 12 500 à 25 000 pièces selon la force du Pokémon (total de ses stats de base).
-    const price = d => Math.round(2.5 * (5000 + 5000 * Math.max(0, Math.min(1, ((G.DEX_BY[d].bst || 300) - 250) / 300))) / 500) * 500;
+    // Version de Nika : de 5 000 à 10 000 pièces selon la force du Pokémon (total de ses stats de base),
+    // et chaque Pokémon acheté rend le suivant 1,5 fois plus cher (dans toutes les boutiques).
+    const price = d => Math.round(Math.pow(1.5, S.monsBought || 0) * (5000 + 5000 * Math.max(0, Math.min(1, ((G.DEX_BY[d].bst || 300) - 250) / 300))) / 500) * 500;
     for (;;) {
       const list = martMons();
       if (!list.length) { await talk([['Vendeur', 'Je n\'ai plus de Pokémon à vendre pour l\'instant. Repasse plus tard dans l\'aventure !']]); return; }
@@ -1208,6 +1209,7 @@ G.Overworld = (() => {
       const d = list[i], cost = price(d);
       if (S.money < cost) { await talk([['Vendeur', 'Il te faut ' + cost + ' pièces pour ' + G.DEX_BY[d].name + '. Reviens quand tu les auras !']]); continue; }
       S.money -= cost;
+      S.monsBought = (S.monsBought || 0) + 1;
       S.shop.sold.push(d);
       const m = M().make(d, lv);
       if (S.team.length < 6) S.team.push(m); else S.box.push(m);
