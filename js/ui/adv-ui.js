@@ -155,5 +155,53 @@ G.AdvUI = (() => {
     });
   }
 
-  return { open, talk, talkP, choose, init, evolve };
+  /** Le Pokédex d'un Pokémon de l'Aventure : types, statistiques, évolutions (avec les niveaux) et attaques par niveau. */
+  function dex(m) {
+    return new Promise(res => {
+      const M = G.AdvMon, p = G.DEX_BY[m.dex], shiny = G.DB.ownsShiny(m.dex);
+      const el = document.createElement('div');
+      el.id = 'adv-dex';
+      const b = M.base(m.dex);
+      const bar = (n, v) => `<div class="ad-st"><span>${n}</span><i><b style="width:${Math.min(100, v / 1.6)}%"></b></i><em>${v}</em></div>`;
+      // La famille depuis la forme de base, avec les niveaux d'évolution de l'Aventure.
+      const pre = {};
+      for (const [a, l] of Object.entries(G.EVOS || {})) for (const [to] of l) if (!pre[to]) pre[to] = +a;
+      let root = m.dex;
+      for (let i = 0; i < 4 && pre[root]; i++) root = pre[root];
+      const step = d => `<span class="ad-evo-mon${d === m.dex ? ' on' : ''}" data-d="${d}"></span>`;
+      const rows = [];
+      const walk = (d, path) => {
+        const nx = (G.EVOS[d] || []).filter(e => G.DEX_BY[e[0]]);
+        if (!nx.length) { rows.push(path); return; }
+        for (const [to, lv] of nx) walk(to, path.concat([[to, lv]]));
+      };
+      walk(root, [[root, 0]]);
+      const evoHtml = rows.length === 1 && rows[0].length === 1 ? '<p class="ad-none">N\'évolue pas.</p>'
+        : `<div class="ad-evo">${step(root)}<div class="ad-branch">${rows.map(r => `<div class="ad-evo">${r.slice(1).map(([d, lv]) => `<span class="ad-arrow">→<small>N. ${lv}</small></span>` + step(d)).join('')}</div>`).join('')}</div></div>`;
+      const nx = (G.EVOS[m.dex] || []).filter(e => G.DEX_BY[e[0]]);
+      const next = nx.length ? 'Évolue au N. ' + Math.min(...nx.map(e => e[1])) + (nx.length > 1 ? ' (' + nx.length + ' évolutions possibles, au hasard)' : ' en ' + G.DEX_BY[nx[0][0]].name) : 'N\'évolue pas';
+      const learn = M.learnset(m.dex);
+      const mv = learn.map(([lv, id]) => { const o = M.move(id), pw = M.power(id);
+        return `<div class="ad-mv${m.moves.includes(id) ? ' on' : ''}${lv > m.lv ? ' later' : ''}" style="--c:${G.U.TYPE_COLOR[o.type]}"><span>N. ${lv || 1}</span><b>${o.name}</b><small>${G.U.TYPE_NAME[o.type] || o.type} · ${pw ? 'Puiss. ' + pw : o.cls ? 'Fixe' : 'Statut'}</small></div>`; }).join('');
+      el.innerHTML = `<div class="ad-box"><button class="ad-x" aria-label="Fermer">Fermer</button>
+        <div class="ad-head"><div class="ad-pic"></div><div><small>N° ${String(m.dex).padStart(3, '0')}</small><h3>${p.name}${m.nick ? ' · ' + m.nick : ''}</h3>
+          <div>${G.UI.typeChips(p.types)}</div><p class="ad-lv">Niveau ${m.lv} · ${next}</p></div></div>
+        <h4>Statistiques de base</h4>${bar('PV', b[0])}${bar('Attaque', b[1])}${bar('Défense', b[2])}${bar('Att. Spé', b[3])}${bar('Déf. Spé', b[4])}${bar('Vitesse', b[5])}
+        <h4>Évolutions</h4>${evoHtml}
+        <h4>Attaques par niveau</h4><div class="ad-mvs">${mv}</div><small class="ad-note">En couleur : attaques qu'il connaît.</small></div>`;
+      el.querySelector('.ad-pic').appendChild(G.UI.spriteCanvas(m.dex, 96, 96, { fit: true, shiny }));
+      el.querySelectorAll('.ad-evo-mon').forEach(x => { const d = +x.dataset.d;
+        x.appendChild(G.UI.spriteCanvas(d, 52, 48, { fit: true, shiny: G.DB.ownsShiny(d) }));
+        x.insertAdjacentHTML('beforeend', `<small>${G.DEX_BY[d].name}</small>`); });
+      document.body.appendChild(el);
+      G.Audio.sfx('select');
+      const fin = () => { removeEventListener('keydown', key, true); el.remove(); res(); };
+      const key = e => { if (['Space', 'Enter', 'Escape', 'Backspace', 'KeyE'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); fin(); } };
+      addEventListener('keydown', key, true);
+      el.querySelector('.ad-x').onclick = e => { e.stopPropagation(); fin(); };
+      el.onclick = e => { if (e.target === el) fin(); };
+    });
+  }
+
+  return { open, talk, talkP, choose, init, evolve, dex };
 })();
