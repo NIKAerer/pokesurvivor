@@ -736,5 +736,107 @@ G.Kanto = (() => {
     { title: 'À suivre…', goal: 'La suite de l\'aventure (Parmanie, Koga et le Parc Safari…) arrive bientôt !',
       intro: [['', 'Chapitre 17 · À suivre'], ['', 'Bravo ! Six badges ! La suite arrive bientôt : Parmanie, le ninja Koga et le Parc Safari…']] });
 
-  return { HIDE, MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
+  // ---------------- Chapitres 17 à 20 : Ronflex, Koga, Auguste et Giovanni ----------------
+  delete CLOSED.Route12;
+  Object.assign(CLOSED, {
+    Route11: 'La Route 11 mène vers Carmin sur Mer. Ce n\'est pas ton chemin pour l\'instant.',
+    Route18: 'La Route 18 est la fin de la Piste Cyclable. Il faut un vélo…',
+    Route19: 'Le courant est trop fort ici. Pour Cramois\'Île, passe par Bourg Palette et la Route 21.',
+    Route20: 'Les Îles Écume sont glacées et le courant est trop fort. Reviens par la Route 21.',
+    Route22: 'La Route 22 mène à la Ligue Pokémon. Il faut les 8 badges… La suite arrive bientôt !'
+  });
+  Object.assign(MAPS, {
+    route12: { name: 'Route 12', ch: 14, music: 'forest', doors: {} },
+    route13: { name: 'Route 13', ch: 14, music: 'forest', doors: {} },
+    route14: { name: 'Route 14', ch: 14, music: 'forest', doors: {} },
+    route15: { name: 'Route 15', ch: 14, music: 'forest', doors: {} },
+    parmanie: { name: 'Parmanie', ch: 15, music: 'village', wild: null, doors: { SAFARI_ZONE_ENTRANCE: 'safari', SAFARI_ZONE_OFFICE: 'safari', HOUSE: 'closed' } },
+    route21n: { name: 'Route 21', ch: 16, music: 'forest', doors: {} },
+    route21s: { name: 'Route 21', ch: 16, music: 'forest', doors: {} },
+    cramois: { name: 'Cramois\'Île', ch: 16, music: 'village', wild: null, doors: { POKEMON_MANSION: 'manoir' } }
+  });
+  const ROOMS7 = {
+    parmanie_centre: ['Centre Pokémon de Parmanie', 15], parmanie_boutique: ['Boutique de Parmanie', 15], parmanie_arene: ['Arène de Parmanie', 15],
+    parmanie_gardien: ['Maison du Gardien', 15], cramois_centre: ['Centre Pokémon de Cramois\'Île', 16], cramois_boutique: ['Boutique de Cramois\'Île', 16],
+    cramois_arene: ['Arène de Cramois\'Île', 16], cramois_labo: ['Laboratoire Pokémon', 16], jadielle_arene: ['Arène de Jadielle', 17]
+  };
+  for (const k in ROOMS7) MAPS[k] = { name: ROOMS7[k][0], ch: ROOMS7[k][1], music: 'village', wild: null, doors: {}, inside: true };
+  MAPS.parmanie_arene.pool = [109, 110, 88, 89, 48, 49, 23, 24, 41, 42];
+  MAPS.cramois_arene.pool = [58, 59, 77, 78, 37, 38, 126, 4, 5];
+  MAPS.jadielle_arene.pool = [111, 112, 50, 51, 27, 28, 31, 34, 104, 105, 56, 57, 66, 67];
+  Object.assign(DOORS, {
+    safari: 'Le Parc Safari est fermé aujourd\'hui : le Gardien a perdu son dentier !',
+    manoir: 'Le Manoir Pokémon tombe en ruine. Un panneau dit : « Danger ! Ne pas entrer. »'
+  });
+  // Les postes de garde qu'on traverse sur la route (on entre d'un côté, on ressort de l'autre).
+  const PASS = {
+    route12: { '14,15': [14, 22], '15,15': [14, 22], '14,21': [14, 14] },
+    route15: { '9,11': [17, 11], '16,11': [8, 11] }
+  };
+  // Les portes du quiz de l'arène d'Auguste : ouvertes (version de Nika, pas de clé du Manoir).
+  const GATES = { cramois_arene: [[5, 9], [6, 9], [17, 9], [18, 9], [26, 9], [27, 9], [17, 16], [18, 16], [5, 17], [6, 17], [11, 22], [11, 23]] };
+  Object.assign(CLASSES, { biker: 'Motard', poke_maniac: 'Pokémaniac', tuber_m_water: 'Petit nageur', swimmer_f_water: 'Nageuse', crush_girl: 'Karatéka' });
+  Object.assign(SIGNS, {
+    FuchsiaCity_EventScript_CitySign: 'Parmanie — Une ville de passion et de nature.',
+    FuchsiaCity_EventScript_GymSign: 'Arène de Parmanie · Champion : Koga — Le maître ninja des Pokémon Poison.',
+    FuchsiaCity_EventScript_SafariZoneSign: 'Parc Safari — Fermé aujourd\'hui.',
+    CinnabarIsland_EventScript_IslandSign: 'Cramois\'Île — L\'île brûlante du désir.',
+    CinnabarIsland_EventScript_GymSign: 'Arène de Cramois\'Île · Champion : Auguste — Le roi du quiz enflammé.',
+    ViridianCity_EventScript_GymSign: 'Arène de Jadielle · Champion : ??? — L\'arène la plus forte de Kanto.'
+  });
+  Object.assign(TALK, {
+    FuchsiaCity_EventScript_Youngster: 'Koga a des Pokémon Poison terribles. Prends des Antidotes… ou un Total Soin !',
+    FuchsiaCity_EventScript_LittleBoy: 'Le Gardien du Parc Safari a perdu son dentier. Il ne peut plus parler !',
+    FuchsiaCity_EventScript_OldMan: 'L\'arène de Koga est pleine de murs invisibles. Il faut tâtonner !',
+    FuchsiaCity_EventScript_Erik: 'Mon amie Sara est partie au Parc Safari… Je l\'attends depuis des heures.',
+    FuchsiaCity_EventScript_Lass: 'Les Pokémon du Parc Safari sont rares. Il paraît qu\'il y a des Kangourex !',
+    FuchsiaCity_EventScript_SubstituteTutor: 'Moi aussi je veux devenir un ninja comme Koga !',
+    CinnabarIsland_EventScript_Woman: 'Auguste pose des questions avant chaque combat. Il adore les quiz !',
+    CinnabarIsland_EventScript_OldMan: 'Le laboratoire fait revivre les fossiles. Incroyable, non ?',
+    CinnabarIsland_PokemonCenter_1F_EventScript_Gentleman: 'Les Pokémon Feu d\'Auguste craignent l\'Eau, la Roche et le Sol.',
+    FuchsiaCity_PokemonCenter_1F_EventScript_Rocker: 'Le Parc Safari, c\'est fermé ? Zut alors.',
+    ViridianCity_Gym_EventScript_GymGuy: 'Le champion de cette arène… personne ne sait qui c\'est. Mais il est très fort !'
+  });
+  Object.assign(NPCS, {
+    route12: [{ id: 'snorlax', mon: 143, x: 14, y: 70, dir: 'down', event: 'snorlax', when: f => !f.snorlax }],
+    parmanie_arene: [{ id: 'koga', look: 'koga', x: 7, y: 13, dir: 'down', event: 'koga' }],
+    cramois_arene: [{ id: 'auguste', look: 'blaine', x: 5, y: 4, dir: 'down', event: 'auguste' }],
+    jadielle_arene: [{ id: 'giovanni3', look: 'giovanni', x: 2, y: 2, dir: 'down', event: 'giovanni3' }]
+  });
+  CHAPTERS.splice(14, 1,
+    { title: 'Le Ronflex de la Route 12', goal: 'Prends la Route 12 au sud de Lavanville, réveille le Ronflex avec la Poké Flûte de M. Fuji, puis suis les Routes 13, 14 et 15 jusqu\'à Parmanie.',
+      intro: [['', 'Chapitre 17 · Le Ronflex de la Route 12'], ['Pierre', 'Prochain badge : Parmanie, au sud. Le plus court, c\'est la Route 12, depuis Lavanville.'],
+              ['Ondine', 'Sauf qu\'un énorme Ronflex dort en plein milieu ! Et rien ne le réveille…'],
+              ['Pierre', 'M. Fuji a une Poké Flûte. Sa musique réveille n\'importe quel Pokémon. Il te la prêtera sûrement !']] },
+    { title: 'Koga', goal: 'Défie Koga, le champion ninja de l\'arène de Parmanie. Attention aux murs invisibles !',
+      intro: [['', 'Chapitre 18 · Koga'], ['Ondine', 'Parmanie ! La ville du Parc Safari… qui est fermé. Dommage !'],
+              ['Pierre', 'Le champion, Koga, est un ninja. Ses Pokémon Poison endorment, empoisonnent… Prends des Total Soin.']] },
+    { title: 'Cramois\'Île et Auguste', goal: 'Retourne à Bourg Palette, surfe vers le sud sur la Route 21 jusqu\'à Cramois\'Île, et défie Auguste.',
+      intro: [['', 'Chapitre 19 · Cramois\'Île et Auguste'], ['Pierre', 'Le septième badge est à Cramois\'Île, une île volcanique au sud de Bourg Palette.'],
+              ['Ondine', 'Il faut surfer sur la Route 21 ! Un Pokémon Eau dans ton équipe, et c\'est parti.'],
+              ['Pierre', 'Le champion, Auguste, adore les quiz… et les Pokémon Feu.']] },
+    { title: 'Le Badge Terre', goal: 'Retourne à Jadielle : son arène est enfin ouverte. Découvre qui est son champion.',
+      intro: [['', 'Chapitre 20 · Le Badge Terre'], ['Ondine', 'Sept badges ! Il ne t\'en manque qu\'un, et l\'arène de Jadielle vient de rouvrir.'],
+              ['Pierre', 'Personne ne sait qui est son champion. On dit que c\'est le plus fort de Kanto…']] },
+    { title: 'À suivre…', goal: 'La suite de l\'aventure (la Route Victoire et la Ligue Pokémon…) arrive bientôt !',
+      intro: [['', 'Chapitre 21 · À suivre'], ['', 'Bravo ! Les huit badges de Kanto ! La suite arrive bientôt : la Route Victoire et la Ligue Pokémon…']] });
+
+  // ---------------- Le Grand Magasin de Céladopole (version de Nika : de vrais étages et de vrais vendeurs) ----------------
+  const ROOMS8 = { magasin2: ['Grand Magasin · 2e étage', 10], magasin4: ['Grand Magasin · 4e étage', 10], magasin5: ['Grand Magasin · 5e étage', 10], magasin_toit: ['Grand Magasin · Toit', 10] };
+  for (const k in ROOMS8) MAPS[k] = { name: ROOMS8[k][0], ch: ROOMS8[k][1], music: 'village', wild: null, doors: {}, inside: true };
+  MAPS.celadopole_magasin.name = 'Grand Magasin · Rez-de-chaussée';
+  const STAIRS_MSG = { CELADON_CITY_DEPARTMENT_STORE_3F: 'Le 3e étage est en travaux. Prends l\'ascenseur, au fond !' };
+  Object.assign(TALK, {
+    CeladonCity_DepartmentStore_1F_EventScript_Receptionist: 'Bienvenue au Grand Magasin ! 2e étage : objets et CT. 4e : cadeaux. 5e : potions de combat. L\'ascenseur est au fond !',
+    CeladonCity_DepartmentStore_2F_EventScript_Lass: 'Ici, on trouve toutes les CT de Kanto ! Enfin, celles qui sont sorties.',
+    CeladonCity_DepartmentStore_2F_EventScript_Woman: 'Les CT ne servent qu\'une fois. Choisis bien le Pokémon !',
+    CeladonCity_DepartmentStore_4F_EventScript_Man: 'J\'offre une Poupée à ma copine. Elle adore les Mélofée !',
+    CeladonCity_DepartmentStore_4F_EventScript_Youngster: 'Il paraît qu\'on voit tout Céladopole depuis le toit !',
+    CeladonCity_DepartmentStore_5F_EventScript_Gentleman: 'Les Super Potions sauvent la vie avant un gros combat.',
+    CeladonCity_DepartmentStore_5F_EventScript_Sailor: 'Je fais le plein avant de repartir en mer !',
+    CeladonCity_DepartmentStore_Roof_EventScript_CooltrainerM: 'Quelle vue ! On voit la tour de Sylphe SARL d\'ici.',
+    CeladonCity_DepartmentStore_Roof_EventScript_ThirstyGirl: 'J\'ai tellement soif… Les distributeurs du toit sont vides !'
+  });
+
+  return { STAIRS_MSG, PASS, GATES, HIDE, MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
 })();
