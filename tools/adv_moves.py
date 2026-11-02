@@ -7,6 +7,7 @@ js/adv/moves-data.js :
     moves: { id: [nom FR, type, classe (0 statut, 1 physique, 2 spécial), puissance, précision,
                   priorité, cible (1 = soi), altération, chance %, [[stat, cran]...], chance stat %,
                   vol de vie %, soin %, coups min, coups max, peur %, taux critique, PP] },
+             (puissance, précision, PP, type et priorité de la 4e génération, via move_changelog)
     learn: { dex: [[niveau, id], ...] },          // attaques apprises par niveau (Rouge Feu, sinon Platine)
     stats: { dex: [PV, Atq, Déf, Atq Spé, Déf Spé, Vit] }
   }
@@ -17,7 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, '.pokeapi')
 OUT = os.path.join(HERE, '..', 'js', 'adv', 'moves-data.js')
 URL = 'https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/%s.csv'
-FILES = ['moves', 'move_names', 'move_meta', 'move_meta_stat_changes', 'types', 'pokemon_moves', 'version_groups', 'pokemon_stats']
+FILES = ['moves', 'move_names', 'move_meta', 'move_meta_stat_changes', 'types', 'pokemon_moves', 'version_groups', 'pokemon_stats', 'move_changelog']
 MAX_DEX = 493
 FR = '5'
 # Rouge Feu / Vert Feuille d'abord (Gen 1-3), puis Platine et HeartGold (Gen 4).
@@ -69,11 +70,24 @@ def main():
             used.add(mid)
         learn[d] = out
 
+    # Version de Nika : les attaques comme dans les jeux de base (Rouge Feu / Platine), pas comme aujourd'hui.
+    # move_changelog donne, pour chaque changement, la valeur d'AVANT : on remonte de la plus récente à la 5e génération.
+    gen = {r['id']: int(r['generation_id']) for r in rows('version_groups')}
+    old = {}
+    for r in sorted(rows('move_changelog'), key=lambda r: -int(r['changed_in_version_group_id'])):
+        if gen[r['changed_in_version_group_id']] < 5:
+            continue
+        o = old.setdefault(r['move_id'], {})
+        for k in ('type_id', 'power', 'pp', 'accuracy', 'priority'):
+            # Sauf le type « ??? » de Malédiction et la puissance variable de Puissance Cachée.
+            if r[k] not in (None, '') and not (k == 'type_id' and r[k] == '10001') and not (k == 'power' and r[k] == '1'):
+                o[k] = r[k]
     moves = {}
     for r in rows('moves'):
         mid = int(r['id'])
         if mid not in used:
             continue
+        r = {**r, **old.get(r['id'], {})}
         m = meta.get(r['id'], {})
         mm = lambda k: num(m.get(k), 0)
         cls = {'1': 0, '2': 1, '3': 2}[r['damage_class_id']]
