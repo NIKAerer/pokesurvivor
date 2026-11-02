@@ -319,6 +319,8 @@ G.Overworld = (() => {
         f.anim.loop(d > 1.5 ? 'Walk' : 'Idle');
       } else f.anim.loop('Idle');
       f.anim.update(dt);
+      if (f.hopT > 0) f.hopT = Math.max(0, f.hopT - dt);
+      if (f.emote) f.emote.t += dt;
     }
     if (fly) { fly.t += dt; fly.anim.update(dt); if (fly.t >= fly.dur && fly.res) { const r = fly.res; fly.res = null; r(); } }
     for (const n of npcs) { if (n.bubble) n.bubble = Math.max(0, n.bubble - dt); if (n.anim) n.anim.update(dt); }
@@ -403,7 +405,11 @@ G.Overworld = (() => {
     } });
     for (const f of followers) {
       if (f.m === hiddenMon || f.m.hp <= 0 || fly) continue;
-      list.push({ y: f.y, draw: x => { G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, 1); f.anim.draw(x, f.x, f.y); grass(x, f.x, f.y); } });
+      list.push({ y: f.y, draw: x => {
+        const hop = f.hopT > 0 ? Math.abs(Math.sin(f.hopT * Math.PI / 0.3)) * 6 : 0;
+        G.Sprites.drawShadow(x, f.m.dex, f.x, f.y, 1); f.anim.draw(x, f.x, f.y - hop); if (!hop) grass(x, f.x, f.y);
+        if (f.emote) drawEmote(x, f);
+      } });
     }
     if (!fly || fly.ground) list.push({ y: pl.y + 0.1, draw: x => {
       if (pl.hop) { x.fillStyle = 'rgba(0,0,0,.25)'; x.beginPath(); x.ellipse(pl.x, pl.y - 2, 11, 4, 0, 0, 6.2832); x.fill(); }
@@ -557,6 +563,9 @@ G.Overworld = (() => {
     // Par-dessus un comptoir (Infirmière Joëlle, vendeur) : on parle à la personne derrière.
     if (!n && at(f.x, f.y) === '#') { n = at2(f.x + ddx, f.y + ddy); if (n && !n.event) n = null; }
     if (n) { run(() => talkNpc(n)); return; }
+    // Parler à un Pokémon de l'équipe qui suit.
+    const fm = !fromBump && followers.find(f => f.m !== hiddenMon && f.m.hp > 0 && Math.hypot(f.x - (pl.x + ddx * 26), f.y - (pl.y - 6 + ddy * 26)) < 22);
+    if (fm) { run(() => petMon(fm)); return; }
     // Le PC du Centre Pokémon (même place dans tous les Centres de Rouge Feu).
     if (/_centre$/.test(mapKey) && f.x === 11 && f.y === 1 && (!fromBump || pl.dir === 'up')) { run(pc); return; }
     const w = warpAt(f.x, f.y);
@@ -564,6 +573,59 @@ G.Overworld = (() => {
     const sg = art.signs.find(b => b.x === f.x && b.y === f.y);
     if (sg && /TrashCan/.test(sg.script)) { if (!fromBump) run(() => trash(sg)); return; }
     if (sg && (!fromBump || pl.dir === 'up')) run(() => talk([['', K().SIGNS[sg.script] || K().SIGN_DEFAULT]]));
+  }
+  /** Le Pokémon se tourne vers toi, sautille, et réagit selon son état et l'endroit. */
+  async function petMon(f) {
+    const m = f.m, nm = M().name(m), t = G.DEX_BY[m.dex].types, hpK = m.hp / M().maxHp(m);
+    f.anim.dir = G.Sprites.dirFromAngle(Math.atan2(pl.y - f.y, pl.x - f.x));
+    pl.dir = Math.abs(f.x - pl.x) > Math.abs(f.y - pl.y) ? (f.x < pl.x ? 'left' : 'right') : (f.y < pl.y ? 'up' : 'down');
+    const [tx, ty] = tileOf(f.x, f.y), here = at(tx, ty);
+    const pick = a => a[Math.floor(Math.random() * a.length)];
+    let emo = 'heart', line;
+    if (m.st === 'slp') { emo = 'zz'; line = nm + ' dort à poings fermés…'; }
+    else if (m.st === 'psn' || m.st === 'tox') { emo = 'sweat'; line = nm + ' frissonne. Le poison le fait souffrir…'; }
+    else if (m.st === 'par') { emo = 'sweat'; line = nm + ' a du mal à bouger, il est paralysé.'; }
+    else if (m.st === 'brn') { emo = 'sweat'; line = nm + ' souffle sur sa brûlure. Aïe !'; }
+    else if (m.st === 'frz') { emo = 'dots'; line = nm + ' est tout gelé…'; }
+    else if (hpK < 0.3) { emo = 'dots'; line = nm + ' a l\'air épuisé… Un Centre Pokémon lui ferait du bien.'; }
+    else if (art.cave && t.some(x => ['rock', 'ground', 'ghost', 'dark'].includes(x))) { emo = 'note'; line = nm + ' se sent comme chez lui dans cette grotte !'; }
+    else if (art.cave) { emo = 'sweat'; line = nm + ' se colle à toi. Il fait sombre ici…'; }
+    else if (here === 'g' && t.includes('grass')) { emo = 'note'; line = nm + ' adore les hautes herbes !'; }
+    else if (t.includes('water') && /azuria|carmin|route24|route25|route6/.test(mapKey)) { emo = 'note'; line = nm + ' sent l\'eau toute proche et a envie d\'aller nager !'; }
+    else if (art.inside && /_centre$/.test(mapKey)) { emo = 'heart'; line = nm + ' fait un petit signe à l\'Infirmière Joëlle.'; }
+    else if (S.team[0] === m && Math.random() < 0.3) { emo = 'note'; line = nm + ' marche fièrement en tête de l\'équipe !'; }
+    else {
+      const r = pick([['heart', ' te regarde avec de grands yeux. Il t\'aime beaucoup !'], ['note', ' danse autour de toi, tout content !'], ['dots', ' bâille… Une petite sieste ?'],
+        ['excl', ' renifle le sol… Rien à signaler.'], ['heart', ' est fier d\'être dans ton équipe !'], ['note', ' te tire par la manche, il veut continuer l\'aventure !'],
+        ['heart', ' se frotte contre toi.'], ['excl', ' regarde au loin, prêt pour le prochain combat !']]);
+      emo = r[0]; line = nm + r[1];
+    }
+    f.emote = { k: emo, t: 0 }; f.hopT = emo === 'heart' || emo === 'note' ? 0.6 : 0;
+    G.Audio.sfx(emo === 'heart' || emo === 'note' ? 'confirm' : 'select');
+    await new Promise(r => setTimeout(r, 450));
+    await talk([['', line]]);
+    f.emote = null;
+  }
+  // Petites bulles en pixels au-dessus du Pokémon (cœur, note, goutte, sommeil, points, !).
+  const EMO = {
+    heart: ['#e83a5a', ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...']],
+    note: ['#3a6ae0', ['...XXX', '...X.X', '...X..', '...X..', '.XXX..', 'XXXX..', '.XX...']],
+    sweat: ['#3aa0e8', ['..X..', '.XX..', '.XXX.', 'XXXXX', 'XXXXX', '.XXX.']],
+    zz: ['#6a5ad0', ['XXXX....', '..X.....', '.X..XXX.', 'XXXX..X.', '.....X..', '....XXX.']],
+    dots: ['#555', ['.......', '.......', 'X..X..X', '.......']],
+    excl: ['#e0a020', ['XX', 'XX', 'XX', 'XX', '..', 'XX']]
+  };
+  function drawEmote(c, f) {
+    const e = EMO[f.emote.k]; if (!e) return;
+    const [col, rows] = e, px = 2, w = rows[0].length * px, h = rows.length * px;
+    const k = Math.min(1, f.emote.t * 6), y = f.y - 44 - (G.Sprites.size ? 0 : 0) - k * 4, x = f.x;
+    c.save(); c.globalAlpha = k;
+    c.fillStyle = '#fff'; c.strokeStyle = '#333'; c.lineWidth = 1;
+    c.beginPath(); c.roundRect ? c.roundRect(x - w / 2 - 4, y - h - 4, w + 8, h + 8, 4) : c.rect(x - w / 2 - 4, y - h - 4, w + 8, h + 8); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(x - 3, y + 4); c.lineTo(x, y + 8); c.lineTo(x + 3, y + 4); c.fill();
+    c.fillStyle = col;
+    rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] === 'X') c.fillRect(x - w / 2 + i * px, y - h + j * px, px, px); });
+    c.restore();
   }
   /** Lance une suite d'évènements (bloque les mouvements pendant ce temps). */
   async function run(fn) {
@@ -697,6 +759,7 @@ G.Overworld = (() => {
     $('world-hud').classList.remove('dim');
     G.Audio.music(def.music);
     if (res === 'lose') { await blackout(); return res; }
+    if (res === 'win' && opts.shiny) await shinyCatch(opts.wild[0], opts.wild[1]);
     await G.AdvBattle.evolutions();
     refreshFollowers();
     return res;
@@ -785,7 +848,9 @@ G.Overworld = (() => {
     else if (wild && canFight() && (grassy ? Math.random() < 1 / 10 : (art.cave || art.inside) && Math.random() < 1 / 45)) {
       calm = 8;
       const [dex, a, b] = G.U.pick(wild);
-      run(() => battle({ wild: [dex, a + Math.floor(Math.random() * (b - a + 1))] }));
+      // Version de Nika : un Pokémon chromatique, très rare (1 chance sur 150).
+      const shiny = G.Sprites.hasShiny(dex) && Math.random() < 1 / 150;
+      run(() => battle({ wild: [dex, a + Math.floor(Math.random() * (b - a + 1))], shiny }));
     }
   }
 
@@ -1343,6 +1408,29 @@ G.Overworld = (() => {
       commit();
     }
     hud();
+  }
+  /** Un Pokémon chromatique battu : on peut le capturer (et il devient chromatique partout dans le jeu). */
+  async function shinyCatch(dex, lv) {
+    const nm = G.DEX_BY[dex].name;
+    G.Audio.sfx('legend');
+    await talk([['', 'Le ' + nm + ' chromatique est épuisé… C\'est le moment de le capturer !']]);
+    const i = await G.AdvUI.choose(nm + ' chromatique', [
+      { dex, title: 'Le capturer', desc: 'Il sera chromatique partout : Aventure, Pokédex et Survivor', icon: 'pball' },
+      { title: 'Le laisser partir', desc: '' }]);
+    if (i !== 0) { await talk([['', nm + ' s\'enfuit dans les hautes herbes…']]); return; }
+    G.DB.grantShiny(dex, 'adv');
+    G.DB.grant(dex, 'adv');
+    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+    G.Audio.sfx('confirm');
+    if (fams.has(family(dex))) {
+      await talk([['', 'Tu captures ' + nm + ' chromatique !'], ['', 'Tu as déjà un Pokémon de sa famille : il devient chromatique, et ' + nm + ' rejoint ton Pokédex chromatique.']]);
+    } else {
+      const m = M().make(dex, lv);
+      if (S.team.length < 6) S.team.push(m); else S.box.push(m);
+      await talk([['', 'Tu captures ' + nm + ' chromatique !'], ['', nm + (S.team.includes(m) ? ' rejoint ton équipe !' : ' part dans ta boîte (équipe pleine).')]]);
+    }
+    refreshFollowers();
+    commit();
   }
   /** La forme de base de la famille (Roucool pour Roucoups et Roucarnage). */
   let PRE = null;
