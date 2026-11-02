@@ -1217,12 +1217,17 @@ G.Overworld = (() => {
     commit();
     await intro();
   }
+  /** « évolue au N. 16 » (le plus petit niveau d'évolution), ou rien. */
+  function evoTxt(m) {
+    const l = (G.EVOS[m.dex] || []).filter(e => G.DEX_BY[e[0]]).map(e => e[1]);
+    return l.length ? ' (évolue au N. ' + Math.min(...l) + ')' : '';
+  }
   /** Le PC du Centre : la boîte pour ranger, reprendre ou relâcher ses Pokémon. */
   async function pc() {
     G.Audio.sfx('select');
     await talk([['', 'Tu allumes le PC. Connexion au système de stockage de Léo…']]);
     const card = (m, k) => ({ dex: m.dex, title: M().name(m) + (k === 0 && S.team.includes(m) ? ' (tête)' : ''),
-      desc: 'N. ' + m.lv + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV · ' + m.moves.map(M().moveName).join(', ') });
+      desc: 'N. ' + m.lv + evoTxt(m) + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV · ' + m.moves.map(M().moveName).join(', ') });
     for (;;) {
       const i = await G.AdvUI.choose('PC de Léo · équipe ' + S.team.length + '/6 · boîte ' + S.box.length, [
         { icon: 'pcbox', title: 'Retirer', desc: 'Prendre un Pokémon de la boîte dans l\'équipe', off: !S.box.length },
@@ -1372,7 +1377,7 @@ G.Overworld = (() => {
         if (i === 0) {
           if (!S.team.length) continue;
           const j = await G.AdvUI.choose('Touche un Pokémon pour qu\'il mène l\'équipe', S.team.map((m, k) => ({ dex: m.dex,
-            title: M().name(m) + (k === 0 ? ' (tête)' : ''), desc: 'N. ' + m.lv + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV' + (m.st ? ' · ' + G.AdvBattle.ST_NAME[m.st] : '') + ' · ' + m.moves.map(M().moveName).join(', ') })));
+            title: M().name(m) + (k === 0 ? ' (tête)' : ''), desc: 'N. ' + m.lv + evoTxt(m) + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV' + (m.st ? ' · ' + G.AdvBattle.ST_NAME[m.st] : '') + ' · ' + m.moves.map(M().moveName).join(', ') })));
           if (j > 0) { const [m] = S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
         else if (i === 2) { await flyMenu(); return; }

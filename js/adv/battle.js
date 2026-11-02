@@ -806,15 +806,15 @@ G.AdvBattle = (() => {
       if (!ok.length) continue;
       const to = G.U.pick(ok)[0];
       if (!G.DEX_BY[to]) continue;
-      const before = M.name(m), hpK = m.hp / M.maxHp(m);
+      const before = M.name(m), hpK = m.hp / M.maxHp(m), from = m.dex;
       await G.AdvUI.talkP([['', 'Quoi ? ' + before + ' évolue !']]);
-      G.Audio.sfx('legend');
+      G.Sprites.preload([to], 6000, G.DB.ownsShiny(to));
+      await G.AdvUI.evolve(from, to, G.DB.ownsShiny(from), G.DB.ownsShiny(to));
       m.dex = to;
       m.hp = Math.round(M.maxHp(m) * hpK);
       G.Sprites.preload([to], 6000, G.DB.ownsShiny(to));
       G.DB.grant(to, 'adv');
       G.Overworld.refreshFollowers();
-      await G.AdvUI.talkP([['', 'Félicitations ! ' + before + ' a évolué en ' + G.DEX_BY[to].name + ' !']]);
       // Comme dans les jeux : l'attaque que la nouvelle forme apprend à ce niveau.
       for (const id of M.newMovesAt(to, m.lv)) if (!m.moves.includes(id)) await learn(m, id, false);
       M.ensureDamage(m);
