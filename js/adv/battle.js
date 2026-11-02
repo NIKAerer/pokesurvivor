@@ -141,17 +141,30 @@ G.AdvMon = (() => {
     const avg = lv.reduce((a, b) => a + b, 0) / lv.length;
     const target = Math.round((Math.max(...lv) + avg) / 2) + (tr.leader ? 2 : 0);
     const top = Math.max(...tr.team.map(t => t[1]));
-    return tr.team.map(([d, l]) => {
+    return tr.team.map(([d, l, mv]) => {
       const nl = Math.min(100, Math.max(l, target - (top - l)));
       if (nl > l) for (let i = 0; i < 2; i++) {
         const e = (G.EVOS[d] || []).find(([to, el]) => nl >= el && G.DEX_BY[to]);
         if (e) d = e[0];
       }
-      return [d, nl];
+      return [d, nl, mv];
     });
   }
+  /** Les CT des jeux : le Pokémon peut-il l'apprendre ? Et son numéro (CT39). */
+  const canTm = (dex, id) => (D().tm[dex] || []).includes(id);
+  function tmNum(id) { const t = (D().tms || []).find(([, m]) => m === id); return t ? 'CT' + String(t[0]).padStart(2, '0') : 'CT'; }
+  /**
+   * Version de Nika : les attaques d'un Pokémon de dresseur. Une liste écrite (celle des jeux) remplace ses attaques ;
+   * la CT du dresseur (tm) remplace sa dernière attaque s'il peut l'apprendre.
+   */
+  function foeMoves(m, mv, tm) {
+    if (mv && mv.length) m.moves = mv.filter(id => move(id)).slice(0, 4);
+    if (tm && !m.moves.includes(tm) && canTm(m.dex, tm)) { if (m.moves.length < 4) m.moves.push(tm); else m.moves[3] = tm; }
+    m.pp = null; fixPp(m);
+    return m;
+  }
 
-  return { scaleTeam, relearnable, base, maxHp, stat, xpAt, power, move, ensureDamage, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
+  return { scaleTeam, foeMoves, canTm, tmNum, relearnable, base, maxHp, stat, xpAt, power, move, ensureDamage, movesAt, newMovesAt, nextMoves, make, restore, migrate, fixPp, name, moveName, moveInfo, typeMul, learnset, FIXED };
 })();
 
 G.AdvBattle = (() => {
@@ -1050,7 +1063,7 @@ G.AdvBattle = (() => {
     const s = G.Overworld.save();
     active = true;
     B = { wild: !!opts.wild, trainer: opts.trainer || null, leader: opts.trainer && opts.trainer.leader, stages: { me: fresh(), foe: fresh() }, vol: { me: {}, foe: {} }, scr: { me: {}, foe: {} }, slotMe: place.me, slotFoe: place.foe, order: [] };
-    B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1], true)] : M.scaleTeam(opts.trainer, s.team).map(([d, l]) => M.make(d, l, true));
+    B.foes = opts.wild ? [M.make(opts.wild[0], opts.wild[1], true)] : M.scaleTeam(opts.trainer, s.team).map(([d, l, mv]) => M.foeMoves(M.make(d, l, true), mv, opts.trainer.tm));
     if (opts.shiny) B.foes[0].shiny = true;
     B.foePotions = opts.trainer ? (opts.trainer.potions != null ? opts.trainer.potions : opts.trainer.smart ? 1 : 0) : 0;
     s.team.forEach(M.migrate);
