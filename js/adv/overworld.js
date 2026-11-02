@@ -308,11 +308,13 @@ G.Overworld = (() => {
     let k = 0;
     for (const f of followers) {
       if (f.m === hiddenMon || f.m.hp <= 0) continue;
-      k++;
-      const p = trailAt(k * TS);
+      const p = slotAt(k++);
       const dx = p.x - f.x, dy = p.y - f.y, d = Math.hypot(dx, dy);
       if (d > 0.5) {
-        f.x += dx * Math.min(1, dt * 12); f.y += dy * Math.min(1, dt * 12);
+        const x1 = f.x + dx * Math.min(1, dt * 10), y1 = f.y + dy * Math.min(1, dt * 10);
+        // Jamais dans un mur : si le pas y mène, on passe par le chemin du dresseur.
+        if (monOk(x1, y1) || !monOk(f.x, f.y) || d > TS * 3) { f.x = x1; f.y = y1; }
+        else { const q = trailAt((FORM[k - 1] || [80])[0]); f.x += (q.x - f.x) * Math.min(1, dt * 10); f.y += (q.y - f.y) * Math.min(1, dt * 10); }
         if (d > 1.5) f.anim.dir = G.Sprites.dirFromAngle(Math.atan2(dy, dx));
         f.anim.loop(d > 1.5 ? 'Walk' : 'Idle');
       } else f.anim.loop('Idle');
@@ -350,6 +352,27 @@ G.Overworld = (() => {
     const [tx, ty] = tileOf();
     if (axisI === 0) { const d = tx * TS + 16 - pl.x, m = Math.sign(d) * Math.min(Math.abs(d), step); if (m && !blocked(pl.x + m, pl.y, Math.sign(m), 0)) pl.x += m; }
     else { const d = ty * TS + 30 - pl.y, m = Math.sign(d) * Math.min(Math.abs(d), step); if (m && !blocked(pl.x, pl.y + m, 0, Math.sign(m))) pl.y += m; }
+  }
+  // L'équipe suit en petit groupe derrière le dresseur (pas à la queue leu leu) : [distance sur le chemin, écart sur le côté].
+  const FORM = [[28, -16], [28, 16], [50, 0], [66, -20], [66, 20], [84, 0]];
+  /** Une case où un Pokémon peut se tenir (pas de mur, d'arbre, d'eau, de rebord ni de personnage). */
+  function monOk(x, y) {
+    const tx = Math.floor(x / TS), ty = Math.floor((y - 4) / TS);
+    return inMap(tx, ty) && !SOLID.has(at(tx, ty)) && !LEDGE[at(tx, ty)] && !npcAt(tx, ty);
+  }
+  /** La place du k-ième Pokémon : à côté du chemin du dresseur si la carte le permet, sinon sur le chemin. */
+  function slotAt(k) {
+    const [dist, side] = FORM[k] || [84 + (k - FORM.length + 1) * 18, 0];
+    const p = trailAt(dist), a = trailAt(dist - 10), b = trailAt(dist + 10);
+    const hx = a.x - b.x, hy = a.y - b.y, hl = Math.hypot(hx, hy);
+    if (!side || hl < 1) return p;
+    const nx = -hy / hl, ny = hx / hl;
+    // On essaie l'écart entier, puis la moitié, en vérifiant tout le trajet depuis le chemin (jamais à travers un mur).
+    for (const s of [side, side * 0.5]) {
+      const q = { x: p.x + nx * s, y: p.y + ny * s };
+      if (monOk(q.x, q.y) && monOk(p.x + nx * s * 0.5, p.y + ny * s * 0.5)) return q;
+    }
+    return p;
   }
   function trailAt(dist) {
     let acc = 0;
@@ -1508,6 +1531,6 @@ G.Overworld = (() => {
     addEventListener('blur', () => { keys.clear(); stick = null; });
   }
 
-  return { open, quit, init, save: () => S || save(), player: () => pl, setFollowerHidden, refreshFollowers, fx,
+  return { open, quit, init, save: () => S || save(), player: () => pl, setFollowerHidden, refreshFollowers, followers: () => followers, fx,
            get active() { return open_; }, get busy() { return busy; } };
 })();
