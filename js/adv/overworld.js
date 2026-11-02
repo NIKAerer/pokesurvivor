@@ -1546,7 +1546,7 @@ G.Overworld = (() => {
   }
   /** L'ascenseur du repaire (avec la Clé Ascenseur). */
   const LIFT = [['repaire1', 'Sous-sol 1', 24, 26], ['repaire2', 'Sous-sol 2', 28, 17], ['repaire4', 'Sous-sol 4', 20, 24]];
-  const SILPH = [['sylphe1', 'Rez-de-chaussée', 22, 4], ['sylphe5', '5e étage', 22, 4], ['sylphe7', '7e étage', 23, 4], ['sylphe11', '11e étage', 13, 4]];
+  const SILPH = [['sylphe1', 'Rez-de-chaussée', 22, 4], ['sylphe2', '2e étage', 22, 4], ['sylphe3', '3e étage', 22, 4], ['sylphe4', '4e étage', 22, 4], ['sylphe5', '5e étage', 22, 4], ['sylphe6', '6e étage', 20, 4], ['sylphe7', '7e étage', 23, 4], ['sylphe8', '8e étage', 22, 4], ['sylphe9', '9e étage', 24, 4], ['sylphe10', '10e étage', 13, 4], ['sylphe11', '11e étage', 13, 4]];
   const STORE = [['celadopole_magasin', 'Rez-de-chaussée · Accueil', 6, 2], ['magasin2', '2e étage · Objets et CT', 6, 2], ['magasin4', '4e étage · Cadeaux', 6, 2], ['magasin5', '5e étage · Potions de combat', 6, 2]];
   async function lift() {
     const silph = /^sylphe/.test(mapKey), store = /magasin/.test(mapKey);

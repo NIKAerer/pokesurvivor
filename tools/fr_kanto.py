@@ -56,6 +56,8 @@ MAPS = {  # clé du jeu de Nika : nom pret
     'safrania_arene': 'SaffronCity_Gym', 'safrania_dojo': 'SaffronCity_Dojo', 'safrania_maison': 'SaffronCity_House',
     'porte5': 'Route5_SouthEntrance', 'porte6': 'Route6_NorthEntrance', 'porte7': 'Route7_EastEntrance', 'porte8': 'Route8_WestEntrance',
     'sylphe1': 'SilphCo_1F', 'sylphe5': 'SilphCo_5F', 'sylphe7': 'SilphCo_7F', 'sylphe11': 'SilphCo_11F',
+    'sylphe2': 'SilphCo_2F', 'sylphe3': 'SilphCo_3F', 'sylphe4': 'SilphCo_4F', 'sylphe6': 'SilphCo_6F',
+    'sylphe8': 'SilphCo_8F', 'sylphe9': 'SilphCo_9F', 'sylphe10': 'SilphCo_10F',
     # Chapitres 17 à 20 : Routes 12 à 15, Parmanie et Koga, Route 21 et Cramois'Île, l'arène de Jadielle.
     'route12': 'Route12', 'route13': 'Route13', 'route14': 'Route14', 'route15': 'Route15',
     'parmanie': 'FuchsiaCity', 'parmanie_centre': 'FuchsiaCity_PokemonCenter_1F', 'parmanie_boutique': 'FuchsiaCity_Mart',
