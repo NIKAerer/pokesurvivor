@@ -658,7 +658,7 @@ G.Kanto = (() => {
     porte5: ['Poste de garde de Safrania', 12], porte6: ['Poste de garde de Safrania', 12], porte7: ['Poste de garde de Safrania', 12], porte8: ['Poste de garde de Safrania', 12],
     safrania_centre: ['Centre Pokémon de Safrania', 12], safrania_boutique: ['Boutique de Safrania', 12], safrania_maison: ['Maison de Safrania', 12],
     safrania_dojo: ['Dojo de Karaté', 12], safrania_arene: ['Arène de Safrania', 13],
-    sylphe1: ['Sylphe SARL · Rez-de-chaussée', 12], sylphe5: ['Sylphe SARL · 5e étage', 12], sylphe7: ['Sylphe SARL · 7e étage', 12], sylphe11: ['Sylphe SARL · 11e étage', 12]
+    sylphe1: ['Sylphe SARL · Rez-de-chaussée', 12], sylphe2: ['Sylphe SARL · 2e étage', 12], sylphe3: ['Sylphe SARL · 3e étage', 12], sylphe4: ['Sylphe SARL · 4e étage', 12], sylphe5: ['Sylphe SARL · 5e étage', 12], sylphe6: ['Sylphe SARL · 6e étage', 12], sylphe7: ['Sylphe SARL · 7e étage', 12], sylphe8: ['Sylphe SARL · 8e étage', 12], sylphe9: ['Sylphe SARL · 9e étage', 12], sylphe10: ['Sylphe SARL · 10e étage', 12], sylphe11: ['Sylphe SARL · 11e étage', 12]
   };
   for (const k in ROOMS6) MAPS[k] = { name: ROOMS6[k][0], ch: ROOMS6[k][1], music: 'village', wild: null, doors: {}, inside: true };
   MAPS.safrania_dojo.pool = [56, 57, 66, 67, 106, 107, 236];
