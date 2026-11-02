@@ -268,6 +268,18 @@ G.MenuUI = (() => {
       ` : `<p class="center" style="color:var(--muted)">Aún no lo tienes.<br>Consíguelo en el banner de <b class="gold">${GEN_NAMES[p.gen - 1]}</b>
             o derrotándolo cuando salga shiny.</p>`}
     `;
+    // Version de Nika : un Pokédex pour tous les modes, avec où trouver chaque Pokémon.
+    {
+      const base = G.EVO_FROM[dex] ? G.DEX_BY[G.Team.family(dex)] : null;
+      const surv = base ? 'En faisant évoluer ' + base.name + ' en partie' : 'À la Boutique (Poké Balls)';
+      const adv = G.Overworld.where(dex);
+      if (base && !adv.length) adv.push('En faisant évoluer ' + base.name);
+      const from = s.owned[dex] && s.owned[dex].from === 'adv' ? 'Obtenu en Aventure' : s.owned[dex] ? 'Obtenu en Survivor' : '';
+      box.insertAdjacentHTML('beforeend', `<div class="dex-where"><h4>Où le trouver</h4>
+        <p><b>Survivor et Tour</b>${surv}</p>
+        <p><b>Aventure</b>${adv.length ? adv.slice(0, 5).join(' · ') : 'Pas encore dans l\'Aventure (plus tard dans l\'histoire)'}</p>
+        ${from ? `<p class="dw-from">${from}${hasSh ? ' · ' + G.Icons.html('shiny', 12) + ' chromatique dans tous les modes' : ''}</p>` : ''}</div>`);
+    }
     $('dex-big').style.setProperty('--stage-c', !own ? '#5b83d6' : viewShiny ? '#9ae6ff' : G.U.TYPE_COLOR[p.types[0]]);
     $('dex-big').classList.toggle('shiny', own && viewShiny);
     G.UI.sprite($('dex-big'), dex, { lively: own, spin: own, silhouette: !own, scale: 3, hero: true, shiny: own && viewShiny });

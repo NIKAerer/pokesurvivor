@@ -575,7 +575,7 @@ G.Kanto = (() => {
   // ---------------- Les épisodes du chapitre 6 : les starters de l'animé (Salamèche, Bulbizarre, Carapuce) ----------------
   // Version de Nika : plus de chapitres entre les chapitres. Ils se jouent avant le Major Bob.
   CHAPTERS[6].pre = [
-    { id: 'sala', title: 'Salamèche abandonné', goal: 'Au nord d\'Azuria, après le Pont Pépite, un Salamèche attend sur un rocher de la Route 24. Va la voir.',
+    { id: 'sala', title: 'Salamèche abandonné', goal: 'Au nord d\'Azuria, après le Pont Pépite, un Salamèche attend sur un rocher de la Route 24. Va le voir.',
       intro: [['', 'Chapitre 6 · Salamèche abandonné'], ['Ondine', 'Je viens avec toi ! Tant que tu ne m\'as pas remboursé ce vélo, je ne te lâche pas !'],
               ['Pierre', 'Avant de partir vers Carmin… Un pêcheur m\'a parlé d\'un Salamèche qui attend son dresseur depuis des jours, au nord, sur la Route 24.'],
               ['Ondine', 'Avec la pluie qui arrive ? Sa flamme va s\'éteindre ! Il faut y aller tout de suite !']] },

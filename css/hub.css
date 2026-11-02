@@ -194,6 +194,37 @@
   #scr-pick.hub .pick-credits { display: none; }
 }
 
+/* ---- accueil : Aventure, record Survivor, Défi du jour (version de Nika) ---- */
+.hub-recap { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
+.rc { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 8px; text-align: left; padding: 7px 12px; border: 0; border-radius: 14px;
+  background: #fff; color: var(--ink); box-shadow: 0 4px 0 var(--cd); cursor: pointer; min-width: 0; }
+.rc small { grid-column: 1 / -1; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--cd); }
+.rc b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc em { grid-column: 1 / -1; font-style: normal; font-size: 11px; color: #6a5a4e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-mons { display: flex; gap: 1px; grid-row: 2; grid-column: 2; }
+.rc-mons canvas { width: 22px; }
+.rc-mon { grid-row: 2 / span 2; grid-column: 2; }
+.rc-mon canvas { width: 44px; }
+.rc-defi { background: #ffd23f; }
+.rc-defi small { color: #7a5a00; }
+.rc-defi.done { background: #e8f6e0; }
+.rc-defi.done small { color: #3a7a2a; }
+@media (max-width: 759px) {
+  .hub-recap { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+  .rc { grid-template-columns: 1fr; padding: 6px 8px; border-radius: 12px; }
+  .rc small { font-size: 9px; }
+  .rc b { font-size: 11px; }
+  .rc em { font-size: 9px; }
+  .rc-mons, .rc-mon { grid-row: auto; grid-column: 1; }
+  .rc-mons canvas { width: 16px; }
+  .rc-mon { display: none; }
+}
+@media (max-height: 500px) {
+  .hub-recap { grid-template-columns: 1fr; margin-bottom: 6px; }
+  .rc-adv, .rc-run { display: none; }
+  .rc { padding: 4px 10px; }
+}
+
 /* Corrections (la police pixel n'a pas de ligature « fi ») */
 #scr-pick.hub { font-variant-ligatures: none; }
 #scr-pick.hub .hub-panel { background: #0b1020e6; box-shadow: 0 5px 0 var(--cd); }

@@ -1625,11 +1625,35 @@ G.Overworld = (() => {
   function cur() { const c = K().CHAPTERS[S.ch]; return S.ep != null && c.pre && c.pre[S.ep] ? c.pre[S.ep] : c; }
   function epId() { return S.ep != null ? cur().id : null; }
   /** Le numéro affiché : les épisodes comptent comme des chapitres. */
-  function chNum() {
+  function chNum(s = S) {
     const C = K().CHAPTERS;
     let n = 0;
-    for (let c = 1; c < S.ch; c++) n += 1 + ((C[c] && C[c].pre) || []).length;
-    return S.ep != null ? n + S.ep + 1 : n + ((C[S.ch].pre) || []).length + 1;
+    for (let c = 1; c < s.ch; c++) n += 1 + ((C[c] && C[c].pre) || []).length;
+    return s.ep != null ? n + s.ep + 1 : n + ((C[s.ch].pre) || []).length + 1;
+  }
+  /** Pour le Pokédex : où trouver ce Pokémon en Aventure (lieux, histoire, pêche, captures de fin de chapitre). */
+  const STORY = { 16: 'Labo du Prof. Chen (premier Pokémon)', 19: 'Labo du Prof. Chen (premier Pokémon)', 25: 'Labo du Prof. Chen (premier Pokémon)',
+    4: 'Route 24 : Salamèche abandonné', 1: 'Route 5 : le village caché', 7: 'Route 6 : l\'Escouade Carapuce', 130: 'Naufrage de l\'Océane (Magicarpe)' };
+  function where(dex) {
+    const out = [], K_ = K(), seen = new Set();
+    if (STORY[dex]) out.push(STORY[dex]);
+    for (const k in G.KantoArt.maps) {
+      const w = G.KantoArt.maps[k].wild || [], name = K_.MAPS[k] && K_.MAPS[k].name;
+      if (!name || seen.has(name) || !w.some(x => x[0] === dex)) continue;
+      seen.add(name); out.push(name);
+    }
+    if (SURF_POOL.includes(dex)) out.push('En surfant');
+    if (FISH_POOL.includes(dex)) out.push('À la pêche');
+    const chs = Object.keys(HABITAT).filter(c => HABITAT[c].includes(dex)).map(c => +c);
+    if (chs.length) out.push('Capture de fin de chapitre (' + chs.slice(0, 3).map(c => K_.CHAPTERS[c].title).join(', ') + (chs.length > 3 ? '…' : '') + ')');
+    return out;
+  }
+  /** Pour l'accueil du menu : où en est l'Aventure (sans l'ouvrir). */
+  function summary() {
+    const s = G.DB.save && G.DB.save.adv2;
+    if (!s || !s.flags || !s.flags.intro1) return null;
+    const c = K().CHAPTERS[s.ch] || {}, e = s.ep != null && c.pre && c.pre[s.ep];
+    return { num: chNum(s), title: (e || c).title, badges: BADGES.filter(b => s.flags[b.flag]).length, team: (s.team || []).map(m => m.dex) };
   }
   /** Un Pokémon de l'histoire rejoint l'équipe (jamais un doublon de famille : alors un cadeau). */
   async function join(dex, lv) {
@@ -1980,6 +2004,6 @@ G.Overworld = (() => {
     addEventListener('blur', () => { keys.clear(); stick = null; });
   }
 
-  return { open, quit, init, save: () => S || save(), player: () => pl, setFollowerHidden, refreshFollowers, followers: () => followers, fx,
+  return { open, quit, init, summary, where, save: () => S || save(), player: () => pl, setFollowerHidden, refreshFollowers, followers: () => followers, fx,
            get active() { return open_; }, get busy() { return busy; }, get surfing() { return surfing; } };
 })();
