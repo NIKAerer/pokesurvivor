@@ -14,7 +14,7 @@ adaptée pour Nika :
 
 ## Jouer
 
-- **Sur téléphone ou PC : https://nikaerer.github.io/pokeweb/**
+- **Sur téléphone ou PC : https://nikaerer.github.io/pokesurvivor/**
   Sur iPhone, ouvrir le lien dans Safari puis Partager > « Sur l'écran d'accueil » : le jeu
   s'ouvre en plein écran, marche hors ligne et propose « Forcer le mode horizontal ».
 - Chaque push sur `main` republie le site tout seul (`.github/workflows/pages.yml`).
