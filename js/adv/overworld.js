@@ -1936,6 +1936,15 @@ G.Overworld = (() => {
       if (await G.AdvBattle.learn(m, ids[k], false)) return true;
     }
   }
+  /** Le Maître des capacités : réapprendre n'importe quelle attaque déjà passée (comme dans les jeux), gratuit. */
+  async function relearn(m) {
+    const ids = M().relearnable(m);
+    if (!ids.length) { await talk([['Maître des capacités', M().name(m) + ' connaît déjà toutes les attaques de son niveau !']]); return; }
+    const k = await G.AdvUI.choose('Quelle attaque pour ' + M().name(m) + ' ?', ids.map(id => ({ icon: 'move:' + id, title: M().moveName(id), desc: M().moveInfo(id) }))
+      .concat([{ title: 'Retour', desc: '' }]));
+    if (k == null || k < 0 || k >= ids.length) return;
+    await G.AdvBattle.learn(m, ids[k], false);
+  }
   /** Entraîner : des niveaux pour toute l'équipe (attaques et évolutions comprises). */
   async function train(n) {
     G.Audio.sfx('levelup');
@@ -1986,9 +1995,12 @@ G.Overworld = (() => {
           const m = S.team[j];
           const a = await G.AdvUI.choose(M().name(m) + ' · N. ' + m.lv, [{ icon: 'book', title: 'Pokédex', desc: 'Stats, évolutions et attaques' }]
             .concat(j > 0 ? [{ icon: 'crown', title: 'Mettre en tête', desc: 'Il ouvre la marche et combat en premier' }] : [])
+            .concat([{ icon: 'up', title: 'Réapprendre une attaque', desc: M().relearnable(m).length + ' attaques apprises jusqu\'ici (forme d\'avant comprise)' }])
             .concat([{ title: 'Retour', desc: '' }]));
+          const lead = j > 0 ? 1 : -1, re = j > 0 ? 2 : 1;
           if (a === 0) await G.AdvUI.dex(m);
-          else if (a === 1 && j > 0) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
+          else if (a === lead) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
+          else if (a === re) await relearn(m);
         } else if (i === 1) await talk([['', cur().goal]]);
         else if (i === 2) await worldMap();
         else if (i === 3) await badgeCase();
