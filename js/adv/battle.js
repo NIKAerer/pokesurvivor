@@ -183,9 +183,11 @@ G.AdvBattle = (() => {
     $('advb-msg').classList.remove('on');
     const box = $('advb-menu');
     box.innerHTML = '';
+    let k = 0;
     for (const b of buttons) {
       const el = document.createElement('button');
       el.className = 'advb-btn' + (b.cls ? ' ' + b.cls : '');
+      el.dataset.k = b.cls === 'back' ? 'Échap' : ++k;
       el.innerHTML = b.html;
       if (b.color) el.style.setProperty('--bc', b.color);
       el.disabled = !!b.disabled;
@@ -240,6 +242,7 @@ G.AdvBattle = (() => {
         if (m.hp <= 0) return;
         const el = document.createElement('button');
         el.className = 'advb-btn';
+        el.dataset.k = box.children.length + 1;
         el.style.setProperty('--bc', '#3ab060');
         el.innerHTML = `<b>${M.name(m)}</b><small>N. ${m.lv} · ${Math.ceil(m.hp)}/${M.maxHp(m)} PV</small>`;
         el.onclick = e => { e.stopPropagation(); res(i); };

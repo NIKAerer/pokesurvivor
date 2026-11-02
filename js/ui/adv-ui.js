@@ -48,6 +48,7 @@ G.AdvUI = (() => {
       options.forEach((o, i) => {
         const b = document.createElement('button');
         b.className = 'adv-opt' + (o.off ? ' off' : '');
+        if (i < 9) b.dataset.k = i + 1;
         const p = o.dex && G.DEX_BY[o.dex];
         const mv = o.icon && o.icon.startsWith('move:') && G.AdvMon.move(o.icon.slice(5));
         b.style.setProperty('--tc', p ? G.U.TYPE_COLOR[p.types[0]] : mv ? G.U.TYPE_COLOR[mv.type] : '#e0a020');
@@ -73,10 +74,33 @@ G.AdvUI = (() => {
   function init() {
     $('adv-talk').onclick = next;
     document.addEventListener('keydown', e => {
-      if ($('adv-talk').classList.contains('hidden') || !['Space', 'Enter', 'KeyE'].includes(e.code)) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      next();
+      if (!$('adv-talk').classList.contains('hidden')) {
+        if (!['Space', 'Enter', 'KeyE'].includes(e.code)) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        next();
+        return;
+      }
+      if (e.repeat) return;
+      // Au clavier : 1, 2, 3, 4… choisissent (cartes de choix, menu de combat), Échap ou Retour arrière = Retour.
+      const n = /^(Digit|Numpad)([1-9])$/.exec(e.code), num = n ? +n[2] - 1 : -1;
+      const hit = el => { e.preventDefault(); e.stopImmediatePropagation(); if (el && !el.disabled) el.click(); };
+      const ch = $('adv-choose');
+      if (!ch.classList.contains('hidden')) {
+        if (num >= 0) hit(ch.querySelectorAll('.adv-opt')[num]);
+        return;
+      }
+      const advb = $('advb');
+      if (!advb || advb.classList.contains('hidden')) return;
+      const intro = $('advb-intro');
+      if (intro && intro.classList.contains('on') && ['Space', 'Enter', 'KeyE'].includes(e.code)) { hit(intro); return; }
+      const btns = [...$('advb-menu').querySelectorAll('.advb-btn')];
+      if (btns.length) {
+        if (num >= 0) hit(btns.filter(b => !b.classList.contains('back'))[num]);
+        else if (['Escape', 'Backspace'].includes(e.code)) hit(btns.find(b => b.classList.contains('back')));
+        return;
+      }
+      if (['Space', 'Enter', 'KeyE'].includes(e.code)) hit(advb);
     }, true);
     G.Overworld.init();
   }

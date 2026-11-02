@@ -147,7 +147,7 @@ G.Overworld = (() => {
   /** Touche un mur, un arbre, l'eau ou un personnage (pas les rebords) : coincé si c'est vrai là où on est. */
   function hard(x, y) {
     const c = (wx, wy) => { const tx = Math.floor(wx / TS), ty = Math.floor(wy / TS);
-      return inMap(tx, ty) && SOLID.has(at(tx, ty)); };
+      return inMap(tx, ty) && SOLID.has(at(tx, ty)) || npcs.some(n => Math.abs(n.px - wx) < 14 && wy > n.py - 14 && wy < n.py + 2); };
     return c(x - 9, y - 1) || c(x + 9, y - 1) || c(x - 9, y - 9) || c(x + 9, y - 9);
   }
   /** Un rebord sous les pieds : petit saut par-dessus, jusqu'à la case d'après (au milieu de la case). */
