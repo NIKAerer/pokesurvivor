@@ -203,6 +203,10 @@ G.Icons = (() => {
     pcbox: { pal: { b: '#e0a86a', d: '#a86b3c', l: '#f6d39c', r: '#ff4d4d', w: '#f4f4f4' }, rows: [
       '............', 'kkkkkkkkkkkk', 'kllllllllllk', 'kllllllllldk', 'kkkkkkkkkkkk', '.kbbbbbbbdk.',
       '.kbbbkkbbdk.', '.kbbkrrkbdk.', '.kbbkkkkbdk.', '.kbbkwwkbdk.', '.kbbbkkbbdk.', '.kkkkkkkkkk.'] },
+    // Version de Nika : la carte de Kanto (Aventure).
+    map: { pal: { g: '#7cc86a', b: '#4fa0e8', y: '#f4dc8a', r: '#e83a3a' }, rows: [
+      '............', 'kkkkkkkkkkkk', 'kggkyyykbbbk', 'kgggkyykbbbk', 'kgrgkyyykbbk', 'kgggkyyykbbk',
+      'kggykkyyykbk', 'kgyyykkyyykk', 'kyyggykyyyyk', 'kyggggykyyyk', 'kkkkkkkkkkkk', '............'] },
     home: { pal: { r: '#ff7a4d', w: '#f4ead2', d: '#c9b48a', b: '#8a5a2b' }, rows: ['.....kk.....', '....krrk....', '...krrrrk...', '..krrrrrrk..', '.krrrrrrrrk.', 'kkkkkkkkkkkk', '.kwwwwwwwdk.', '.kwkkwwbbdk.', '.kwkkwwbbdk.', '.kwwwwwbbdk.', '.kwwwwwbbdk.', '.kkkkkkkkkk.'] },
     trophy: { pal: { y: '#ffd23f', d: '#c08a10', w: '#fff3b0' }, rows: [
       '............', '..kkkkkkkk..', 'kkkwyyyydkkk', 'k.kwyyyydk.k', 'k.kwyyyydk.k', '.kkwyyyydkk.',

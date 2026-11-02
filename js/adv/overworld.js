@@ -189,6 +189,8 @@ G.Overworld = (() => {
     return [tx, ty];
   }
   function setMap(key, tx, ty, dir) {
+    if (art && !art.inside && !art.cave && mapKey) S.out = { map: mapKey, x: pl.x / TS, y: pl.y / TS };
+    (S.visited = S.visited || {})[key] = 1;
     mapKey = key;
     art = G.KantoArt.maps[key];
     def = K().MAPS[key];
@@ -508,6 +510,92 @@ G.Overworld = (() => {
     { town: 'route10', name: 'Route 10', door: 'route10_centre', desc: 'Centre Pokémon de la Centrale' },
     { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' }
   ];
+  // ---------------- la carte du monde ----------------
+  /** Les cartes extérieures placées les unes par rapport aux autres (en cases), d'après leurs raccords. */
+  let WORLD = null;
+  function world() {
+    if (WORLD) return WORLD;
+    const maps = G.KantoArt.maps, pos = { bourg: [0, 0] }, q = ['bourg'];
+    while (q.length) {
+      const k = q.shift(), a = maps[k], [x, y] = pos[k];
+      for (const c of a.conns || []) {
+        const b = maps[c.map];
+        if (!b || pos[c.map]) continue;
+        pos[c.map] = c.dir === 'up' ? [x + c.offset, y - b.h] : c.dir === 'down' ? [x + c.offset, y + a.h]
+          : c.dir === 'left' ? [x - b.w, y + c.offset] : [x + a.w, y + c.offset];
+        q.push(c.map);
+      }
+    }
+    // Safrania n'existe pas encore : on la réserve (dans le brouillard) et on place la Route 6 et Carmin dessous.
+    const ghost = {};
+    if (pos.route5) {
+      ghost.safrania = [pos.route5[0], pos.route5[1] + maps.route5.h, 48, 40];
+      const go = (k, x, y) => { if (maps[k] && !pos[k]) { pos[k] = [x, y]; q.push(k); } };
+      go('route6', ghost.safrania[0] + 12, ghost.safrania[1] + 40);
+      if (pos.route6) go('carmin', pos.route6[0] - 12, pos.route6[1] + maps.route6.h);
+    }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const k in ghost) { const [x, y, w, h] = ghost[k]; x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); }
+    for (const k in pos) { const a = maps[k]; x0 = Math.min(x0, pos[k][0]); y0 = Math.min(y0, pos[k][1]); x1 = Math.max(x1, pos[k][0] + a.w); y1 = Math.max(y1, pos[k][1] + a.h); }
+    x0 -= 4; y0 -= 4; x1 += 4; y1 += 4;
+    return (WORLD = { pos, ghost, x0, y0, w: x1 - x0, h: y1 - y0 });
+  }
+  /** La carte de Kanto : les vraies cartes en petit, celles pas encore visitées dans le brouillard, et toi dessus. */
+  function worldMap() {
+    return new Promise(res => {
+      const W = world(), maps = G.KantoArt.maps;
+      const visited = k => (S.visited && S.visited[k]) || ((K().MAPS[k] && K().MAPS[k].ch) || 1) < S.ch || k === mapKey;
+      const el = document.createElement('div');
+      el.id = 'adv-map';
+      el.innerHTML = `<div class="am-box"><button class="ad-x">Fermer</button><h3>Kanto</h3><p class="am-goal">${K().CHAPTERS[S.ch].goal}</p><canvas></canvas>
+        <p class="am-leg"><i class="me"></i> Toi <i class="fog"></i> Pas encore visité</p></div>`;
+      document.body.appendChild(el);
+      const cv = el.querySelector('canvas'), c = cv.getContext('2d');
+      const draw = () => {
+        const bw = cv.clientWidth || 300, sc = bw / W.w, d = Math.min(2, devicePixelRatio || 1);
+        cv.width = Math.round(bw * d); cv.height = Math.round(W.h * sc * d); cv.style.height = W.h * sc + 'px';
+        c.setTransform(d * sc, 0, 0, d * sc, -W.x0 * sc * d, -W.y0 * sc * d);
+        c.imageSmoothingEnabled = true;
+        c.fillStyle = '#33433a'; c.fillRect(W.x0, W.y0, W.w, W.h);
+        for (const k in W.ghost) { const [x, y, w, h] = W.ghost[k]; c.fillStyle = '#20262c'; c.fillRect(x, y, w, h); }
+        for (const k in W.pos) {
+          const a = maps[k], [x, y] = W.pos[k];
+          if (!a._bg) { a._bg = img(a.base); a._top = img(a.top); }
+          if (a._bg.complete && a._bg.naturalWidth) c.drawImage(a._bg, x, y, a.w, a.h); else { c.fillStyle = '#6a9a5a'; c.fillRect(x, y, a.w, a.h); }
+          if (a._top.complete && a._top.naturalWidth) c.drawImage(a._top, x, y, a.w, a.h);
+          if (!a._bg.complete) a._bg.onload = draw;
+          if (!visited(k)) { c.fillStyle = 'rgba(20,24,30,.78)'; c.fillRect(x, y, a.w, a.h); }
+        }
+        // Les noms des villes et des routes visitées.
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        for (const k in W.pos) {
+          const a = maps[k], [x, y] = W.pos[k], town = !K().MAPS[k] || K().MAPS[k].wild === null;
+          if (!visited(k)) continue;
+          const nm = (K().MAPS[k] && K().MAPS[k].name || k).replace(/ ·.*/, '');
+          const fs = (town ? 15 : 10) / sc;
+          c.font = `800 ${fs}px sans-serif`;
+          const tw = c.measureText(nm).width;
+          c.fillStyle = town ? 'rgba(255,250,242,.92)' : 'rgba(255,250,242,.75)';
+          const lx = Math.max(W.x0 + tw / 2 + 6 / sc, Math.min(W.x0 + W.w - tw / 2 - 6 / sc, x + a.w / 2)), ly = y + a.h / 2 + (k === mapKey || (S.out && S.out.map === k) ? fs * 1.3 : 0);
+          c.fillRect(lx - tw / 2 - 4 / sc, ly - fs * 0.7, tw + 8 / sc, fs * 1.4);
+          c.fillStyle = '#2a1d14'; c.fillText(nm, lx, ly);
+        }
+        // Toi : là où tu es dehors (ou la porte par laquelle tu es entré).
+        const here = !art.inside && !art.cave ? { map: mapKey, x: pl.x / TS, y: pl.y / TS } : S.out;
+        if (here && W.pos[here.map]) {
+          const px = W.pos[here.map][0] + here.x, py = W.pos[here.map][1] + here.y, r = 9 / sc;
+          c.fillStyle = '#e83a3a'; c.strokeStyle = '#fff'; c.lineWidth = 3 / sc;
+          c.beginPath(); c.arc(px, py, r, 0, 6.2832); c.fill(); c.stroke();
+        }
+      };
+      requestAnimationFrame(draw);
+      G.Audio.sfx('select');
+      const fin = () => { removeEventListener('keydown', key, true); el.remove(); res(); };
+      const key = e => { if (['Space', 'Enter', 'Escape', 'Backspace', 'KeyM'].includes(e.code)) { e.preventDefault(); e.stopImmediatePropagation(); fin(); } };
+      addEventListener('keydown', key, true);
+      el.onclick = e => { if (e.target === el || e.target.classList.contains('ad-x')) fin(); };
+    });
+  }
   function seen(key) {
     const f = FLY.find(f => f.town === key || f.door === key);
     if (f) (S.fly = S.fly || {})[f.town] = 1;
@@ -1531,6 +1619,7 @@ G.Overworld = (() => {
         const i = await G.AdvUI.choose('Menu · ' + S.money + ' pièces · ' + S.potions + ' Potions', [
           { icon: 'pball', title: 'Équipe', desc: S.team.length + ' Pokémon' },
           { icon: 'up', title: 'Objectif', desc: K().CHAPTERS[S.ch].goal },
+          { icon: 'map', title: 'Carte', desc: 'La carte de Kanto et où tu es' },
           { icon: 'flying', title: 'Vol', desc: flier() ? M().name(flier()) + ' t\'emmène à un Centre Pokémon' : 'Il faut un Pokémon de type Vol' },
           { icon: 'home', title: 'Débloquer', desc: 'Coincé ? Retour au dernier Centre Pokémon' },
           { title: 'Quitter', desc: 'Sauvegarde et retour au menu' },
@@ -1548,12 +1637,13 @@ G.Overworld = (() => {
           if (a === 0) await G.AdvUI.dex(m);
           else if (a === 1 && j > 0) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
-        else if (i === 2) { await flyMenu(); return; }
-        else if (i === 3) {
+        else if (i === 2) await worldMap();
+        else if (i === 3) { await flyMenu(); return; }
+        else if (i === 4) {
           const y = await G.AdvUI.choose('Retourner au dernier Centre Pokémon visité ?', [{ icon: 'home', title: 'Oui, j\'y retourne', desc: '' }, { title: 'Non', desc: '' }]);
           if (y === 0) { await rescue(); return; }
         }
-        else if (i === 4) { quit(); return; }
+        else if (i === 5) { quit(); return; }
         else return;
       }
     });
