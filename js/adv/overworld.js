@@ -39,7 +39,9 @@ G.Overworld = (() => {
     // Lavanville et la Tour Pokémon : les spectres, Osselait l'orphelin, Spectrum le farceur.
     9: [92, 93, 104, 96, 63, 39, 35, 79, 52, 58, 37, 132],
     // Routes 7 et 8, Céladopole et l'arène d'Érika : plantes, Évoli du Grand Magasin, Caninos, Miaouss.
-    10: [43, 44, 69, 70, 102, 114, 1, 46, 48, 58, 37, 52, 16, 23, 133, 60, 61]
+    10: [43, 44, 69, 70, 102, 114, 1, 46, 48, 58, 37, 52, 16, 23, 133, 60, 61],
+    // Le repaire de la Team Rocket : les Pokémon des sbires (Rattata, Nosferapti, Abo, Smogo, Miaouss, Tadmorv…).
+    11: [19, 20, 41, 42, 23, 24, 109, 110, 52, 88, 96, 66, 74, 27]
   };
 
   let S = null;              // la sauvegarde de l'Aventure
@@ -80,13 +82,14 @@ G.Overworld = (() => {
     if (!w) return null;
     // Les vraies cartes : on entre, on sort, on descend dans la grotte (les étages privés restent fermés).
     if (w.dest && G.KantoArt.maps[w.dest]) return { ...w, ev: 'go' };
+    if (w.to === 'ROCKET_HIDEOUT_ELEVATOR') return { ...w, ev: 'lift' };
     if (art.inside) return { ...w, ev: 'stairs' };
     const k = Object.keys(def.doors || {}).find(k => w.to.includes(k));
     return k ? { ...w, ev: def.doors[k] } : { ...w, ev: 'closed' };
   }
 
   // ---------------- personnages ----------------
-  const SKIP = new Set(['item_ball', 'cut_tree', 'var_0', 'push_boulder', 'prof_oak', 'blue', 'pokedex', 'town_map', 'old_amber', 'fossil', 'bill', 'clefairy', 'mr_fuji', 'rock_smash_rock']);
+  const SKIP = new Set(['item_ball', 'cut_tree', 'var_0', 'push_boulder', 'prof_oak', 'blue', 'pokedex', 'town_map', 'old_amber', 'fossil', 'bill', 'clefairy', 'mr_fuji', 'rock_smash_rock', 'giovanni']);
   const INVISIBLE = new Set(['', 'clipboard']);   // journaux et cahiers posés sur les tables : on peut les lire
   // Les Pokémon posés sur la carte (le Piafabec de Jadielle, le Rondoudou du Centre…) : dessinés avec nos sprites.
   const MONS = { spearow: 21, nidoran_m: 32, jigglypuff: 39, pikachu: 25, clefairy: 35, meowth: 52, pidgey: 16, machop: 66, seel: 86, slowbro: 80,
@@ -97,8 +100,8 @@ G.Overworld = (() => {
     for (const ch of o.script || '') h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
     const ch = def.ch || S.ch;
-    const pool = o.gfx === 'rocket_m' ? [19, 41, 23, 109] : def.pool || (art.wild.length ? art.wild.map(w => w[0]) : HABITAT[ch] || [16, 19]);
-    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26, 29][ch] || 29;
+    const pool = o.gfx === 'rocket_m' ? (ch >= 11 ? HABITAT[11] : [19, 41, 23, 109]) : def.pool || (art.wild.length ? art.wild.map(w => w[0]) : HABITAT[ch] || [16, 19]);
+    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26, 29, 31][ch] || 31;
     const n = 1 + Math.floor(rnd() * 3), team = [];
     for (let i = 0; i < n; i++) team.push([pool[Math.floor(rnd() * pool.length)], Math.max(2, top - (n - 1) + Math.floor(rnd() * 2))]);
     const who = (K().CLASSES[o.gfx] || 'Dresseur') + ' ' + String(o.script || '').replace(/^.*_EventScript_/, '').replace(/\d+$/, '');
@@ -519,7 +522,8 @@ G.Overworld = (() => {
     { town: 'azuria', name: 'Azuria', door: 'azuria_centre' },
     { town: 'carmin', name: 'Carmin-sur-Mer', door: 'carmin_centre' },
     { town: 'route10', name: 'Route 10', door: 'route10_centre', desc: 'Centre Pokémon de la Centrale' },
-    { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' }
+    { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' },
+    { town: 'celadopole', name: 'Céladopole', door: 'celadopole_centre' }
   ];
   // ---------------- la boîte à badges ----------------
   const BADGES = [
@@ -702,6 +706,7 @@ G.Overworld = (() => {
     if (fromBump && !surfing && inMap(f.x, f.y) && at(f.x, f.y) === 'w' && !S.flags.surfHint) { S.flags.surfHint = 1; run(() => water(f)); return; }
     const sg = art.signs.find(b => b.x === f.x && b.y === f.y);
     if (sg && /TrashCan/.test(sg.script)) { if (!fromBump) run(() => trash(sg)); return; }
+    if (sg && /GameCorner_EventScript_Poster/.test(sg.script) && (!fromBump || pl.dir === 'up')) { run(poster); return; }
     if (sg && (!fromBump || pl.dir === 'up')) run(() => talk([['', K().SIGNS[sg.script] || K().SIGN_DEFAULT]]));
   }
   // ---------------- Surf et pêche ----------------
@@ -858,6 +863,9 @@ G.Overworld = (() => {
     if (n.event === 'ghost') { await ghost(); return; }
     if (n.event === 'fuji') { await fuji(); return; }
     if (n.event === 'erika') { await erika(n); return; }
+    if (n.event === 'casinoGrunt') { await casinoGrunt(n); return; }
+    if (n.event === 'rocket3') { await rocket3(); return; }
+    if (n.event === 'giovanni') { await giovanni(n); return; }
     if (n.event === 'sala') { await sala(); return; }
     if (n.event === 'bulbi') { await bulbi(); return; }
     if (n.event === 'cara') { await cara(); return; }
@@ -922,6 +930,7 @@ G.Overworld = (() => {
       S.flags['tr_' + n.id] = 1;
       S.money += n.trainer.coins || 0;
       await talk([[n.trainer.name, n.trainer.lose], ['', 'Tu gagnes ' + (n.trainer.coins || 0) + ' pièces.']]);
+      if (n.trainer.gift === 'lift' && !S.flags.lift) { S.flags.lift = 1; G.Audio.sfx('confirm'); await talk([['', 'Tu ramasses la Clé Ascenseur ! L\'ascenseur du repaire mène au 4e sous-sol.']]); }
     }
   }
 
@@ -1467,6 +1476,66 @@ G.Overworld = (() => {
                 ['', 'Tu obtiens le Badge Prisme et 1200 pièces !']]);
     if (S.ch === 10) await chapterEnd();
   }
+  // ---------------- chapitre 11 : le repaire de la Team Rocket ----------------
+  /** Le Sbire qui garde le poster de la Salle de jeux. */
+  async function casinoGrunt(n) {
+    if (S.ch < 11) { await talk([['Sbire Rocket', 'Hé, gamin ! Tu n\'as rien vu, compris ? Circule !']]); return; }
+    await talk([['Sbire Rocket', 'Qu\'est-ce que tu regardes ? Ce poster ? Il n\'a rien de spécial, hé hé…'], ['Sbire Rocket', 'Tu poses trop de questions, toi ! Je vais te faire passer l\'envie !']]);
+    const res = await battle({ trainer: { name: 'Sbire Rocket', team: [[19, 24], [109, 24]], smart: true } }, n);
+    if (res !== 'win') return;
+    S.flags.casinoGrunt = 1; S.money += 400;
+    await talk([['Sbire Rocket', 'Aïe… Je dois prévenir le Boss !'], ['', 'Le Sbire file en courant. Tu gagnes 400 pièces.']]);
+    loadNpcs();
+  }
+  /** Le poster : un interrupteur caché ouvre l'escalier du repaire. */
+  async function poster() {
+    if (S.flags.poster) { await talk([['', 'L\'interrupteur derrière le poster. L\'escalier secret est ouvert, au fond à droite.']]); return; }
+    if (S.ch < 11 || !S.flags.casinoGrunt) { await talk([['', K().SIGNS.CeladonCity_GameCorner_EventScript_Poster]]); return; }
+    S.flags.poster = 1;
+    G.Audio.sfx('select');
+    await talk([['', 'Il y a un interrupteur derrière le poster ! Clic !'], ['', 'Un escalier secret s\'ouvre au fond de la salle, à droite !']]);
+  }
+  /** L'ascenseur du repaire (avec la Clé Ascenseur). */
+  const LIFT = [['repaire1', 'Sous-sol 1', 24, 26], ['repaire2', 'Sous-sol 2', 28, 17], ['repaire4', 'Sous-sol 4', 20, 24]];
+  async function lift() {
+    if (!S.flags.lift) { await talk([['', 'L\'ascenseur ne bouge pas. Il faut une Clé Ascenseur…']]); return; }
+    const floors = LIFT.filter(f => f[0] !== mapKey);
+    const i = await G.AdvUI.choose('Ascenseur · quel étage ?', floors.map(f => ({ title: f[1], desc: '' })).concat([{ title: 'Rester ici', desc: '' }]));
+    if (i == null || i >= floors.length) return;
+    const [key, , x, y] = floors[i];
+    await fade(() => setMap(key, x, y, 'down'));
+    commit();
+  }
+  /** Jessie et James gardent l'escalier du 3e sous-sol. */
+  async function rocket3() {
+    if (S.flags.rocket3) return;
+    const jessie = npcs.find(n => n.id === 'jessie3');
+    await talk([['Jessie', 'Nous sommes de retour !'], ['James', 'Pour vous jouer un mauvais tour !'], ['Miaouss', 'Et le Boss nous regarde, alors cette fois, on gagne !'],
+                ['Jessie', 'Personne ne descend voir Giovanni sans passer par nous ! Arbok, Smogogo, en avant !']]);
+    const res = await battle({ trainer: { name: 'Jessie et James', team: [[24, 26], [110, 26], [52, 27]], smart: true, potions: 1 } }, jessie);
+    if (res !== 'win') return;
+    S.flags.rocket3 = 1; S.money += 800;
+    await talk([['James', 'Battus devant le Boss…'], ['Miaouss', 'On va se faire virer !'],
+                ['Jessie, James et Miaouss', 'La Team Rocket s\'envole vers d\'autres cieux !'], ['', 'Tu ramasses 800 pièces qu\'ils ont laissées tomber.']]);
+    loadNpcs();
+  }
+  /** Giovanni, le chef de la Team Rocket, au fond du repaire. */
+  async function giovanni(n) {
+    if (S.flags.giovanni) return;
+    await talk([['???', 'Alors c\'est toi, le gamin qui a mis mes sbires en déroute…'],
+                ['Giovanni', 'Je suis Giovanni, le chef de la Team Rocket. Ce repaire, la Salle de jeux, cette ville… tout ça m\'appartient.'],
+                ['Giovanni', 'Persian ronronne : il a hâte de voir ce que tu vaux. Montre-moi, petit dresseur !']]);
+    const res = await battle({ trainer: { name: 'Giovanni', team: [[95, 25], [111, 24], [53, 27], [115, 29]], smart: true, potions: 2 } }, n);
+    if (res !== 'win') return;
+    S.flags.giovanni = 1; S.money += 2000;
+    G.Audio.sfx('legend');
+    await talk([['Giovanni', 'Impossible… Battu par un enfant.'], ['Giovanni', 'Très bien. Je quitte ce repaire. Mais la Team Rocket ne disparaîtra jamais. On se reverra !'],
+                ['', 'Giovanni s\'enfuit par une sortie secrète. Il laisse tomber un Scope Sylphe… et 2000 pièces !'],
+                ['Pierre', 'Le Scope Sylphe… On dit qu\'il est fabriqué par Sylphe SARL, à Safrania. Il se passe des choses bizarres là-bas.']]);
+    loadNpcs();
+    if (S.ch === 11) await chapterEnd();
+  }
+
   /** Passer une porte, une échelle ou l'entrée d'une grotte : on arrive sur la vraie carte, à la porte qui y mène. */
   async function go(w) {
     if (w.dest === 'ssanne' && mapKey === 'carmin') {
@@ -1475,6 +1544,7 @@ G.Overworld = (() => {
       if (!S.flags.surge) { await talk([['Marin', 'La fête des dresseurs commence ce soir. Va d\'abord défier le Major Bob, petit !']]); return; }
       if (!S.flags.ssanne) { S.flags.ssanne = 1; await talk([['Marin', 'Un Passe Océane ! Bienvenue à bord, la fête des dresseurs va commencer !']]); }
     }
+    if (w.dest === 'repaire1' && mapKey === 'celadopole_casino' && !S.flags.poster) { await talk([['', 'Un mur… On dirait qu\'il y a un passage, mais il est fermé.']]); return; }
     const to = G.KantoArt.maps[w.dest];
     // La porte d'arrivée (celle donnée par le jeu, sinon une qui ramène ici).
     let t = to.warps[w.id];
@@ -1509,6 +1579,7 @@ G.Overworld = (() => {
     if (ev === 'go') { await go(w); return; }
     if (K().DOORS[ev]) { await talk([['', K().DOORS[ev]]]); return; }
     if (ev === 'ssanne') { await ssanne(); return; }
+    if (ev === 'lift') { await lift(); return; }
     if (ev === 'stairs') { await talk([['', 'L\'étage est privé.']]); return; }
     if (ev === 'link') { await link(w); return; }
     if (ev === 'cave') { await talk([['', 'La Cave Taupiqueur est sombre et pleine de Taupiqueur… Pas maintenant !']]); return; }
@@ -1940,7 +2011,7 @@ G.Overworld = (() => {
     S.team.concat(S.box).forEach(M().migrate);
     // Vol : les villes déjà traversées dans les parties d'avant.
     S.fly = S.fly || {};
-    [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });
+    [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville'], [11, 'celadopole']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });
     G.UI.show('scr-world');
     open_ = true;
     resize();

@@ -607,5 +607,48 @@ G.Kanto = (() => {
       { id: 'jenny', look: 'cooltrainer_f', x: 8, y: 19, dir: 'right', event: 'jenny' }
     ]);
 
+  // ---------------- Chapitre 11 : le repaire de la Team Rocket ----------------
+  const ROOMS5 = { repaire1: ['Repaire Rocket · Sous-sol 1', 11], repaire2: ['Repaire Rocket · Sous-sol 2', 11], repaire3: ['Repaire Rocket · Sous-sol 3', 11], repaire4: ['Repaire Rocket · Sous-sol 4', 11] };
+  for (const k in ROOMS5) MAPS[k] = { name: ROOMS5[k][0], ch: ROOMS5[k][1], music: 'cave', wild: null, doors: {}, inside: true };
+  Object.assign(TRAINERS, {
+    RocketHideout_B1F_EventScript_Grunt1: { name: 'Sbire Rocket', team: [[41, 26], [20, 26]], coins: 400, meet: 'Un intrus ! Comment tu as trouvé l\'escalier ?', lose: 'Le Boss ne va pas aimer ça…' },
+    RocketHideout_B1F_EventScript_Grunt2: { name: 'Sbire Rocket', team: [[109, 25], [23, 25], [19, 25]], coins: 400, meet: 'Ici, c\'est chez la Team Rocket ! Dehors !', lose: 'Bon, d\'accord, entre…' },
+    RocketHideout_B1F_EventScript_Grunt3: { name: 'Sbire Rocket', team: [[19, 23], [20, 23], [41, 23]], coins: 380, meet: 'Tu as vu le poster ? Il ne fallait pas y toucher !', lose: 'Mes Rattata sont tout tristes.' },
+    RocketHideout_B1F_EventScript_Grunt4: { name: 'Sbire Rocket', team: [[88, 26], [109, 26]], coins: 400, meet: 'Sens-moi cette odeur de victoire !', lose: 'Ça sent la défaite, en fait…' },
+    RocketHideout_B1F_EventScript_Grunt5: { name: 'Sbire Rocket', team: [[52, 27]], coins: 420, meet: 'L\'ascenseur ? Il faut une clé, hé hé. Et tu ne l\'auras pas !', lose: 'Le Sbire du 4e sous-sol a la clé… Oups, je n\'ai rien dit !' },
+    RocketHideout_B2F_EventScript_Grunt: { name: 'Sbire Rocket', team: [[24, 27], [42, 27]], coins: 440, meet: 'Ces flèches au sol rendent fous les intrus ! Mais pas moi !', lose: 'J\'ai le tournis…' },
+    RocketHideout_B3F_EventScript_Grunt1: { name: 'Sbire Rocket', team: [[20, 28], [66, 28]], coins: 460, meet: 'Le Boss prépare un grand coup ! Tu ne le dérangeras pas !', lose: 'Le Boss est en bas… mais tu ne passeras pas sans la clé !' },
+    RocketHideout_B3F_EventScript_Grunt2: { name: 'Sbire Rocket', team: [[96, 27], [109, 27], [110, 28]], coins: 460, meet: 'Dodo, petit dresseur…', lose: 'C\'est moi qui suis endormi, là…' },
+    RocketHideout_B4F_EventScript_Grunt1: { name: 'Sbire Rocket', team: [[24, 29], [110, 29]], coins: 500, gift: 'lift', meet: 'Tu cherches la Clé Ascenseur ? Elle est dans ma poche ! Viens la prendre !', lose: 'Zut… J\'ai fait tomber la clé !' },
+    RocketHideout_B4F_EventScript_Grunt2: { name: 'Sbire Rocket', team: [[42, 29], [20, 29], [24, 30]], coins: 520, meet: 'Personne ne dérange le Boss !', lose: 'Boss… Désolé…' },
+    RocketHideout_B4F_EventScript_Grunt3: { name: 'Sbire Rocket', team: [[66, 30], [110, 30]], coins: 520, meet: 'Tu es arrivé jusqu\'ici ? Tu dois être fort. Moi aussi !', lose: 'Le Boss va s\'occuper de toi.' }
+  });
+  Object.assign(SIGNS, {
+    CeladonCity_GameCorner_EventScript_Poster: 'Un poster de la Team Rocket… Il y a un petit interrupteur derrière ?',
+    CeladonCity_GameCorner_EventScript_PhotoPrinter: 'Une machine à photos. Elle est en panne.'
+  });
+  Object.assign(TALK, {
+    CeladonCity_GameCorner_EventScript_BaldingMan: 'Je joue ici tous les jours. Enfin… je perds ici tous les jours.',
+    CeladonCity_GameCorner_EventScript_Woman1: 'Les hommes en noir passent souvent derrière le poster, au fond. Bizarre, non ?',
+    CeladonCity_GameCorner_EventScript_Fisher: 'Les machines sont truquées, j\'en suis sûr ! C\'est la Team Rocket qui tient la Salle de jeux.',
+    CeladonCity_GameCorner_EventScript_Woman2: 'Ding ding ding ! Ah non, ce n\'était pas ma machine…',
+    CeladonCity_GameCorner_EventScript_OldMan: 'Dans ma jeunesse, il n\'y avait pas de Team Rocket à Céladopole.',
+    CeladonCity_GameCorner_EventScript_Scientist: 'J\'étudie les probabilités. Conclusion : il vaut mieux ne pas jouer.',
+    CeladonCity_GameCorner_EventScript_Gentleman: 'Le patron de la Salle de jeux ? Personne ne l\'a jamais vu…'
+  });
+  NPCS.celadopole_casino = [{ id: 'casino_grunt', look: 'rocket_m', x: 11, y: 2, dir: 'down', event: 'casinoGrunt', when: f => !f.casinoGrunt }];
+  NPCS.repaire3 = [
+    { id: 'jessie3', look: 'rocket_f', x: 11, y: 16, dir: 'down', event: 'rocket3', when: f => !f.rocket3 },
+    { id: 'james3', look: 'rocket_m', x: 12, y: 16, dir: 'down', event: 'rocket3', when: f => !f.rocket3 }
+  ];
+  NPCS.repaire4 = [{ id: 'giovanni', look: 'giovanni', x: 19, y: 4, dir: 'down', event: 'giovanni', when: f => !f.giovanni }];
+  CHAPTERS.splice(11, 1,
+    { title: 'Le repaire de la Team Rocket', goal: 'À la Salle de jeux de Céladopole, bats le Sbire qui garde le poster du fond, puis descends dans le repaire de la Team Rocket et trouve leur chef.',
+      intro: [['', 'Chapitre 14 · Le repaire de la Team Rocket'], ['Pierre', 'Tu as vu tous ces sbires en noir à Céladopole ? Ils entrent et sortent de la Salle de jeux.'],
+              ['Ondine', 'Un vieux monsieur dit qu\'ils passent derrière un poster, au fond de la salle… Un passage secret ?'],
+              ['Pierre', 'Si la Team Rocket a un repaire ici, son chef y est peut-être. Sois prudent : il paraît qu\'il faut une clé pour l\'ascenseur.']] },
+    { title: 'À suivre…', goal: 'La suite de l\'aventure (Safrania, Sylphe SARL et Morgane…) arrive bientôt !',
+      intro: [['', 'Chapitre 15 · À suivre'], ['', 'Bravo ! Le chef de la Team Rocket a fui. La suite arrive bientôt : Safrania, la tour Sylphe SARL et la championne Morgane…']] });
+
   return { MAPS, NPCS, TRAINERS, SIGNS, SIGN_DEFAULT, TALK, CHAPTERS, CLOSED, DOORS, CLASSES, ZONES };
 })();
