@@ -45,7 +45,15 @@ G.Overworld = (() => {
     // Safrania et Sylphe SARL : les Pokémon des sbires, Porygon et les Magnéton du labo.
     12: [20, 42, 24, 110, 53, 89, 97, 67, 81, 82, 137, 100, 125],
     // Morgane et le Dojo : Pokémon Psy et Combat.
-    13: [63, 64, 96, 97, 122, 79, 102, 56, 57, 66, 106, 107, 124]
+    13: [63, 64, 96, 97, 122, 79, 102, 56, 57, 66, 106, 107, 124],
+    // Routes 12 à 15 : Mystherbe, Chétiflor, Roucoups, Métamorph, Ronflex de passage.
+    14: [43, 44, 69, 70, 16, 17, 132, 48, 54, 60, 118, 129, 23, 24],
+    // Parmanie et Koga : Pokémon Poison, Kangourex et Rhinocorne du Parc Safari.
+    15: [109, 110, 88, 89, 48, 49, 23, 24, 111, 115, 113, 123, 127, 102],
+    // Route 21 et Cramois'Île : Pokémon de la mer et du volcan.
+    16: [72, 73, 116, 117, 120, 90, 98, 99, 58, 77, 78, 126, 138, 140, 137],
+    // L'arène de Jadielle : Pokémon Sol.
+    17: [111, 112, 50, 51, 27, 28, 31, 34, 104, 105, 95]
   };
 
   let S = null;              // la sauvegarde de l'Aventure
@@ -84,9 +92,11 @@ G.Overworld = (() => {
   function warpAt(x, y) {
     const w = art.warps.find(w => w.x === x && w.y === y);
     if (!w) return null;
+    const ps = (K().PASS[mapKey] || {})[x + ',' + y];
+    if (ps) return { ...w, ev: 'pass', to: ps };
     // Les vraies cartes : on entre, on sort, on descend dans la grotte (les étages privés restent fermés).
     if (w.dest && G.KantoArt.maps[w.dest]) return { ...w, ev: 'go' };
-    if (w.to === 'ROCKET_HIDEOUT_ELEVATOR' || w.to === 'SILPH_CO_ELEVATOR') return { ...w, ev: 'lift' };
+    if (w.to === 'ROCKET_HIDEOUT_ELEVATOR' || w.to === 'SILPH_CO_ELEVATOR' || w.to === 'CELADON_CITY_DEPARTMENT_STORE_ELEVATOR') return { ...w, ev: 'lift' };
     if (art.inside) return { ...w, ev: 'stairs' };
     const k = Object.keys(def.doors || {}).find(k => w.to.includes(k));
     return k ? { ...w, ev: def.doors[k] } : { ...w, ev: 'closed' };
@@ -97,7 +107,8 @@ G.Overworld = (() => {
   const INVISIBLE = new Set(['', 'clipboard']);   // journaux et cahiers posés sur les tables : on peut les lire
   // Les Pokémon posés sur la carte (le Piafabec de Jadielle, le Rondoudou du Centre…) : dessinés avec nos sprites.
   const MONS = { spearow: 21, nidoran_m: 32, jigglypuff: 39, pikachu: 25, clefairy: 35, meowth: 52, pidgey: 16, machop: 66, seel: 86, slowbro: 80,
-                 cubone: 104, psyduck: 54, nidorino: 33, wigglytuff: 40, machoke: 67, poliwrath: 62, nidoran_f: 29 };
+                 cubone: 104, psyduck: 54, nidorino: 33, wigglytuff: 40, machoke: 67, poliwrath: 62, nidoran_f: 29,
+                 snorlax: 143, slowpoke: 79, voltorb: 100, chansey: 113, lapras: 131, kangaskhan: 115 };
   /** Un dresseur du jeu sans équipe écrite : des Pokémon du coin, toujours les mêmes pour lui. */
   function genTrainer(o) {
     let h = 7;
@@ -105,7 +116,7 @@ G.Overworld = (() => {
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
     const ch = def.ch || S.ch;
     const pool = o.gfx === 'rocket_m' ? (ch >= 12 ? HABITAT[12] : ch >= 11 ? HABITAT[11] : [19, 41, 23, 109]) : def.pool || (art.wild.length ? art.wild.map(w => w[0]) : HABITAT[ch] || [16, 19]);
-    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26, 29, 31, 34, 37][ch] || 37;
+    const top = art.wild.length ? Math.max(...art.wild.map(w => w[2])) : [0, 6, 9, 11, 12, 16, 20, 22, 24, 26, 29, 31, 34, 37, 39, 42, 45, 48][ch] || 48;
     const n = 1 + Math.floor(rnd() * 3), team = [];
     for (let i = 0; i < n; i++) team.push([pool[Math.floor(rnd() * pool.length)], Math.max(2, top - (n - 1) + Math.floor(rnd() * 2))]);
     const who = (K().CLASSES[o.gfx] || 'Dresseur') + ' ' + String(o.script || '').replace(/^.*_EventScript_/, '').replace(/\d+$/, '');
@@ -125,7 +136,7 @@ G.Overworld = (() => {
     const amb = art.objs.filter(o => o.gfx === 'cut_tree' ? cut(o) : !SKIP.has(o.gfx) && !hide.includes(o.gfx)).map((o, i) => {
       const t = o.trainer && (K().TRAINERS[o.script] || genTrainer(o));
       return { id: mapKey + '_' + i, look: G.People.has(o.gfx) ? o.gfx : 'boy', mon: MONS[o.gfx], x: o.x, y: o.y, dir: FACE[o.mv] || 'down',
-        inv: INVISIBLE.has(o.gfx), event: o.gfx === 'nurse' ? 'center' : o.gfx === 'clerk' ? 'mart' : o.gfx === 'cut_tree' ? 'cut' : undefined,
+        inv: INVISIBLE.has(o.gfx), event: o.gfx === 'nurse' ? 'center' : o.gfx === 'clerk' ? (/ClerkTMs/.test(o.script || '') ? 'tmstore' : 'mart') : o.gfx === 'cut_tree' ? 'cut' : undefined,
         trainer: t ? { ...t, sees: Math.max(2, +o.sight || 3) } : null, cutKey: o.gfx === 'cut_tree' ? cutKey(o) : null,
         talk: () => [['', K().TALK[o.script] || 'Bonjour ! Belle journée pour une balade avec ses Pokémon.']] };
     }).filter(n => !story.some(s2 => s2.x === n.x && s2.y === n.y));
@@ -200,8 +211,9 @@ G.Overworld = (() => {
           if (Math.max(Math.abs(dx), Math.abs(dy)) === r && ok(tx + dx, ty + dy)) return [tx + dx, ty + dy];
     return [tx, ty];
   }
-  function setMap(key, tx, ty, dir) {
-    surfing = false;
+  function setMap(key, tx, ty, dir, keepSurf) {
+    const wet = keepSurf && (G.KantoArt.maps[key].grid[ty] || '')[tx] === 'w';
+    if (!wet) { surfing = false; surfAnim = null; }
     if (art && !art.inside && !art.cave && mapKey) S.out = { map: mapKey, x: pl.x / TS, y: pl.y / TS };
     (S.visited = S.visited || {})[key] = 1;
     mapKey = key;
@@ -209,9 +221,10 @@ G.Overworld = (() => {
     def = K().MAPS[key];
     if (!art._bg) { art._bg = img(art.base); art._top = img(art.top); }
     if (key === 'carmin_arene' && S.flags.surgeDoor) openBarrier();
+    for (const [gx, gy] of K().GATES[key] || []) { const r = art.grid[gy]; if (r[gx] === '#') art.grid[gy] = r.slice(0, gx) + '.' + r.slice(gx + 1); }
     bg = art._bg; top = art._top;
     loadNpcs();
-    [tx, ty] = freeNear(tx, ty);
+    if (!wet) [tx, ty] = freeNear(tx, ty);
     pl.x = tx * TS + 16; pl.y = ty * TS + 30; pl.dir = dir || pl.dir; pl.jump = null; pl.hop = 0;
     pl.tile = tx + ',' + ty;
     resetTrail();
@@ -529,7 +542,9 @@ G.Overworld = (() => {
     { town: 'route10', name: 'Route 10', door: 'route10_centre', desc: 'Centre Pokémon de la Centrale' },
     { town: 'lavanville', name: 'Lavanville', door: 'lavanville_centre' },
     { town: 'celadopole', name: 'Céladopole', door: 'celadopole_centre' },
-    { town: 'safrania', name: 'Safrania', door: 'safrania_centre' }
+    { town: 'safrania', name: 'Safrania', door: 'safrania_centre' },
+    { town: 'parmanie', name: 'Parmanie', door: 'parmanie_centre' },
+    { town: 'cramois', name: 'Cramois\'Île', door: 'cramois_centre' }
   ];
   // ---------------- la boîte à badges ----------------
   const BADGES = [
@@ -852,6 +867,7 @@ G.Overworld = (() => {
     if (n.event === 'rival1') { await rival1(n); return; }
     if (n.event === 'mom') { await mom(); return; }
     if (n.event === 'center') { await center(); return; }
+    if (n.event === 'tmstore') { await talk([['Vendeur', 'Bienvenue au rayon CT du Grand Magasin ! Toutes les CT sorties à ce jour.']]); await tmShop(true); return; }
     if (n.event === 'mart') { await talk([['Vendeur', 'Bienvenue ! Que puis-je pour toi ?']]); await mart(); return; }
     if (n.event === 'pierre') { await pierre(n); return; }
     if (n.event === 'magikarp') { await magikarp(); return; }
@@ -879,6 +895,10 @@ G.Overworld = (() => {
     if (n.event === 'president') { await president(); return; }
     if (n.event === 'dojo') { await dojo(n); return; }
     if (n.event === 'morgane') { await morgane(n); return; }
+    if (n.event === 'snorlax') { await snorlax(n); return; }
+    if (n.event === 'koga') { await koga(n); return; }
+    if (n.event === 'auguste') { await auguste(n); return; }
+    if (n.event === 'giovanni3') { await giovanni3(n); return; }
     if (n.event === 'sala') { await sala(); return; }
     if (n.event === 'bulbi') { await bulbi(); return; }
     if (n.event === 'cara') { await cara(); return; }
@@ -1095,8 +1115,11 @@ G.Overworld = (() => {
       await talk([['', 'Tes Pokémon sont fatigués par la route. Passe d\'abord au Centre Pokémon de Jadielle.']]);
       return;
     }
-    await fade(() => setMap(e.map, e.x, e.y, e.dir));
+    if (e.map === 'route12' && mapKey === 'lavanville' && S.ch < 14) { back(); await talk([['', 'Un énorme Ronflex dort au milieu de la Route 12. Impossible de passer pour l\'instant !']]); return; }
+    if (e.map === 'route21n' && mapKey === 'bourg' && S.ch < 16) { back(); await talk([['', 'La mer au sud de Bourg Palette mène à Cramois\'Île. Ce n\'est pas encore le moment.']]); return; }
+    await fade(() => setMap(e.map, e.x, e.y, e.dir, surfing));
     commit();
+    if (e.map === 'parmanie' && S.ch === 14) await chapterEnd();
     if (e.map === 'argenta' && S.ch === 2) await chapterEnd();
     if (e.map === 'azuria' && S.ch === 4) await chapterEnd();
     if (e.map === 'lavanville' && S.ch === 8) await chapterEnd();
@@ -1209,7 +1232,11 @@ G.Overworld = (() => {
       leader: { look: 'erika', type: 'grass', badge: 'Prisme', title: 'Revanche · Championne de Céladopole', quote: 'Les fleurs reviennent toujours.' } },
     morgane: { name: 'Morgane', team: [122, 49, 64, 65], bonus: 3500, hi: 'Je savais que tu reviendrais. Je l\'ai vu.',
       win: 'Je n\'avais pas prévu ça… Intéressant.', busy: 'Mes Pokémon méditent. Reviens au prochain chapitre.',
-      leader: { look: 'sabrina', type: 'psychic', badge: 'Marais', title: 'Revanche · Championne de Safrania', quote: 'Je lis chacun de tes gestes.' } }
+      leader: { look: 'sabrina', type: 'psychic', badge: 'Marais', title: 'Revanche · Championne de Safrania', quote: 'Je lis chacun de tes gestes.' } },
+    koga: { name: 'Koga', team: [109, 89, 110, 49], bonus: 3500, hi: 'Fu fu fu… Un ninja ne refuse jamais un combat.', win: 'Ta technique est digne d\'un ninja.',
+      busy: 'Je médite dans l\'ombre. Reviens au prochain chapitre.', leader: { look: 'koga', type: 'poison', badge: 'Âme', title: 'Revanche · Champion de Parmanie', quote: 'Le poison ne pardonne pas.' } },
+    auguste: { name: 'Auguste', team: [58, 77, 126, 59], bonus: 4000, hi: 'Hohoho ! Une revanche ? Question : qui va brûler cette fois ? Toi !', win: 'Mon feu s\'est éteint… Bien joué !',
+      busy: 'Je prépare de nouvelles questions. Reviens au prochain chapitre.', leader: { look: 'blaine', type: 'fire', badge: 'Volcan', title: 'Revanche · Champion de Cramois\'Île', quote: 'Le feu de mon cœur brûle encore !' } }
   };
   async function rematch(n, key) {
     const R = REMATCH[key];
@@ -1520,8 +1547,18 @@ G.Overworld = (() => {
   /** L'ascenseur du repaire (avec la Clé Ascenseur). */
   const LIFT = [['repaire1', 'Sous-sol 1', 24, 26], ['repaire2', 'Sous-sol 2', 28, 17], ['repaire4', 'Sous-sol 4', 20, 24]];
   const SILPH = [['sylphe1', 'Rez-de-chaussée', 22, 4], ['sylphe5', '5e étage', 22, 4], ['sylphe7', '7e étage', 23, 4], ['sylphe11', '11e étage', 13, 4]];
+  const STORE = [['celadopole_magasin', 'Rez-de-chaussée · Accueil', 6, 2], ['magasin2', '2e étage · Objets et CT', 6, 2], ['magasin4', '4e étage · Cadeaux', 6, 2], ['magasin5', '5e étage · Potions de combat', 6, 2]];
   async function lift() {
-    const silph = /^sylphe/.test(mapKey);
+    const silph = /^sylphe/.test(mapKey), store = /magasin/.test(mapKey);
+    if (store) {
+      const floors = STORE.filter(f => f[0] !== mapKey);
+      const i = await G.AdvUI.choose('Ascenseur · quel étage ?', floors.map(f => ({ title: f[1], desc: '' })).concat([{ title: 'Rester ici', desc: '' }]));
+      if (i == null || i < 0 || i >= floors.length) return;
+      const [key, , x, y] = floors[i];
+      await fade(() => setMap(key, x, y, 'down'));
+      commit();
+      return;
+    }
     if (!silph && !S.flags.lift) { await talk([['', 'L\'ascenseur ne bouge pas. Il faut une Clé Ascenseur…']]); return; }
     const floors = (silph ? SILPH : LIFT).filter(f => f[0] !== mapKey);
     if (silph && !S.flags.regis5 && !S.flags.giovanni2) {
@@ -1664,6 +1701,70 @@ G.Overworld = (() => {
     if (S.ch === 13) await chapterEnd();
   }
 
+  // ---------------- chapitres 17 à 20 : Ronflex, Koga, Auguste et Giovanni ----------------
+  const avgLv = () => Math.max(2, Math.round(S.team.reduce((a, m) => a + m.lv, 0) / Math.max(1, S.team.length)));
+  /** Le Ronflex de la Route 12 : la Poké Flûte de M. Fuji le réveille, il se fâche… et peut te suivre. */
+  async function snorlax(n) {
+    if (!S.flags.fuji || S.ch < 14) { await talk([['', 'Un énorme Ronflex dort au milieu de la route… Il ronfle très fort. Rien ne le réveille !']]); return; }
+    await talk([['', 'Un énorme Ronflex dort au milieu de la route.'], ['', 'Tu joues de la Poké Flûte que M. Fuji t\'a donnée… Tu tu tuuu ♪'], ['', 'Ronflex se réveille… Il a l\'air de très mauvaise humeur !']]);
+    const lv = avgLv();
+    const res = await battle({ wild: [143, lv] }, n);
+    if (res === 'lose') return;
+    S.flags.snorlax = 1;
+    const fams = new Set(S.team.concat(S.box).map(m => family(m.dex)));
+    if (res === 'win' && !fams.has(family(143))) {
+      await talk([['', 'Ronflex se relève en bâillant… puis il te suit ! On dirait qu\'il veut faire partie de ton équipe.']]);
+      const inTeam = give(143, lv);
+      await talk([['', 'Ronflex rejoint ' + (inTeam ? 'ton équipe' : 'ta boîte') + ' !']]);
+    } else await talk([['', 'Ronflex s\'éloigne en baillant vers les montagnes. La route est libre !']]);
+    loadNpcs();
+  }
+  async function koga(n) {
+    if (S.flags.koga) { await rematch(n, 'koga'); return; }
+    if (S.ch < 15) { await talk([['Koga', 'Fu fu fu… Un ninja sait attendre. Reviens plus tard.']]); return; }
+    await talk([['Koga', 'Fu fu fu ! Tu as trouvé ton chemin entre mes murs invisibles. Pas mal.'], ['Koga', 'Je suis Koga, champion de Parmanie. Mes Pokémon Poison vont te montrer l\'art du ninja !']]);
+    const res = await battle({ trainer: { name: 'Koga', team: [[109, 37, [123, 108, 124, 92]], [89, 39, [107, 124, 92, 151]], [109, 37, [123, 108, 124, 120]], [110, 43, [92, 108, 124, 120]]], tm: 92, smart: true, potions: 2,
+      leader: { look: 'koga', type: 'poison', badge: 'Âme', title: 'Champion de l\'arène de Parmanie', quote: 'Le ninja frappe dans l\'ombre.' } } }, n);
+    if (res !== 'win') return;
+    S.flags.koga = 1; S.flags.badge5 = 1; S.money += 1800;
+    G.Audio.sfx('legend');
+    await talk([['Koga', 'Battu ! Tu as la patience d\'un vrai ninja.'], ['Koga', 'Voici le Badge Âme.'], ['', 'Tu obtiens le Badge Âme et 1800 pièces !']]);
+    await leaderTm('koga', 'Koga');
+    if (S.ch === 15) await chapterEnd();
+  }
+  async function auguste(n) {
+    if (S.flags.auguste) { await rematch(n, 'auguste'); return; }
+    if (S.ch < 16) { await talk([['Auguste', 'Hohoho ! Reviens quand tu seras prêt à brûler !']]); return; }
+    await talk([['Auguste', 'Hohoho ! Bienvenue dans mon arène brûlante ! Je suis Auguste, champion de Cramois\'Île.']]);
+    // Un petit quiz, comme dans les jeux : une bonne réponse, et Auguste garde une Potion en moins.
+    const q = await G.AdvUI.choose('Quiz d\'Auguste : quel type est super efficace contre le Feu ?', [{ title: 'Plante', desc: '' }, { title: 'Eau', desc: '' }, { title: 'Glace', desc: '' }]);
+    const good = q === 1;
+    await talk([['Auguste', good ? 'Exact ! L\'Eau éteint le feu. Tu es malin… mais ça ne suffira pas !' : 'Faux ! C\'est l\'Eau, voyons ! Hohoho, mes Pokémon vont adorer te réchauffer !']]);
+    const res = await battle({ trainer: { name: 'Auguste', team: [[58, 42, [52, 46, 36, 53]], [77, 40, [23, 52, 36, 53]], [78, 42, [23, 53, 36, 126]], [59, 47, [53, 36, 46, 126]]], tm: 126, smart: true, potions: good ? 1 : 2,
+      leader: { look: 'blaine', type: 'fire', badge: 'Volcan', title: 'Champion de l\'arène de Cramois\'Île', quote: 'Le feu de mon cœur brûle !' } } }, n);
+    if (res !== 'win') return;
+    S.flags.auguste = 1; S.flags.badge7 = 1; S.money += 2000;
+    G.Audio.sfx('legend');
+    await talk([['Auguste', 'Hohoho ! Je me suis fait éteindre ! Tu mérites le Badge Volcan.'], ['', 'Tu obtiens le Badge Volcan et 2000 pièces !']]);
+    await leaderTm('auguste', 'Auguste');
+    if (S.ch === 16) await chapterEnd();
+  }
+  async function giovanni3(n) {
+    if (S.flags.giovanni3) { await talk([['', 'L\'arène est vide. Giovanni est parti… pour de bon ?']]); return; }
+    await talk([['Giovanni', 'Te voilà enfin. Le petit dresseur qui a ruiné tous mes plans.'], ['Giovanni', 'Oui : le champion de Jadielle, c\'est moi. Le chef de la Team Rocket.'],
+                ['Giovanni', 'Ici, c\'est mon arène, et mes Pokémon Sol sont au meilleur de leur forme. Cette fois, tu vas perdre !']]);
+    const res = await battle({ trainer: { name: 'Giovanni', team: [[111, 45, [30, 23, 39, 31]], [51, 42, [163, 91, 157, 89]], [31, 44, [24, 40, 91, 89]], [34, 45, [24, 40, 32, 89]], [112, 50, [32, 157, 90, 89]]], tm: 157, smart: true, potions: 2,
+      leader: { look: 'giovanni', type: 'ground', badge: 'Terre', title: 'Champion de l\'arène de Jadielle', quote: 'La Team Rocket ne perd jamais deux fois… trois fois ?' } } }, n);
+    if (res !== 'win') return;
+    S.flags.giovanni3 = 1; S.flags.badge8 = 1; S.money += 3000;
+    G.Audio.sfx('legend');
+    await talk([['Giovanni', 'Ha… ha ha. Battu encore une fois. Tu as un vrai lien avec tes Pokémon.'], ['Giovanni', 'Je dissous la Team Rocket. Je vais m\'entraîner seul, loin d\'ici. Prends le Badge Terre.'],
+                ['', 'Tu obtiens le Badge Terre et 3000 pièces ! Tu as les huit badges de Kanto !']]);
+    await leaderTm('giovanni3', '', 'Giovanni a laissé une CT sur son bureau avant de partir…');
+    loadNpcs();
+    if (S.ch === 17) await chapterEnd();
+  }
+
   /** Passer une porte, une échelle ou l'entrée d'une grotte : on arrive sur la vraie carte, à la porte qui y mène. */
   async function go(w) {
     if (w.dest === 'ssanne' && mapKey === 'carmin') {
@@ -1674,6 +1775,7 @@ G.Overworld = (() => {
     }
     if (/^porte[5-8]$/.test(w.dest) && !/^porte/.test(mapKey) && mapKey !== 'safrania' && S.ch < 12) { await talk([['', K().DOORS.safrania]]); return; }
     if (w.dest === 'sylphe1' && mapKey === 'safrania' && !S.flags.silphGuard) { await talk([['Sbire Rocket', 'Hé ! Personne n\'entre à Sylphe SARL ! Viens me parler si tu as un problème.']]); return; }
+    if (w.dest === 'jadielle_arene' && S.ch < 17) { await talk([['', 'L\'arène de Jadielle est fermée. Son champion est absent…']]); return; }
     if (w.dest === 'safrania_arene' && !S.flags.giovanni2) { await talk([['', 'Un sbire de la Team Rocket bloque l\'entrée de l\'arène.']]); return; }
     if (w.dest === 'repaire1' && mapKey === 'celadopole_casino' && !S.flags.poster) { await talk([['', 'Un mur… On dirait qu\'il y a un passage, mais il est fermé.']]); return; }
     const to = G.KantoArt.maps[w.dest];
@@ -1703,7 +1805,8 @@ G.Overworld = (() => {
                   ['Guide de l\'arène', 'Pour l\'éteindre, fouille les poubelles : deux interrupteurs sont cachés, l\'un juste à côté de l\'autre. Si tu te trompes, tout se referme !']]);
     }
   }
-  const GYMS = { argenta_arene: 'Champion : Pierre', azuria_arene: 'Championne : Ondine', carmin_arene: 'Champion : Major Bob', celadopole_arene: 'Championne : Érika', safrania_arene: 'Championne : Morgane' };
+  const GYMS = { argenta_arene: 'Champion : Pierre', azuria_arene: 'Championne : Ondine', carmin_arene: 'Champion : Major Bob', celadopole_arene: 'Championne : Érika', safrania_arene: 'Championne : Morgane',
+    parmanie_arene: 'Champion : Koga', cramois_arene: 'Champion : Auguste', jadielle_arene: 'Champion : ???' };
 
   async function door(w) {
     const ev = w.ev;
@@ -1711,7 +1814,8 @@ G.Overworld = (() => {
     if (K().DOORS[ev]) { await talk([['', K().DOORS[ev]]]); return; }
     if (ev === 'ssanne') { await ssanne(); return; }
     if (ev === 'lift') { await lift(); return; }
-    if (ev === 'stairs') { await talk([['', 'L\'étage est privé.']]); return; }
+    if (ev === 'pass') { const [x, y] = w.to; await fade(() => setMap(mapKey, x, y, y > w.y ? 'down' : y < w.y ? 'up' : x > w.x ? 'right' : 'left')); commit(); return; }
+    if (ev === 'stairs') { await talk([['', K().STAIRS_MSG[w.to] || 'L\'étage est privé.']]); return; }
     if (ev === 'link') { await link(w); return; }
     if (ev === 'cave') { await talk([['', 'La Cave Taupiqueur est sombre et pleine de Taupiqueur… Pas maintenant !']]); return; }
     if (ev === 'house') { await talk([['Habitant', 'On dit qu\'un Pikachu dresseur traîne dans le coin… Bizarre, non ?']]); return; }
@@ -2072,7 +2176,7 @@ G.Overworld = (() => {
   // ---------------- les CT des jeux ----------------
   // Version de Nika : les CT de Rouge Feu, une seule utilisation comme dans les jeux. Les Champions donnent la leur,
   // les boutiques en vendent quelques-unes (de plus en plus fortes au fil des chapitres).
-  const LEADER_TM = { pierre: 317, ondine: 352, surge: 351, erika: 202, giovanni: 89, morgane: 347 };
+  const LEADER_TM = { pierre: 317, ondine: 352, surge: 351, erika: 202, giovanni: 89, morgane: 347, koga: 92, auguste: 126, giovanni3: 157 };
   const TM_USELESS = new Set(['skill-swap', 'snatch', 'torment', 'taunt', 'attract', 'roar']);
   // [chapitre, numéro de CT] : à partir de quel chapitre une boutique peut la vendre.
   const TM_SHOP = [[2, 9], [2, 46], [2, 40], [2, 28], [3, 6], [3, 43], [4, 31], [4, 17], [4, 33], [4, 16], [4, 42], [4, 44], [5, 18], [5, 11], [5, 23], [5, 10],
@@ -2100,18 +2204,18 @@ G.Overworld = (() => {
     if (await G.AdvBattle.learn(m, ids[k], false)) { S.tms[ids[k]]--; commit(); }
   }
   /** Les CT de cette boutique : 5 au plus, toujours les mêmes pour elle, parmi celles du chapitre. */
-  function shopTms() {
+  function shopTms(all) {
     let h = 29;
     for (const c of mapKey) h = (h * 31 + c.charCodeAt(0)) >>> 0;
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h >>> 8) / 16777216; };
     const pool = TM_SHOP.filter(([c]) => c <= S.ch).map(([, n]) => tmId(n)).filter(id => id && !TM_USELESS.has(M().move(id).key));
     const out = [];
-    while (pool.length && out.length < 5) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+    while (pool.length && out.length < (all ? 99 : 5)) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
     return out.sort((a, b) => M().tmNum(a).localeCompare(M().tmNum(b)));
   }
-  async function tmShop() {
+  async function tmShop(all) {
     for (;;) {
-      const ids = shopTms();
+      const ids = shopTms(all);
       if (!ids.length) { await talk([['Vendeur', 'Pas de CT pour l\'instant. Reviens plus tard dans ton aventure !']]); return; }
       const who = id => S.team.filter(m => M().canTm(m.dex, id)).map(M().name);
       const i = await G.AdvUI.choose('CT · ' + S.money + ' pièces', ids.map(id => ({ icon: 'move:' + id, title: M().tmNum(id) + ' ' + M().moveName(id),
@@ -2218,7 +2322,7 @@ G.Overworld = (() => {
     for (const f in LEADER_TM) if (S.flags[f] && !S.flags['tm_' + f]) { S.flags['tm_' + f] = 1; giveTm(LEADER_TM[f]); }
     // Vol : les villes déjà traversées dans les parties d'avant.
     S.fly = S.fly || {};
-    [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville'], [11, 'celadopole'], [13, 'safrania']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });
+    [[1, 'bourg'], [2, 'jadielle'], [3, 'argenta'], [5, 'route4'], [5, 'azuria'], [7, 'carmin'], [9, 'route10'], [9, 'lavanville'], [11, 'celadopole'], [13, 'safrania'], [15, 'parmanie'], [17, 'cramois']].forEach(([c, t]) => { if (S.ch >= c) S.fly[t] = 1; });
     G.UI.show('scr-world');
     open_ = true;
     resize();

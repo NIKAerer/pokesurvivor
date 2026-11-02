@@ -55,12 +55,22 @@ MAPS = {  # clé du jeu de Nika : nom pret
     'safrania': 'SaffronCity', 'safrania_centre': 'SaffronCity_PokemonCenter_1F', 'safrania_boutique': 'SaffronCity_Mart',
     'safrania_arene': 'SaffronCity_Gym', 'safrania_dojo': 'SaffronCity_Dojo', 'safrania_maison': 'SaffronCity_House',
     'porte5': 'Route5_SouthEntrance', 'porte6': 'Route6_NorthEntrance', 'porte7': 'Route7_EastEntrance', 'porte8': 'Route8_WestEntrance',
-    'sylphe1': 'SilphCo_1F', 'sylphe5': 'SilphCo_5F', 'sylphe7': 'SilphCo_7F', 'sylphe11': 'SilphCo_11F'
+    'sylphe1': 'SilphCo_1F', 'sylphe5': 'SilphCo_5F', 'sylphe7': 'SilphCo_7F', 'sylphe11': 'SilphCo_11F',
+    # Chapitres 17 à 20 : Routes 12 à 15, Parmanie et Koga, Route 21 et Cramois'Île, l'arène de Jadielle.
+    'route12': 'Route12', 'route13': 'Route13', 'route14': 'Route14', 'route15': 'Route15',
+    'parmanie': 'FuchsiaCity', 'parmanie_centre': 'FuchsiaCity_PokemonCenter_1F', 'parmanie_boutique': 'FuchsiaCity_Mart',
+    'parmanie_arene': 'FuchsiaCity_Gym', 'parmanie_gardien': 'FuchsiaCity_WardensHouse',
+    'route21n': 'Route21_North', 'route21s': 'Route21_South', 'cramois': 'CinnabarIsland', 'cramois_centre': 'CinnabarIsland_PokemonCenter_1F',
+    'cramois_boutique': 'CinnabarIsland_Mart', 'cramois_arene': 'CinnabarIsland_Gym', 'cramois_labo': 'CinnabarIsland_PokemonLab_Entrance',
+    'jadielle_arene': 'ViridianCity_Gym',
+    # Le Grand Magasin de Céladopole (le 3e étage n'existe pas dans la décompilation : on passe par l'ascenseur).
+    'magasin2': 'CeladonCity_DepartmentStore_2F', 'magasin4': 'CeladonCity_DepartmentStore_4F', 'magasin5': 'CeladonCity_DepartmentStore_5F',
+    'magasin_toit': 'CeladonCity_DepartmentStore_Roof'
 }
 PEOPLE = ['red_normal', 'prof_oak', 'blue', 'mom', 'nurse', 'brock', 'bug_catcher', 'black_belt', 'clerk',
           'old_man_1', 'boy', 'little_boy', 'youngster', 'camper', 'woman_1', 'fat_man', 'lass', 'gym_guy',
           'little_girl', 'woman_2', 'old_woman', 'scientist', 'gentleman', 'woman_3', 'worker_f', 'worker_m', 'man',
-          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'rocket_f', 'channeler', 'erika', 'cooltrainer_f', 'picnicker', 'giovanni', 'sabrina', 'misc/item_ball', 'misc/cut_tree', 'misc/ss_anne']
+          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'rocket_f', 'channeler', 'erika', 'cooltrainer_f', 'picnicker', 'giovanni', 'sabrina', 'koga', 'blaine', 'snorlax', 'misc/item_ball', 'misc/cut_tree', 'misc/ss_anne']
 
 NUM_PRI_TILES, NUM_PRI_MT, NUM_PRI_PALS = 640, 640, 7
 
@@ -222,7 +232,7 @@ def main():
         for c in conns:  # MAP_ROUTE1 -> Route1, MAP_VIRIDIAN_CITY -> ViridianCity
             raw = next(x['map'] for x in mj['connections'] if x['direction'] == c['dir'])
             pn = ''.join(w.title() for w in raw[4:].split('_'))
-            c['map'] = names.get(pn, pn)
+            c['map'] = ids.get(raw[4:]) or names.get(pn, pn)
         warps = [{'x': w['x'], 'y': w['y'], 'to': w['dest_map'][4:], 'id': int(w['dest_warp_id']), 'dest': ids.get(w['dest_map'][4:])}
                  for w in mj.get('warp_events', [])]
         objs = [{'x': o['x'], 'y': o['y'], 'gfx': o['graphics_id'][len('OBJ_EVENT_GFX_'):].lower(), 'mv': o['movement_type'][len('MOVEMENT_TYPE_'):].lower(),
