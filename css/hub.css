@@ -275,6 +275,10 @@ body.touch .world-act { display: block; }
 #advb-menu:empty { display: none; }
 .advb-btn { --bc: #888; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; background: #fffaf2; color: #2a1d14;
   border: 3px solid #3a2a1c; border-left: 10px solid var(--bc); border-radius: 12px; padding: 10px 12px; font-size: 16px; cursor: pointer; min-height: 52px; }
+/* Au clavier : le numéro de la touche dans le coin (caché sur téléphone). */
+.advb-btn, .adv-opt { position: relative; }
+body:not(.touch) .advb-btn[data-k]::after, body:not(.touch) .adv-opt[data-k]::after { content: attr(data-k); position: absolute; top: 4px; right: 6px;
+  font-size: 11px; font-weight: 800; line-height: 1; color: #2a1d14; background: rgba(42, 29, 20, .1); border: 1px solid rgba(42, 29, 20, .35); border-radius: 5px; padding: 2px 5px; }
 .advb-btn.big { font-size: 20px; font-weight: 800; justify-content: center; }
 .advb-btn small { font-size: 12px; opacity: .7; }
 .advb-btn.back { grid-column: 1 / -1; align-items: center; min-height: 40px; border-left-width: 3px; }
