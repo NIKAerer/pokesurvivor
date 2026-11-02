@@ -163,3 +163,9 @@
  * Pendant le fondu on voyait une image du décor derrière, entre deux écrans. */
 .scr.hub, .scr.ts { animation: none; }
 .scr.ts .ts-body { animation: psin .18s ease-out; }
+/* Pokédex : où trouver le Pokémon (version de Nika) */
+#dex-detail .dex-where { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #f4ece2; }
+#dex-detail .dex-where h4 { margin: 0 0 6px; font-size: 14px; color: #241a14; }
+#dex-detail .dex-where p { margin: 4px 0; font-size: 12px; line-height: 1.4; }
+#dex-detail .dex-where p b { display: block; font-size: 11px; color: #8a5a2a; }
+#dex-detail .dex-where .dw-from { color: #3a7a2a; }

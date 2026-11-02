@@ -158,6 +158,8 @@ G.PickUI = (() => {
       <span class="hc-dark">Rang ${rk} · +${Math.round(rk * G.Rank.BONUS * 100)} %</span>
       <span class="hc-dark">${G.Icons.html('candy', 12)} ${G.Box.candy(mon.dex)}</span></div>`);
 
+    recap();
+
     // Équipe : rang, Bonbons, shiny, relâcher (Bonbons de l'espèce d'abord, puis Super Bonbons).
     const rb = $('pick-rankbox');
     rb.innerHTML = '';
@@ -415,6 +417,37 @@ G.PickUI = (() => {
     G.DB.grant(save.partner, 'starter');
     G.DB.commit();
     G.Game.startRun();
+  }
+
+  /** Accueil (version de Nika) : l'Aventure, le record Survivor et le Défi du jour, en un coup d'œil. */
+  function recap() {
+    const s = G.DB.save, el = $('hub-recap');
+    if (!el) return;
+    const fmt = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+    const adv = G.Overworld.summary(), d = G.Defi.today(), dm = G.DEX_BY[d.dex], ok = G.Defi.done();
+    const st = s.stats || {};
+    el.innerHTML = `
+      <button class="rc rc-adv" data-m="adv"><small>Aventure</small>
+        <b>${adv ? 'Chapitre ' + adv.num : 'Pas commencée'}</b><span class="rc-mons"></span>
+        <em>${adv ? adv.badges + ' / 8 badges' : 'Kanto t\'attend'}</em></button>
+      <button class="rc rc-run" data-m="run"><small>Survivor</small>
+        <b>${st.bestTime ? 'Record ' + fmt(st.bestTime) : 'Aucune partie'}</b>
+        <em>${st.bestTime ? 'Niveau max ' + (st.bestLevel || 0) + ' · ' + (st.runs || 0) + ' parties' : 'Lance ta première partie'}</em></button>
+      <button class="rc rc-defi${ok ? ' done' : ''}"><small>Défi du jour</small>
+        <span class="rc-mon"></span><b>${d.goal.txt}</b>
+        <em>${ok ? 'Réussi aujourd\'hui' : 'avec ' + dm.name + ' · +' + d.coins + ' pièces'}</em></button>`;
+    const mons = el.querySelector('.rc-mons');
+    if (adv) for (const dex of adv.team.slice(0, 6)) mons.appendChild(G.UI.spriteCanvas(dex, 22, 22, { fit: true, shiny: G.DB.ownsShiny(dex) }));
+    el.querySelector('.rc-mon').appendChild(G.UI.spriteCanvas(d.dex, 34, 34, { fit: true }));
+    el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { s.pickMode = b.dataset.m; G.DB.commit(); G.Audio.sfx('select'); render(); });
+    el.querySelector('.rc-defi').onclick = async () => {
+      G.Audio.sfx('select');
+      const i = await G.AdvUI.choose('Défi du jour', [
+        { dex: d.dex, title: d.goal.txt + ' avec ' + dm.name, desc: ok ? 'Déjà réussi aujourd\'hui : tu peux rejouer, sans récompense.'
+          : 'Récompense : ' + d.coins + ' pièces et ' + d.t1 + ' Poké Balls, une fois par jour. Ton partenaire ne change pas.' },
+        { icon: 'up', title: 'Jouer le défi', desc: '' }, { title: 'Retour', desc: '' }]);
+      if (i === 0 || i === 1) G.Defi.start();
+    };
   }
 
   function init() {

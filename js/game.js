@@ -87,10 +87,11 @@ G.Game = (() => {
   // ---------------- run ----------------
 
   /** @param coop  { seed, host, members } para una partida en grupo */
-  function startRun(coop = null) {
+  function startRun(coop = null, opts = null) {
     holdBy = []; awayBy = null; checkT = 0;
     const save = G.DB.save;
-    const mon = G.DEX_BY[save.partner];
+    // Version de Nika : le Défi du jour impose son Pokémon (opts.dex) sans changer le partenaire.
+    const mon = G.DEX_BY[(opts && opts.dex) || save.partner];
     const perks = G.Upgrades.perks(G.DB.upgradesOf(mon.dex));   // améliorations du menu
 
     G.UI.hideAll();
@@ -402,6 +403,7 @@ G.Game = (() => {
     if (coop) save.stats.bestGroupTime = Math.max(save.stats.bestGroupTime || 0, Math.floor(time));
     save.stats.bestLevel = Math.max(save.stats.bestLevel, pl.level);
     save.stats.coinsEarned += coins;
+    const defi = G.Defi.end();             // version de Nika : Défi du jour
     const judge = G.Judgment.summary();
     if (judge) G.Progress.event('judgeEnd', judge);
     G.Judgment.reset();
@@ -423,7 +425,7 @@ G.Game = (() => {
     G.RunUI.showOver({
       dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,
       moves: pl.moves, caught,
-      breakdown: Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
+      breakdown: (defi ? defi + ' · ' : '') + Object.entries(parts).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(' · ') +
                  (mul > 1 ? ` · ×${mul.toFixed(2)} Fortuna` : '')
     }, () => { pl = null; G.Flow.afterRun(); });
   }
@@ -723,6 +725,7 @@ G.Game = (() => {
     }
     time += dt;
     if (!coop && (checkT += dt) >= 15) { checkT = 0; checkpoint(); }
+    if (G.Defi.active) G.Defi.check(pl, time);
 
     const tower = G.Tower.active;           // version de Nika : Tour de Combat (salles, tower.js)
     const b = Math.floor(time / 240);
