@@ -356,3 +356,32 @@ body:not(.touch) .advb-btn[data-k]::after, body:not(.touch) .adv-opt[data-k]::af
 #adv-evo .ae-spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; background: #fff6a0; box-shadow: 0 0 6px #ffe14d;
   transform: rotate(var(--a)) translateX(0); animation: ae-spark .9s ease-out forwards; }
 @keyframes ae-spark { to { transform: rotate(var(--a)) translateX(110px); opacity: 0; } }
+
+/* Pokédex de l'Aventure */
+#adv-dex { position: fixed; inset: 0; z-index: 66; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 8, 6, .6); }
+#adv-dex .ad-box { position: relative; width: min(620px, 100%); max-height: 92vh; overflow: auto; background: #fffaf2; color: #2a1d14; border: 5px solid #3a2a1c; border-radius: 20px; padding: 16px; }
+#adv-dex .ad-x { position: absolute; top: 10px; right: 10px; border: 3px solid #3a2a1c; background: #ffe14d; color: #2a1d14; font-weight: 800; border-radius: 10px; padding: 6px 12px; cursor: pointer; }
+#adv-dex .ad-head { display: flex; gap: 14px; align-items: center; padding-right: 80px; }
+#adv-dex .ad-pic canvas { width: 96px !important; height: auto !important; }
+#adv-dex h3 { margin: 2px 0 6px; font-size: 22px; }
+#adv-dex h4 { margin: 14px 0 6px; font-size: 15px; }
+#adv-dex .ad-lv { margin: 6px 0 0; font-size: 13px; font-weight: 700; }
+#adv-dex .ad-st { display: grid; grid-template-columns: 74px 1fr 34px; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
+#adv-dex .ad-st i { height: 9px; background: rgba(42, 29, 20, .12); border-radius: 5px; overflow: hidden; }
+#adv-dex .ad-st b { display: block; height: 100%; background: #e0a020; }
+#adv-dex .ad-st em { font-style: normal; text-align: right; font-weight: 700; }
+#adv-dex .ad-evo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0; }
+#adv-dex .ad-branch { display: flex; flex-direction: column; gap: 2px; }
+#adv-dex .ad-branch .ad-evo { margin: 0; }
+#adv-dex .ad-evo-mon { display: flex; flex-direction: column; align-items: center; padding: 4px 6px; border-radius: 10px; font-size: 12px; }
+#adv-dex .ad-evo-mon.on { background: #ffe9a8; box-shadow: inset 0 0 0 2px #e0a020; }
+#adv-dex .ad-evo-mon canvas { width: 52px !important; height: auto !important; }
+#adv-dex .ad-arrow { display: flex; flex-direction: column; align-items: center; font-weight: 800; }
+#adv-dex .ad-arrow small { font-size: 11px; font-weight: 700; }
+#adv-dex .ad-none { margin: 0; font-size: 13px; }
+#adv-dex .ad-mvs { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+#adv-dex .ad-mv { display: grid; grid-template-columns: 42px 1fr; column-gap: 6px; border-left: 6px solid var(--c); background: #fff; border-radius: 8px; padding: 4px 6px; font-size: 13px; opacity: .55; }
+#adv-dex .ad-mv.on { opacity: 1; background: color-mix(in srgb, var(--c) 18%, #fff); }
+#adv-dex .ad-mv span { grid-row: span 2; font-size: 11px; font-weight: 700; align-self: center; }
+#adv-dex .ad-mv small { font-size: 11px; opacity: .75; }
+#adv-dex .ad-note { display: block; margin-top: 6px; font-size: 11px; opacity: .7; }

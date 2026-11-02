@@ -1376,9 +1376,15 @@ G.Overworld = (() => {
         ]);
         if (i === 0) {
           if (!S.team.length) continue;
-          const j = await G.AdvUI.choose('Touche un Pokémon pour qu\'il mène l\'équipe', S.team.map((m, k) => ({ dex: m.dex,
-            title: M().name(m) + (k === 0 ? ' (tête)' : ''), desc: 'N. ' + m.lv + evoTxt(m) + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV' + (m.st ? ' · ' + G.AdvBattle.ST_NAME[m.st] : '') + ' · ' + m.moves.map(M().moveName).join(', ') })));
-          if (j > 0) { const [m] = S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
+          const j = await G.AdvUI.choose('Ton équipe · touche un Pokémon', S.team.map((m, k) => ({ dex: m.dex,
+            title: M().name(m) + (k === 0 ? ' (tête)' : ''), desc: 'N. ' + m.lv + evoTxt(m) + ' · ' + Math.ceil(m.hp) + '/' + M().maxHp(m) + ' PV' + (m.st ? ' · ' + G.AdvBattle.ST_NAME[m.st] : '') + ' · ' + m.moves.map(M().moveName).join(', ') })).concat([{ title: 'Retour', desc: '' }]));
+          if (j < 0 || j >= S.team.length) continue;
+          const m = S.team[j];
+          const a = await G.AdvUI.choose(M().name(m) + ' · N. ' + m.lv, [{ icon: 'book', title: 'Pokédex', desc: 'Stats, évolutions et attaques' }]
+            .concat(j > 0 ? [{ icon: 'crown', title: 'Mettre en tête', desc: 'Il ouvre la marche et combat en premier' }] : [])
+            .concat([{ title: 'Retour', desc: '' }]));
+          if (a === 0) await G.AdvUI.dex(m);
+          else if (a === 1 && j > 0) { S.team.splice(j, 1); S.team.unshift(m); refreshFollowers(); }
         } else if (i === 1) await talk([['', K().CHAPTERS[S.ch].goal]]);
         else if (i === 2) { await flyMenu(); return; }
         else if (i === 3) {
