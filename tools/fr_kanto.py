@@ -48,12 +48,14 @@ MAPS = {  # clé du jeu de Nika : nom pret
     'souterrain_o': 'UndergroundPath_WestEntrance', 'route7': 'Route7', 'celadopole': 'CeladonCity',
     'celadopole_centre': 'CeladonCity_PokemonCenter_1F', 'celadopole_arene': 'CeladonCity_Gym', 'celadopole_magasin': 'CeladonCity_DepartmentStore_1F',
     'celadopole_casino': 'CeladonCity_GameCorner', 'celadopole_resto': 'CeladonCity_Restaurant', 'celadopole_hotel': 'CeladonCity_Hotel',
-    'celadopole_maison': 'CeladonCity_House1', 'celadopole_parfum': 'CeladonCity_Condominiums_1F'
+    'celadopole_maison': 'CeladonCity_House1', 'celadopole_parfum': 'CeladonCity_Condominiums_1F',
+    # Chapitre 11 : le repaire de la Team Rocket sous la Salle de jeux.
+    'repaire1': 'RocketHideout_B1F', 'repaire2': 'RocketHideout_B2F', 'repaire3': 'RocketHideout_B3F', 'repaire4': 'RocketHideout_B4F'
 }
 PEOPLE = ['red_normal', 'prof_oak', 'blue', 'mom', 'nurse', 'brock', 'bug_catcher', 'black_belt', 'clerk',
           'old_man_1', 'boy', 'little_boy', 'youngster', 'camper', 'woman_1', 'fat_man', 'lass', 'gym_guy',
           'little_girl', 'woman_2', 'old_woman', 'scientist', 'gentleman', 'woman_3', 'worker_f', 'worker_m', 'man',
-          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'rocket_f', 'channeler', 'erika', 'cooltrainer_f', 'picnicker', 'misc/item_ball', 'misc/cut_tree', 'misc/ss_anne']
+          'rocker', 'hiker', 'beauty', 'super_nerd', 'gamer', 'swimmer_m_land', 'cooltrainer_m', 'daisy', 'balding_man', 'gba_kid', 'rocket_f', 'channeler', 'erika', 'cooltrainer_f', 'picnicker', 'giovanni', 'misc/item_ball', 'misc/cut_tree', 'misc/ss_anne']
 
 NUM_PRI_TILES, NUM_PRI_MT, NUM_PRI_PALS = 640, 640, 7
 
