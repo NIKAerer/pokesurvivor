@@ -198,26 +198,34 @@ G.Team = (() => {
     const pool = G.Moves.poolFor({ types: [...types] }).filter(id => id !== start)
       .map(id => [score(id), id]).sort((a, b) => b[0] - a[0]).map(x => x[1]);
     const out = [start];
+    // Version de Nika (2026-11-25) : jamais deux fois la même attaque. Certaines
+    // signatures portent le nom d'une attaque normale (Cru-Ailes de Roucool) ou
+    // de l'évolution d'une autre (Bélier de Tauros = Charge évoluée) : on écarte
+    // toute attaque dont le nom (ou celui de son évolution) est déjà pris.
+    const tr = s => G.I18n.t(s);
+    const names = id => [tr(B[id].name)].concat(G.Moves.EVO[id] ? [tr(G.Moves.EVO[id][0])] : []);
+    const taken = new Set(names(start));
+    const fresh = id => !out.includes(id) && !names(id).some(n => taken.has(n));
     let buffs = B[start].kind === 'buff' ? 1 : 0;
     const maxBuffs = support ? 3 : 2;
     let roleN = B[start].role === role ? 1 : 0;
     let typeN = 1 - roleN;
-    const take = id => { out.push(id); if (B[id].kind === 'buff') buffs++; };
+    const take = id => { out.push(id); names(id).forEach(n => taken.add(n)); if (B[id].kind === 'buff') buffs++; };
     const okBuff = id => B[id].kind !== 'buff' || buffs < maxBuffs;
     for (const id of pool) {                         // attaques de rôle
       if (roleN >= ROLE_N) break;
-      if (B[id].role !== role || !okBuff(id)) continue;
+      if (B[id].role !== role || !okBuff(id) || !fresh(id)) continue;
       take(id); roleN++;
     }
     const typeMax = LEARN - ROLE_N;
     for (const id of pool) {                         // attaques de type (pas de rôle), types de la famille d'abord
       if (out.length >= LEARN || typeN >= typeMax + (ROLE_N - roleN)) break;
-      if (out.includes(id) || B[id].role === role || !okBuff(id)) continue;
+      if (!fresh(id) || B[id].role === role || !okBuff(id)) continue;
       // varier : pas deux attaques de la même forme tant qu'il y a le choix
       if (out.some(o => B[o].kind === B[id].kind) && pool.length > 10 && typeN < 2) continue;
       take(id); typeN++;
     }
-    for (const id of pool) { if (out.length >= LEARN) break; if (!out.includes(id) && okBuff(id)) take(id); }
+    for (const id of pool) { if (out.length >= LEARN) break; if (fresh(id) && okBuff(id)) take(id); }
     return (sets[root] = out);
   }
 
