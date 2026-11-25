@@ -79,7 +79,31 @@ G.Combat = (() => {
   }
 
   function payload(m) {
-    return { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type };
+    const o = { burn: m.burn || 0, poison: m.poison || 0, slow: m.slow || 0, knock: m.knock || 0, mtype: m.type };
+    if (SHOT_KINDS.includes(m.kind)) { const st = shotStyle(m); o.pierce = st.pierce; o.splash = st.splash; }
+    return o;
+  }
+
+  /*
+   * Version de Nika (2026-11-25) : plus aucun tir ne s'arrête au premier ennemi.
+   * Selon le TYPE de l'attaque, un tir (projectile, éventail, nova, tourelle)
+   *  - EXPLOSE (zone) : Feu, Roche, Sol, Poison, Spectre, Psy, Combat. Il touche
+   *    une cible et éclabousse ceux autour (SPLASH_K des dégâts).
+   *  - TRAVERSE : tous les autres types, et tous les éventails (souffles, jets).
+   *    Il perce PIERCE_MIN ennemis de plus.
+   */
+  const BLAST_TYPES = new Set(['fire', 'rock', 'ground', 'poison', 'ghost', 'psychic', 'fighting']);
+  const SPLASH_K = 0.6, PIERCE_MIN = { projectile: 2, cone: 2, nova: 1, turret: 2 };
+  function shotStyle(m) {
+    const pierce = m.pierce | 0;
+    if (BLAST_TYPES.has(m.type) && m.kind !== 'cone') return { pierce, splash: Math.round(30 + (m.size || 6) * 2.5), zone: true };
+    return { pierce: pierce + (PIERCE_MIN[m.kind] || 0), splash: 0, zone: false };
+  }
+  /** Les formes d'attaque concernées (pour l'étiquette des cartes). */
+  const SHOT_KINDS = ['projectile', 'cone', 'nova', 'turret'];
+  function shotLabel(m) {
+    if (!SHOT_KINDS.includes(m.kind)) return '';
+    return shotStyle(m).zone ? 'Zone' : 'Perçante';
   }
 
   /** Tabla de tipos × clima para un ataque de tipo `type` contra `e`. */
@@ -544,6 +568,21 @@ G.Combat = (() => {
 
   // Golpe crítico (Mejoras → Golpe Crítico): x1,5 de daño, número naranja y grande.
   const CRIT_MUL = 1.5;
+
+  /** Explosion d'un tir de zone : blesse les ennemis autour de la cible touchée. */
+  function splash(pl, p, e0) {
+    G.FX.ring(e0.x, e0.y, 4, p.splash, p.color, 0.25, 3);
+    const owner = p.owner || pl;
+    for (const e of G.EnemyMgr.queryCircle(e0.x, e0.y, p.splash)) {
+      if (e === e0 || e.dead) continue;
+      const k = p.mtype ? typeK(p.mtype, e) : 1, dmg = p.dmg * SPLASH_K * k;
+      e.hurt(dmg, p.color, e.x - e0.x, e.y - e0.y, (p.knock || 0) * 0.5, null);
+      owner.dmgDealt += dmg;
+      pl.onDealt(dmg);
+      if (p.burn) e.applyBurn(p.burn);
+      if (p.poison) e.applyPoison(p.poison);
+    }
+  }
   const isCrit = pl => { const c = pl.critChance + (pl.inTeam ? G.Talents.crit() : 0); return !ghost && c > 0 && Math.random() < c; };
 
   const VAMP = 0.01;
@@ -676,6 +715,7 @@ G.Combat = (() => {
         // Disparo fantasma de un compañero: choca y se ve, pero no daña.
         if (p.ghost) {
           G.FX.sp('impact', p.vis ? p.vis.pal : 'normal', e.x, e.y - e.bodyH * 0.5, { life: 0.12, scale: 1 });
+          if (p.splash) G.FX.ring(e.x, e.y, 4, p.splash, p.color, 0.25, 3);
           if (p.pierce > 0) { p.pierce--; continue; }
           G.FX.burst(p.x, p.y - G.LIFT, p.color, 5, 80);
           projectiles.splice(i, 1);
@@ -695,6 +735,7 @@ G.Combat = (() => {
         if (p.burn) e.applyBurn(p.burn);
         if (p.poison) e.applyPoison(p.poison);
         if (p.slow) e.applySlow(p.slow);
+        if (p.splash) splash(pl, p, e);
 
         if (!p.orb) {
           if (p.pierce > 0) { p.pierce--; }
@@ -722,6 +763,6 @@ G.Combat = (() => {
     }
   }
 
-  return { tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
+  return { shotStyle, shotLabel, tick, resolve, ghostCast, ghostOrbit, updateFields, drawGroundFields, drawAirFields, clearFields,
            get fieldCount() { return fields.length; } };
 })();
