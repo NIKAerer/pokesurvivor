@@ -219,6 +219,22 @@ G.RunUI = (() => {
     G.UI.show('scr-item');
   }
 
+  /**
+   * Version de Nika (2026-11-26) : réanimation payante, une fois par partie.
+   * onYes() paie et relève le Pokémon ; onNo() termine la partie.
+   */
+  function showRevive(cost, have, onYes, onNo) {
+    $('revive-cost').textContent = cost.toLocaleString('fr');
+    $('revive-have').textContent = have.toLocaleString('fr');
+    const yes = $('btn-revive'), ok = have >= cost;
+    yes.disabled = !ok;
+    yes.title = ok ? '' : 'Pas assez de pièces';
+    let done = false;
+    yes.onclick = () => { if (done || !ok) return; done = true; G.UI.hide('scr-revive'); onYes(); };
+    $('btn-revive-no').onclick = () => { if (done) return; done = true; G.UI.hide('scr-revive'); onNo(); };
+    G.UI.show('scr-revive');
+  }
+
   function showPause(coop = false) {
     G.UI.soundControls($('pause-sound'));
     G.TypesUI.pauseTeam($('pause-team'));
@@ -232,5 +248,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, reroll, showItemChoice, pick, setWaiting, closeLevelUp, showOver, wirePause, showPause };
+  return { showLevelUp, reroll, showItemChoice, pick, setWaiting, closeLevelUp, showOver, showRevive, wirePause, showPause };
 })();

@@ -113,7 +113,7 @@ G.Game = (() => {
     G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
     G.World.setBiome(0, true);
     biome = 0;
-    time = 0; pendingLevels = 0;
+    time = 0; pendingLevels = 0; revived = false;
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, G.DB.ownsShiny(mon.dex));
@@ -720,7 +720,7 @@ G.Game = (() => {
       G.EnemyMgr.update(dt * 0.3, pl);
       G.FX.update(dt);
       G.Camera.follow(pl.x, pl.y, dt);
-      if (deathT > 1.3) { deathT = 0; endRun(true); }
+      if (deathT > 1.3) { deathT = 0; offerRevive(); }
       return;
     }
     time += dt;
@@ -774,6 +774,33 @@ G.Game = (() => {
     G.Audio.music(tower ? (G.Tower.step().boss && !G.Tower.door ? 'boss' : 'rift') : G.Judgment.active ? G.Judgment.music : G.Rift.inArena ? (G.Rift.inGym ? 'boss' : 'rift') : G.EnemyMgr.bossAlive() ? 'boss' : G.BIOME_MUSIC[biome % G.BIOME_MUSIC.length]);
     if (!coop || G.Coop.isHost) maybeLevelUp();
     if (G.Coop.isHost) checkAllDown(dt);
+  }
+
+  /*
+   * Version de Nika (2026-11-26) : réanimation payante en Survivor (solo),
+   * une seule fois par partie. Payée avec les pièces du menu (save.coins).
+   * Pas dans la Tour de Combat.
+   */
+  const REVIVE_COST = 500;
+  let revived = false;
+  function offerRevive() {
+    const save = G.DB.save;
+    if (revived || G.Tower.active || !save) { endRun(true); return; }
+    state = 'revive';
+    G.RunUI.showRevive(REVIVE_COST, save.coins || 0, () => {
+      if ((save.coins || 0) < REVIVE_COST) { endRun(true); return; }
+      save.coins -= REVIVE_COST;
+      revived = true;
+      G.DB.commit();
+      pl.revive(1);
+      pl.invuln = 3;
+      // On repousse les ennemis collés pour qu'il ne retombe pas tout de suite.
+      for (const e of G.EnemyMgr.all()) {
+        const dx = e.x - pl.x, dy = e.y - pl.y, d = Math.hypot(dx, dy) || 1;
+        if (d < 160 && !e.boss) { e.x = pl.x + dx / d * 160; e.y = pl.y + dy / d * 160; }
+      }
+      state = 'playing';
+    }, () => endRun(true));
   }
 
   /** Caído en grupo: un compañero a tu lado te va levantando. */
