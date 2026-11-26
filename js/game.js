@@ -113,7 +113,7 @@ G.Game = (() => {
     G.World.reset(coop ? coop.seed : Math.floor(Math.random() * 1e6));
     G.World.setBiome(0, true);
     biome = 0;
-    time = 0; pendingLevels = 0; revived = false;
+    time = 0; pendingLevels = 0; revived = false; canRevive = !!perks.revive;
     runReal = performance.now(); tampered = false;
 
     pl = new G.Player(mon, perks, G.DB.ownsShiny(mon.dex));
@@ -784,12 +784,13 @@ G.Game = (() => {
    * Version de Nika (2026-11-26) : réanimation payante en Survivor (solo),
    * une seule fois par partie. Payée avec les pièces du menu (save.coins).
    * Pas dans la Tour de Combat.
+   * 2026-11-26 : il faut d'abord acheter l'amélioration « Réanimation » (2 500 pièces).
    */
   const REVIVE_COST = 1000;
-  let revived = false;
+  let revived = false, canRevive = false;
   function offerRevive() {
     const save = G.DB.save;
-    if (revived || G.Tower.active || !save) { endRun(true); return; }
+    if (revived || !canRevive || G.Tower.active || !save) { endRun(true); return; }
     state = 'revive';
     G.RunUI.showRevive(REVIVE_COST, save.coins || 0, () => {
       if ((save.coins || 0) < REVIVE_COST) { endRun(true); return; }

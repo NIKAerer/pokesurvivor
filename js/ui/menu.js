@@ -305,13 +305,14 @@ G.MenuUI = (() => {
     hp: v => `+${v * 8} PV`, atk: v => `+${v * 4} % dégâts`, crit: v => `+${v * 3} % critiques`,
     cd: v => `-${v * 3} % recharge`, def: v => `-${v * 2} % dégâts subis`, regen: v => `+${fmt(v * 0.2)} PV/s`,
     spd: v => `+${v * 3} % vitesse`, magnet: v => `+${v * 12} % portée`, xp: v => `+${v * 5} % XP`,
-    coins: v => `+${v * 8} % pièces`, moves: () => '2 attaques au départ', afk: () => 'Bouton AFK en partie Survivor', reroll: v => `${v} changement${v > 1 ? 's' : ''} de cartes`
+    coins: v => `+${v * 8} % pièces`, moves: () => '2 attaques au départ', reroll: v => `${v} changement${v > 1 ? 's' : ''} de cartes`,
+    revive: () => 'Réanimation 1 fois par partie (1 000 pièces)', afk: () => 'Bouton AFK en partie Survivor'
   };
   const UPG_NAME = { hp: 'Vitalité', atk: 'Force', crit: 'Coup critique', cd: 'Réflexes', def: 'Carapace', regen: 'Synthèse',
-    spd: 'Foulée', magnet: 'Aimant', xp: 'Sagesse', coins: 'Fortune', moves: 'Répertoire', reroll: 'Changement de cartes', afk: 'Mode AFK' };
+    spd: 'Foulée', magnet: 'Aimant', xp: 'Sagesse', coins: 'Fortune', moves: 'Répertoire', reroll: 'Changement de cartes', revive: 'Réanimation', afk: 'Mode AFK' };
   const UPG_GROUPS = [
     ['Attaque', 'fist', ['atk', 'crit', 'cd', 'moves']],
-    ['Défense', 'shield', ['hp', 'def', 'regen']],
+    ['Défense', 'shield', ['hp', 'def', 'regen', 'revive']],
     ['Aventure', 'boot', ['spd', 'magnet', 'xp', 'coins', 'reroll']],
     ['Confort', 'clock', ['afk']]
   ];
