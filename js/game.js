@@ -781,7 +781,7 @@ G.Game = (() => {
    * une seule fois par partie. Payée avec les pièces du menu (save.coins).
    * Pas dans la Tour de Combat.
    */
-  const REVIVE_COST = 500;
+  const REVIVE_COST = 1000;
   let revived = false;
   function offerRevive() {
     const save = G.DB.save;
