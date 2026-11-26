@@ -479,3 +479,7 @@
   #scr-levelup .card .ds { font-size: 13px; }
   #scr-levelup .card.forget { min-height: 0; }
 }
+
+/* Version de Nika (2026-11-26) : mode AFK, compte à rebours de relance sur le résumé. */
+.over-afk { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
+  margin: 10px 0 8px; padding: 8px 10px; border-radius: 10px; background: rgba(40,150,90,.18); color: #1f7a44; font-weight: 700; }

@@ -232,6 +232,10 @@ G.HUD = (() => {
       ctx.fillText(txt, x0 + 32, y0 + 17);
     }
 
+    // ---------- version de Nika (2026-11-26) : bouton du mode AFK ----------
+    // (debout : à droite sous l'horloge et la météo ; sinon au centre sous la barre du boss)
+    if (G.Auto.unlocked()) G.Auto.drawButton(ctx, tall ? w - 84 : w / 2 - 37, tall ? top + 120 : 90, K, F, roundRect);
+
     // ---------- barra del jefe ----------
     const boss = G.EnemyMgr.all().find(e => e.boss && !e.dead);
     if (boss) {

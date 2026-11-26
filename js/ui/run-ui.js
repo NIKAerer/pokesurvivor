@@ -134,6 +134,33 @@ G.RunUI = (() => {
     cb(c);
   }
 
+  /**
+   * Version de Nika (2026-11-26) : mode AFK (systems/auto.js), choisit une carte seul.
+   * Évolution > nouveau Pokémon > nouvelle attaque > amélioration d'attaque > stat ;
+   * apprendre à la place d'une autre attaque en dernier (oublie la plus faible).
+   * Renvoie true si quelque chose a été choisi.
+   */
+  const AUTO_SCORE = { evo: 100, mon: 80, new: 60, up: 50, stat: 30 };
+  function autoPick() {
+    if (tooSoon()) return false;
+    if (forgetting) {
+      const ms = forgetting.moves;
+      let k = -1;
+      ms.forEach((m, j) => { if (!(m.def && m.def.sig) && (k < 0 || (m.lvl || 0) < (ms[k].lvl || 0))) k = j; });
+      if (k < 0) { forgetting = null; renderCards(offers); return true; }
+      pickForget(k);
+      return true;
+    }
+    if (!offers || !offers.length) return false;
+    let best = 0, bs = -1;
+    offers.forEach((c, i) => {
+      const s = (AUTO_SCORE[c.type] || 20) - (c.forget ? 45 : 0) + Math.random() * 5;
+      if (s > bs) { bs = s; best = i; }
+    });
+    pick(best, true);
+    return true;
+  }
+
   /** Cooperativo: quién falta por elegir. */
   function setWaiting(names) {
     const me = G.Social.me ? G.Social.me.name : '';
@@ -248,5 +275,5 @@ G.RunUI = (() => {
     $('btn-quit').onclick = onQuit;
   }
 
-  return { showLevelUp, reroll, showItemChoice, pick, setWaiting, closeLevelUp, showOver, showRevive, wirePause, showPause };
+  return { showLevelUp, autoPick, reroll, showItemChoice, pick, setWaiting, closeLevelUp, showOver, showRevive, wirePause, showPause };
 })();
