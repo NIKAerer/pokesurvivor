@@ -150,6 +150,7 @@ G.Game = (() => {
     deathT = 0;
 
     state = 'playing';
+    G.Auto.startRun();                       // version de Nika : mode AFK (auto.js)
     if (firstMoves.length >= 2) {
       state = 'levelup';
       const sub = document.querySelector('#scr-levelup .sub'), was = sub && sub.innerHTML;
@@ -422,6 +423,7 @@ G.Game = (() => {
                : ok && wasHost ? G.Ranking.submitGroup(Object.assign(mark, { members: team })) : null;
     if (sent) sent.then(b => { if (b && b.some(p => p !== 'a')) G.DB.commit(true); }).catch(() => {});
 
+    G.Auto.runEnded();                       // version de Nika : relance AFK
     G.RunUI.showOver({
       dead, time, level: pl.level, kills: pl.kills, bosses: pl.bosses, coins, record, t1: pl.t1, t10: pl.t10, judge,
       moves: pl.moves, caught,
@@ -605,6 +607,7 @@ G.Game = (() => {
       if (['space', 'enter', 'escape'].some(k => G.Input.tap(k))) G.Judgment.skip();
       return;
     }
+    if (G.Input.tap('keyk') && G.Auto.allowed()) G.Auto.toggle();   // version de Nika : K = mode AFK
     if (state === 'levelup') {
       for (let i = 0; i < 3; i++) {
         if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) G.RunUI.pick(i);
@@ -685,6 +688,7 @@ G.Game = (() => {
     frameDt = state === 'playing' ? dt : 0;
 
     handleKeys();
+    if (pl) G.Auto.tick(real);              // version de Nika : choix automatiques du mode AFK
 
     unstick(real);
     if (state === 'playing') update(dt);

@@ -17,6 +17,8 @@ G.Upgrades = (() => {
     { id: 'reroll', icon: 'up', name: 'Cambio de cartas', unit: '+1 cambio de cartas de nivel por run', max: 5, base: 150, grow: 1.6 },
     // Version de Nika (2026-11-26) : la réanimation Survivor se débloque ici (2 500 pièces).
     { id: 'revive', icon: 'heart', name: 'Reanimación', unit: 'Puedes reanimarte 1 vez por run', max: 1, base: 2500, grow: 1 },
+    // Version de Nika (2026-11-26) : le mode AFK du Survivor, un seul achat à prix fixe.
+    { id: 'afk',    icon: 'clock', name: 'Modo AFK', unit: 'Juega solo', max: 1, base: 4444, grow: 1, price: 4444 },
     { id: 'ban',    icon: 'ban', name: 'Veto',           unit: 'Bloquea 1 movimiento: no te sale en las cartas', max: 3, base: 300, grow: 1.9 }
   ];
   const BY = {};
@@ -24,6 +26,7 @@ G.Upgrades = (() => {
 
   function cost(id, lvl) {
     const u = BY[id];
+    if (u.price) return u.price;
     return Math.round(u.base * Math.pow(u.grow, lvl) / 10) * 10;
   }
 

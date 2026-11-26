@@ -490,5 +490,5 @@ G.PickUI = (() => {
   /** Ouvre la Boîte directement en mode « Relâcher » (depuis la Boutique quand elle est pleine). */
   function openRelease() { open(); relMode = true; relSel.clear(); view = 'box'; showView(); render(); }
 
-  return { open, openRelease, init, theme, wallet };
+  return { open, openRelease, init, theme, wallet, play };
 })();
