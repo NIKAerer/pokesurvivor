@@ -15,6 +15,8 @@ G.Upgrades = (() => {
     { id: 'moves',  icon: 'cards', name: 'Repertorio',     unit: 'Empiezas con 2 movimientos', max: 1, base: 1500, grow: 1 },
     { id: 'crit',   icon: 'star', name: 'Golpe Crítico',  unit: '+3% de críticos (x1,5 de daño)', max: 10, base: 90, grow: 1.4 },
     { id: 'reroll', icon: 'up', name: 'Cambio de cartas', unit: '+1 cambio de cartas de nivel por run', max: 5, base: 150, grow: 1.6 },
+    // Version de Nika (2026-11-26) : la réanimation Survivor se débloque ici (2 500 pièces).
+    { id: 'revive', icon: 'heart', name: 'Reanimación', unit: 'Puedes reanimarte 1 vez por run', max: 1, base: 2500, grow: 1 },
     { id: 'ban',    icon: 'ban', name: 'Veto',           unit: 'Bloquea 1 movimiento: no te sale en las cartas', max: 3, base: 300, grow: 1.9 }
   ];
   const BY = {};
@@ -42,7 +44,8 @@ G.Upgrades = (() => {
       startMoves: 1 + L('moves'),
       crit: L('crit') * 0.03,
       rerolls: L('reroll'),
-      bans: L('ban')
+      bans: L('ban'),
+      revive: L('revive') > 0
     };
   }
 
